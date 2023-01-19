@@ -1,0 +1,9 @@
+version: 0.2
+phases:
+  build:
+    commands:
+      - docker pull hello-world:latest
+      - docker save -o docker.tar hello-world:latest
+artifacts:
+  files:
+    - docker.tar
