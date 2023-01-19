@@ -1,8 +1,7 @@
+# Bitwarden Manager
 
-# bitwarden-manager
+This is a placeholder for a new repository that will automate administration of bitwarden orgs
 
-This is a placeholder README.md for a new repository
+## License
 
-### License
-
-This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").
+This code is open source software licensed under the Apache 2.0 License.
