@@ -3,7 +3,8 @@ phases:
   build:
     commands:
       - docker pull hello-world:latest
-      - docker save -o docker.tar hello-world:latest
+      - docker tag hello-world:latest container-release:local
+      - docker save -o docker.tar container-release:local
 artifacts:
   files:
     - docker.tar
