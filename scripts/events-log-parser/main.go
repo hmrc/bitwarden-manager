@@ -121,10 +121,8 @@ func averageDailyLogins(records []record, num int) float64 {
 		e = num
 	}
 
-	// fmt.Printf("eeee: %d\n", e)
 	sum := 0
 	for _, d := range days[:e] {
-		// fmt.Printf("day: %s -- %d\n", d, m[d])
 		sum = sum + m[d]
 	}
 
@@ -187,9 +185,7 @@ func averageDailyUniqueUserLogins(records []record, num int) float64 {
 	}
 
 	sum := 0
-	// fmt.Printf("\n\naverageDailyUniqueUserLogins(records, %d):\n", e)
 	for _, d := range days[:e] {
-		// fmt.Printf("day: %s -- %d\n", d, m[d])
 		sum = sum + m[d]
 	}
 
