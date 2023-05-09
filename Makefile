@@ -20,8 +20,11 @@ init:
 	poetry run pre-commit autoupdate
 
 static-analysis:
-	poetry run bandit -c bandit.yaml -r .
+	poetry run bandit -c bandit.yaml -r -q .
 	poetry run flake8 . *.py
 
-test:
+python-test:
 	poetry run pytest
+
+test: python-test static-analysis
+
