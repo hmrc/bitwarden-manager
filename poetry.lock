@@ -297,5 +297,5 @@ pbr = ">=2.0.0,<2.1.0 || >2.1.0"
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.11"
-content-hash = "32adcb48fac25329cd75ed88136a89acb01b716a94f80197bcc57919af0af1bb"
+python-versions = "^3.9"
+content-hash = "bb62761f030ccc96fccaff5d617d1539bd7a556cba195dac4ce99d5071ae7117"
