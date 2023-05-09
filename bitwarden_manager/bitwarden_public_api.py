@@ -1,6 +1,7 @@
 from requests import post, HTTPError
 
 REGULAR_USER = 2
+REQUEST_TIMEOUT_SECONDS = 30
 
 LOGIN_URL = "https://identity.bitwarden.com/connect/token"
 API_URL = "https://api.bitwarden.com/public"
@@ -24,11 +25,12 @@ class BitwardenPublicApi:
                 "email": email,
                 "collections": [],
             },
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
         try:
             response.raise_for_status()
         except HTTPError as e:
-            raise Exception(f"Failed to invite user", e) from e
+            raise Exception("Failed to invite user", e) from e
 
     def __fetch_token(self):
         response = post(
@@ -40,6 +42,7 @@ class BitwardenPublicApi:
                 "client_id": self.__client_id,
                 "client_secret": self.__client_secret,
             },
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
         try:
             response.raise_for_status()
