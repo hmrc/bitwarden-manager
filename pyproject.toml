@@ -5,6 +5,7 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 packages = [{include = "bitwarden_manager"}]
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.11"
