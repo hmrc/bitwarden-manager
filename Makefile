@@ -22,3 +22,6 @@ init:
 static-analysis:
 	poetry run bandit . *.py -r
 	poetry run flake8 . *.py
+
+test:
+	poetry run pytest
