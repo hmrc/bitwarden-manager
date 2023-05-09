@@ -2,18 +2,22 @@
 name = "bitwarden-manager"
 version = "0.1.0"
 description = ""
-authors = ["baarkerlounger <db@slothlife.xyz>"]
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 packages = [{include = "bitwarden_manager"}]
+license = "Apache-2.0"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+requests = "^2.30.0"
 
 [tool.poetry.group.dev.dependencies]
+pytest = "^7.3.1"
+black = "^23.3.0"
+responses = "^0.23.1"
 bandit = "^1.7.5"
 flake8 = "^6.0.0"
 flake8-print = "^5.0.0"
-pytest = "^7.3.1"
 pre-commit = "^3.3.1"
 
 [build-system]
