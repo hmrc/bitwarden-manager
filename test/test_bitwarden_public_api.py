@@ -2,7 +2,7 @@ import pytest
 import responses
 from responses import matchers
 
-from src.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.bitwarden_public_api import BitwardenPublicApi
 
 
 @responses.activate
