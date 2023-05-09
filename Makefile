@@ -16,9 +16,12 @@ install-poetry:
 
 init:
 	@echo "if you do not have poetry installed please run 'make install-poetry'"
-	poetry install
+	poetry install --no-root
 	poetry run pre-commit autoupdate
 
 static-analysis:
-	poetry run bandit . *.py -r
+	poetry run bandit -c bandit.yaml -r .
 	poetry run flake8 . *.py
+
+test:
+	poetry run pytest
