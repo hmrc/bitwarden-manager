@@ -19,5 +19,8 @@ init:
 	poetry install
 	poetry run pre-commit autoupdate
 
+lint:
+	poetry run flake8 . *.py
+
 security-scan:
-	poetry run bandit platsec_cloudtrail_monitoring *.py -r
+	poetry run bandit . *.py -r
