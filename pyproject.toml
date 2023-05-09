@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "bitwarden-manager"
+version = "0.1.0"
+description = ""
+authors = ["baarkerlounger <db@slothlife.xyz>"]
+readme = "README.md"
+packages = [{include = "bitwarden_manager"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.7.5"
+flake8 = "^6.0.0"
+flake8-print = "^5.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
