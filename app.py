@@ -1,5 +1,6 @@
-import boto3
-from botocore.exceptions import ClientError
+# import boto3
+# from botocore.exceptions import ClientError
 
 def handler(event, context):
-    print("event: {}".format(event))
+    return None
+    # print("event: {}".format(event))
