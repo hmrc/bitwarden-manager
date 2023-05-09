@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "bitwarden_manager"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.5"
