@@ -4,4 +4,4 @@
 
 def handler(event, context):
     return None
-    # print("event: {}".format(event))
+    print("Some secret value")
