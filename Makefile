@@ -19,9 +19,6 @@ init:
 	poetry install
 	poetry run pre-commit autoupdate
 
-lint:
-	poetry run flake8 . *.py
-
-security-scan:
+static-analysis:
 	poetry run bandit . *.py -r
 	poetry run flake8 . *.py
