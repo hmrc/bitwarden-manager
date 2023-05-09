@@ -3,4 +3,4 @@
 
 def handler(event, context):
     return None
-    # print("event: {}".format(event))
+    print("event: {}".format(event))
