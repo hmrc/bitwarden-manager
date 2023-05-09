@@ -16,7 +16,7 @@ install-poetry:
 
 init:
 	@echo "if you do not have poetry installed please run 'make install-poetry'"
-	poetry install --no-root
+	poetry install
 	poetry run pre-commit autoupdate
 
 static-analysis:
