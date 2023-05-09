@@ -1,5 +1,7 @@
 from requests import post, HTTPError
 
+REGULAR_USER = 2
+
 LOGIN_URL = "https://identity.bitwarden.com/connect/token"
 API_URL = "https://api.bitwarden.com/public"
 
@@ -15,7 +17,7 @@ class BitwardenPublicApi:
             f"{API_URL}/members",
             headers={"Authorization": f"Bearer {bearer}"},
             json={
-                "type": 2,
+                "type": REGULAR_USER,
                 "accessAll": False,
                 "resetPasswordEnrolled": True,
                 "externalId": username,
