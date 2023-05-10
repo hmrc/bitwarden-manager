@@ -7,18 +7,35 @@ readme = "README.md"
 packages = [{include = "bitwarden_manager"}]
 license = "Apache-2.0"
 
+[[tool.poetry.source]]
+name = "artifactory"
+url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple/"
+default = true
+secondary = false
+
 [tool.poetry.dependencies]
 python = "^3.11"
+boto3-type-annotations = "^0.3.1"
 requests = "^2.30.0"
+types-requests = "^2.30.0.0"
+awslambdaric = "^2.0.4"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.3.1"
+boto3 = "^1.26.127"
 black = "^23.3.0"
-responses = "^0.23.1"
-bandit = "^1.7.5"
 flake8 = "^6.0.0"
 flake8-print = "^5.0.0"
+mypy = "^1.2.0"
+pytest = "^7.3.1"
+pytest-cov = "^4.0.0"
+responses = "^0.23.1"
+bandit = "^1.7.5"
 pre-commit = "^3.3.1"
+
+
+[tool.flake8]
+ignore = ['E203']
+max-line-length = 120
 
 [build-system]
 requires = ["poetry-core"]

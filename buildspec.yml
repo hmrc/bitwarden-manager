@@ -2,8 +2,8 @@ version: 0.2
 phases:
   build:
     commands:
-      - docker pull hello-world:latest
-      - docker tag hello-world:latest container-release:local
+      - make ci
+      - make container-release
       - docker save -o docker.tar container-release:local
 artifacts:
   files:

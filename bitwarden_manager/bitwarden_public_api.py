@@ -1,3 +1,4 @@
+from typing import Dict
 from requests import post, HTTPError
 
 REGULAR_USER = 2
@@ -8,11 +9,11 @@ API_URL = "https://api.bitwarden.com/public"
 
 
 class BitwardenPublicApi:
-    def __init__(self, client_id, client_secret):
+    def __init__(self, client_id: str, client_secret: str) -> None:
         self.__client_secret = client_secret
         self.__client_id = client_id
 
-    def invite_user(self, username, email):
+    def invite_user(self, username: str, email: str) -> None:
         bearer = self.__fetch_token()
         response = post(
             f"{API_URL}/members",
@@ -32,7 +33,7 @@ class BitwardenPublicApi:
         except HTTPError as e:
             raise Exception("Failed to invite user", e) from e
 
-    def __fetch_token(self):
+    def __fetch_token(self) -> str:
         response = post(
             LOGIN_URL,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -47,7 +48,7 @@ class BitwardenPublicApi:
         try:
             response.raise_for_status()
         except HTTPError as e:
-            raise Exception(
-                f"Failed to authenticate with {LOGIN_URL}, creds incorrect?", e
-            ) from e
-        return response.json()["access_token"]
+            raise Exception(f"Failed to authenticate with {LOGIN_URL}, creds incorrect?", e) from e
+
+        response_json: Dict[str, str] = response.json()
+        return response_json["access_token"]
