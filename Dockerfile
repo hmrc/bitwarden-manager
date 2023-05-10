@@ -2,7 +2,10 @@ ARG PYTHON_VERSION
 
 FROM python:${PYTHON_VERSION}-slim AS base
 
-RUN pip install --no-cache-dir poetry awslambdaric
+RUN pip install pip install \
+    --index-url https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple \
+    --no-cache-dir \
+    poetry
 
 # Install Python dependencies so they are cached
 WORKDIR /build
