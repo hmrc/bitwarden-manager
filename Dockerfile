@@ -9,8 +9,6 @@ WORKDIR /build
 
 COPY . .
 
-RUN poetry install --without=dev
-
 
 #---- dev ----
 FROM base AS dev
@@ -19,6 +17,8 @@ RUN poetry install --with=dev
 
 #---- lambda ----
 FROM base AS lambda
+
+RUN poetry install --without=dev
 
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
 CMD ["lambda.handler"]

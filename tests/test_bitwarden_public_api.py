@@ -62,29 +62,6 @@ def test_failed_invite() -> None:
 
 
 @responses.activate
-def test_failed_invite_user() -> None:
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(
-            responses.POST,
-            "https://identity.bitwarden.com/connect/token",
-            body="",
-            status=500,
-            content_type="application/json",
-        )
-
-        client = BitwardenPublicApi(
-            client_id="foo",
-            client_secret="bar",
-        )
-
-        with pytest.raises(
-            Exception,
-            match="Failed to authenticate with " "https://identity.bitwarden.com/connect/token" ", creds incorrect?",
-        ):
-            client.invite_user(username="test.user", email="test@example.com")
-
-
-@responses.activate
 def test_failed_login() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(

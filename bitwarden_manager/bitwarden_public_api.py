@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Dict
 from requests import post, HTTPError
 
 REGULAR_USER = 2
@@ -45,10 +45,10 @@ class BitwardenPublicApi:
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
-        response_json: Dict[str, str] = response.json()
         try:
             response.raise_for_status()
         except HTTPError as e:
             raise Exception(f"Failed to authenticate with {LOGIN_URL}, creds incorrect?", e) from e
 
+        response_json: Dict[str, str] = response.json()
         return response_json["access_token"]
