@@ -7,7 +7,7 @@ SHELL = /bin/bash
 
 PYTHON_VERSION = $(shell head -1 .python-version)
 
-POETRY = docker run \
+DOCKER = docker run \
 	--interactive \
 	--rm \
 	--env "PYTHONWARNINGS=ignore:ResourceWarning" \
@@ -29,26 +29,26 @@ init:
 	poetry run pre-commit autoupdate
 
 flake8: python
-	@$(POETRY) flake8 --max-line-length 120
+	@$(DOCKER) flake8 --max-line-length 120
 
 fmt:
-	@$(POETRY) black --line-length 120 .
+	@$(DOCKER) black --line-length 120 .
 
 fmt-check: python
-	@$(POETRY) black --line-length 120 --check .
+	@$(DOCKER) black --line-length 120 --check .
 
 mypy: python
-	@$(POETRY) mypy --strict .
+	@$(DOCKER) mypy --strict .
 
 bandit: python
-	@$(POETRY) bandit -c bandit.yaml -r -q .
+	@$(DOCKER) bandit -c bandit.yaml -r -q .
 
 python-test: python
-	@$(POETRY) pytest \
+	@$(DOCKER) pytest \
 		-v \
 		-p no:cacheprovider \
 		--no-header \
-		--cov=. \
+		--cov=bitwarden_manager \
 		--cov-report term-missing \
 		--no-cov-on-fail
 		# --cov-fail-under=100 \
