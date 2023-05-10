@@ -1,7 +1,7 @@
-# import boto3
-# from botocore.exceptions import ClientError
+from src.bitwarden_manager import BitwardenManager
+from typing import Any, Dict
 
 
-def handler(event, context):
-    return None
-    # print("event: {}".format(event))
+def handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
+    print("handler")
+    BitwardenManager().run()

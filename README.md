@@ -4,9 +4,8 @@ This is a placeholder for a new repository that will automate administration of 
 
 ## averageDailyLogins & averageDailyUniqueUserLogins metrics
 
-See [events-log-parser script](scripts/events-log-parser/README.md), to get averageDailyLogins and averageDailyUniqueUserLogins metrics
-from a Bitwarden events log file
-
+See [events-log-parser script](scripts/events-log-parser/README.md), to get averageDailyLogins and 
+averageDailyUniqueUserLogins metrics from a Bitwarden events log file
 
 ## License
 
