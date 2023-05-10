@@ -10,17 +10,20 @@ RUN pip install \
 
 WORKDIR /build
 
-COPY . .
-
+COPY pyproject.toml .
+COPY poetry.lock .
 
 #---- dev ----
 FROM base AS dev
-RUN poetry install --with=dev
+RUN poetry install --no-root --with=dev
+COPY . .
 
 
 #---- lambda ----
 FROM base AS lambda
 
+COPY bitwarden_manager .
+COPY main.py .
 RUN poetry install --without=dev
 
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
