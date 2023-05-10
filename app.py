@@ -1,4 +1,4 @@
-from src.bitwarden_manager import BitwardenManager
+from bitwarden_manager.bitwarden_manager import BitwardenManager
 from typing import Any, Dict
 
 

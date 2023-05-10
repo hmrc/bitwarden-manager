@@ -1,4 +1,4 @@
-from src.aws_secretsmanager_client import AwsSecretsManagerClient
+from bitwarden_manager.aws_secretsmanager_client import AwsSecretsManagerClient
 
 from unittest.mock import Mock
 
