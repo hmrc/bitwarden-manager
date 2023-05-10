@@ -20,8 +20,6 @@ python:
 		--build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 		--tag build:local .
 
-ci: flake8 fmt-check mypy bandit test md-check
-
 install-poetry:
 	curl -sSL https://install.python-poetry.org | python -
 
@@ -45,7 +43,7 @@ mypy: python
 bandit: python
 	@$(POETRY) bandit -c bandit.yaml -r -q .
 
-test: python
+python-test: python
 	@$(POETRY) pytest \
 		-v \
 		-p no:cacheprovider \
@@ -54,6 +52,10 @@ test: python
 		--cov-report term-missing \
 		--no-cov-on-fail
 		# --cov-fail-under=100 \
+
+test: python-test flake8 fmt-check mypy bandit md-check
+
+ci: test
 
 md-check:
 	@docker pull zemanlx/remark-lint:0.2.0
