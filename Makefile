@@ -23,7 +23,7 @@ python:
 ci: flake8 fmt-check mypy bandit test md-check
 
 install-poetry:
-	curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -
+	curl -sSL https://install.python-poetry.org | python -
 
 init:
 	@echo "if you do not have poetry installed please run 'make install-poetry'"

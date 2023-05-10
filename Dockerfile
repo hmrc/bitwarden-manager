@@ -2,7 +2,7 @@ ARG PYTHON_VERSION
 
 FROM python:${PYTHON_VERSION}-slim AS base
 
-RUN pip install pip install \
+RUN pip install \
     --index-url https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple \
     --no-cache-dir \
     poetry
