@@ -8,7 +8,7 @@ packages = [{include = "bitwarden_manager"}]
 license = "Apache-2.0"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 boto3-type-annotations = "^0.3.1"
 requests = "^2.30.0"
 

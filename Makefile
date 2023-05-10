@@ -20,7 +20,7 @@ python:
 		--build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 		--tag build:local .
 
-ci: flake8 fmt-check mypy bandit test  md-check
+ci: flake8 fmt-check mypy bandit test md-check
 
 install-poetry:
 	curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python -

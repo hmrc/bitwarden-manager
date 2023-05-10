@@ -47,7 +47,5 @@ class BitwardenPublicApi:
         try:
             response.raise_for_status()
         except HTTPError as e:
-            raise Exception(
-                f"Failed to authenticate with {LOGIN_URL}, creds incorrect?", e
-            ) from e
+            raise Exception(f"Failed to authenticate with {LOGIN_URL}, creds incorrect?", e) from e
         return response.json()["access_token"]

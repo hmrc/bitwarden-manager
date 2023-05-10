@@ -79,9 +79,7 @@ def test_failed_invite_user():
 
         with pytest.raises(
             Exception,
-            match="Failed to authenticate with "
-            "https://identity.bitwarden.com/connect/token"
-            ", creds incorrect?",
+            match="Failed to authenticate with " "https://identity.bitwarden.com/connect/token" ", creds incorrect?",
         ):
             client.invite_user(username="test.user", email="test@example.com")
 
@@ -104,9 +102,7 @@ def test_failed_login():
 
         with pytest.raises(
             Exception,
-            match="Failed to authenticate with "
-            "https://identity.bitwarden.com/connect/token, "
-            "creds incorrect?",
+            match="Failed to authenticate with " "https://identity.bitwarden.com/connect/token, " "creds incorrect?",
         ):
             client.invite_user(username="test.user", email="test@example.com")
 
