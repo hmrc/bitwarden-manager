@@ -13,6 +13,6 @@ class AwsSecretsManagerClient:
         try:
             value: Dict[str, str] = self._secretsmanager.get_secret_value(SecretId=secret_id)
         except (BotoCoreError, ClientError) as err:
-            raise err
+            raise Exception(f"failed to fetch secret value from id: '{secret_id}'", err) from err
 
         return value["SecretString"]

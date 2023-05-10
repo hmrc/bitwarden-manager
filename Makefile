@@ -50,8 +50,8 @@ python-test: python
 		--no-header \
 		--cov=bitwarden_manager \
 		--cov-report term-missing \
-		--no-cov-on-fail
-		# --cov-fail-under=100 \
+		--no-cov-on-fail \
+		--cov-fail-under=100
 
 test: python-test flake8 fmt-check mypy bandit md-check
 
