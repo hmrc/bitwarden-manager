@@ -6,7 +6,7 @@ from bitwarden_manager.bitwarden_public_api import BitwardenPublicApi
 
 
 @responses.activate
-def test_invite_user():
+def test_invite_user() -> None:
     test_user = "test.user"
     test_email = "test@example.com"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -42,7 +42,7 @@ def test_invite_user():
 
 
 @responses.activate
-def test_failed_invite():
+def test_failed_invite() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -62,7 +62,7 @@ def test_failed_invite():
 
 
 @responses.activate
-def test_failed_invite_user():
+def test_failed_invite_user() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.POST,
@@ -85,7 +85,7 @@ def test_failed_invite_user():
 
 
 @responses.activate
-def test_failed_login():
+def test_failed_login() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.POST,
