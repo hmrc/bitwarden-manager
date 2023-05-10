@@ -18,7 +18,6 @@ dist
 /.settings
 *.iws
 .coverage
-aws_scanner_config.ini
 .mypy_cache
 coverage.xml
 __pycache__
