@@ -1,5 +1,5 @@
 from botocore.exceptions import BotoCoreError, ClientError
-from typing import Any, Dict
+from typing import Dict
 import boto3
 
 

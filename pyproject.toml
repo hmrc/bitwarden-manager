@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "bitwarden-manager"
 version = "0.1.0"
-description = "Lambda for automating user onboarding to Bitwarden"
-authors = ["Platform Security <HMRC-MDTP-Team-PlatSec@digital.hmrc.gov.uk>"]
+description = ""
+authors = ["Your Name <you@example.com>"]
 readme = "README.md"
 packages = [{include = "bitwarden_manager"}]
 license = "Apache-2.0"
