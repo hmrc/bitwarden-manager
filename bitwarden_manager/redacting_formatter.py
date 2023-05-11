@@ -17,8 +17,6 @@ class RedactingFormatter(logging.Filter):
 
 
 def get_bitwarden_logger() -> logging.Logger:
-    logging.basicConfig()
-
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.addFilter(RedactingFormatter(patterns=PATTERNS))
