@@ -5,7 +5,7 @@ from bitwarden_manager.bitwarden_manager import BitwardenManager
 
 
 @mock.patch("boto3.client")
-def test_get_credentails(mock_secretsmanager):
+def test_get_credentails(mock_secretsmanager: Mock) -> None:
     get_secret_value = Mock(return_value={"SecretString": "secret"})
     mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
     manager = BitwardenManager()
