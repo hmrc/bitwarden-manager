@@ -24,4 +24,4 @@ FROM base AS lambda
 RUN poetry install --without=dev
 
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
-CMD ["ap.handler"]
+CMD ["app.handler"]
