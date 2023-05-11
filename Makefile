@@ -10,12 +10,10 @@ PYTHON_VERSION = $(shell head -1 .python-version)
 POETRY_DOCKER = docker run \
 	--interactive \
 	--rm \
-	--env "PYTHONWARNINGS=ignore:ResourceWarning" \
-	--volume "$(PWD):/build:z" \
 	build:local poetry run
 
 python:
-	docker build --target dev\
+	docker build --target dev \
 		--file Dockerfile \
 		--build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 		--tag build:local .
@@ -29,7 +27,7 @@ init:
 	poetry run pre-commit autoupdate
 
 flake8: python
-	@$(POETRY_DOCKER) flake8 --max-line-length 120
+	@$(POETRY_DOCKER) flake8 --max-line-length 120 --exclude=.venv
 
 fmt:
 	@$(POETRY_DOCKER) black --line-length 120 .
