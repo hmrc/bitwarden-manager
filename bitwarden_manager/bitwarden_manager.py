@@ -1,6 +1,7 @@
 import boto3
 
 from bitwarden_manager.aws_secretsmanager_client import AwsSecretsManagerClient
+from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 
 class BitwardenManager:
@@ -14,4 +15,5 @@ class BitwardenManager:
         return self._secretsmanager.get_secret_value("/bitwarden/ldap-password")
 
     def run(self) -> None:
-        pass
+        logger = get_bitwarden_logger()
+        logger.info(self.get_ldap_username())

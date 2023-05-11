@@ -8,10 +8,11 @@ RUN pip install \
     poetry \
     awslambdaric
 
+ENV AWS_DEFAULT_REGION="foobar"
+
 WORKDIR /build
 
-COPY pyproject.toml .
-COPY poetry.lock .
+COPY pyproject.toml poetry.lock .
 
 #---- dev ----
 FROM base AS dev
@@ -22,9 +23,8 @@ COPY . .
 #---- lambda ----
 FROM base AS lambda
 
-COPY bitwarden_manager .
-COPY app.py .
-RUN poetry install --without=dev
+COPY bitwarden_manager app.py .
+RUN poetry install --no-root --without=dev --system
 
-ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
+ENTRYPOINT [ "poetry", "run", "python", "-m", "awslambdaric" ]
 CMD ["app.handler"]
