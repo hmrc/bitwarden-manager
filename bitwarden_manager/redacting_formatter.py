@@ -2,7 +2,7 @@ import logging
 import re
 from typing import List
 
-PATTERNS = [r"organization.[\w-]{36}", r"\w{30}"]
+PATTERNS = [r"organization.[\w-]{36}", r"\b\w{30}\b"]
 
 
 class RedactingFormatter(logging.Filter):
@@ -17,8 +17,10 @@ class RedactingFormatter(logging.Filter):
 
 
 def get_bitwarden_logger() -> logging.Logger:
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig()
+
     logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
     logger.addFilter(RedactingFormatter(patterns=PATTERNS))
 
     return logger
