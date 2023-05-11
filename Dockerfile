@@ -23,7 +23,7 @@ COPY . .
 FROM base AS lambda
 
 COPY bitwarden_manager .
-COPY main.py .
+COPY app.py .
 RUN poetry install --without=dev
 
 ENTRYPOINT [ "/usr/local/bin/python", "-m", "awslambdaric" ]
