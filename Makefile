@@ -7,15 +7,13 @@ SHELL = /bin/bash
 
 PYTHON_VERSION = $(shell head -1 .python-version)
 
-POETRY = docker run \
+POETRY_DOCKER = docker run \
 	--interactive \
 	--rm \
-	--env "PYTHONWARNINGS=ignore:ResourceWarning" \
-	--volume "$(PWD):/build:z" \
 	build:local poetry run
 
 python:
-	docker build --target dev\
+	docker build --target dev \
 		--file Dockerfile \
 		--build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 		--tag build:local .
@@ -29,29 +27,29 @@ init:
 	poetry run pre-commit autoupdate
 
 flake8: python
-	@$(POETRY) flake8 --max-line-length 120
+	@$(POETRY_DOCKER) flake8 --max-line-length 120 --exclude=.venv
 
 fmt:
-	@$(POETRY) black --line-length 120 .
+	@$(POETRY_DOCKER) black --line-length 120 .
 
 fmt-check: python
-	@$(POETRY) black --line-length 120 --check .
+	@$(POETRY_DOCKER) black --line-length 120 --check .
 
 mypy: python
-	@$(POETRY) mypy --strict .
+	@$(POETRY_DOCKER) mypy --strict .
 
 bandit: python
-	@$(POETRY) bandit -c bandit.yaml -r -q .
+	@$(POETRY_DOCKER) bandit -c bandit.yaml -r -q .
 
 python-test: python
-	@$(POETRY) pytest \
+	@$(POETRY_DOCKER) pytest \
 		-v \
 		-p no:cacheprovider \
 		--no-header \
-		--cov=. \
+		--cov=bitwarden_manager \
 		--cov-report term-missing \
-		--no-cov-on-fail
-		# --cov-fail-under=100 \
+		--no-cov-on-fail \
+		--cov-fail-under=100
 
 test: python-test flake8 fmt-check mypy bandit md-check
 

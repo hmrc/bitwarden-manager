@@ -19,9 +19,10 @@ boto3-type-annotations = "^0.3.1"
 requests = "^2.30.0"
 types-requests = "^2.30.0.0"
 awslambdaric = "^2.0.4"
+boto3 = "^1.26.127"
+boto3-stubs = "^1.26.131"
 
 [tool.poetry.group.dev.dependencies]
-boto3 = "^1.26.127"
 black = "^23.3.0"
 flake8 = "^6.0.0"
 flake8-print = "^5.0.0"
@@ -34,7 +35,7 @@ pre-commit = "^3.3.1"
 
 
 [tool.flake8]
-ignore = ['E203']
+ignore = ['E203'] # "Colons should not have any space before them" ignoring rule avoids incompatibaty with black formater https://github.com/psf/black/issues/315
 max-line-length = 120
 
 [build-system]
