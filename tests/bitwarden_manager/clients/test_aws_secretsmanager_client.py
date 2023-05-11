@@ -1,7 +1,7 @@
 import pytest
 from botocore.exceptions import BotoCoreError
 
-from bitwarden_manager.aws_secretsmanager_client import AwsSecretsManagerClient
+from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 
 from unittest.mock import Mock
 

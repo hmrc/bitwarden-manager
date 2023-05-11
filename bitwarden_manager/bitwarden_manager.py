@@ -1,6 +1,6 @@
 import boto3
 
-from bitwarden_manager.aws_secretsmanager_client import AwsSecretsManagerClient
+from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 

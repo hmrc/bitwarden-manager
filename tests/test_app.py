@@ -1,10 +1,11 @@
 import logging
-from unittest.mock import patch
+from unittest import mock
+from unittest.mock import patch, Mock
 
 from _pytest.logging import LogCaptureFixture
 
 from app import handler
-from bitwarden_manager.aws_secretsmanager_client import AwsSecretsManagerClient
+from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 
 
 @mock.patch("boto3.client")
