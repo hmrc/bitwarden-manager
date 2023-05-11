@@ -7,7 +7,7 @@ SHELL = /bin/bash
 
 PYTHON_VERSION = $(shell head -1 .python-version)
 
-DOCKER = docker run \
+POETRY_DOCKER = docker run \
 	--interactive \
 	--rm \
 	--env "PYTHONWARNINGS=ignore:ResourceWarning" \
@@ -29,22 +29,22 @@ init:
 	poetry run pre-commit autoupdate
 
 flake8: python
-	@$(DOCKER) flake8 --max-line-length 120
+	@$(POETRY_DOCKER) flake8 --max-line-length 120
 
 fmt:
-	@$(DOCKER) black --line-length 120 .
+	@$(POETRY_DOCKER) black --line-length 120 .
 
 fmt-check: python
-	@$(DOCKER) black --line-length 120 --check .
+	@$(POETRY_DOCKER) black --line-length 120 --check .
 
 mypy: python
-	@$(DOCKER) mypy --strict .
+	@$(POETRY_DOCKER) mypy --strict .
 
 bandit: python
-	@$(DOCKER) bandit -c bandit.yaml -r -q .
+	@$(POETRY_DOCKER) bandit -c bandit.yaml -r -q .
 
 python-test: python
-	@$(DOCKER) pytest \
+	@$(POETRY_DOCKER) pytest \
 		-v \
 		-p no:cacheprovider \
 		--no-header \
