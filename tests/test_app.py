@@ -7,7 +7,8 @@ from app import handler
 from bitwarden_manager.aws_secretsmanager_client import AwsSecretsManagerClient
 
 
-def test_handler_logs_the_ldap_username(caplog: LogCaptureFixture) -> None:
+@mock.patch("boto3.client")
+def test_handler_logs_the_ldap_username(boto_mock: Mock, caplog: LogCaptureFixture) -> None:
     username = "the username"
 
     with patch.object(AwsSecretsManagerClient, "get_secret_value", return_value=username) as mock_method:
