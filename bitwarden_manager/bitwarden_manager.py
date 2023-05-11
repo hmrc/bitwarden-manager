@@ -16,4 +16,7 @@ class BitwardenManager:
 
     def run(self) -> None:
         logger = get_bitwarden_logger()
-        logger.info(self.get_ldap_username())
+        logger.info(f"retrieved ldap creds with username {self.get_ldap_username()}")
+
+        # test log line please remove once we have some real things to do
+        logger.info("testing CLIENT_ID organization.KPL8P83fWXAvYvNYcbNWAKAcdNmn4Ssgne7w")
