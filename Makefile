@@ -12,6 +12,13 @@ POETRY_DOCKER = docker run \
 	--rm \
 	build:local poetry run
 
+POETRY_DOCKER_MOUNT = docker run \
+	--interactive \
+	--rm \
+	--volume "$(PWD)/bitwarden_manager:/build/bitwarden_manager:z" \
+	--volume "$(PWD)/tests:/build/tests:z" \
+	build:local poetry run
+
 python:
 	docker build --target dev \
 		--file Dockerfile \
@@ -30,7 +37,7 @@ flake8: python
 	@$(POETRY_DOCKER) flake8 --max-line-length 120 --exclude=.venv
 
 fmt:
-	@$(POETRY_DOCKER) black --line-length 120 .
+	@$(POETRY_DOCKER_MOUNT) black --line-length 120 --exclude=.venv .
 
 fmt-check: python
 	@$(POETRY_DOCKER) black --line-length 120 --check .
