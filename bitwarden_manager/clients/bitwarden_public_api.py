@@ -1,3 +1,4 @@
+from logging import Logger
 from typing import Dict
 from requests import post, HTTPError
 
@@ -9,7 +10,8 @@ API_URL = "https://api.bitwarden.com/public"
 
 
 class BitwardenPublicApi:
-    def __init__(self, client_id: str, client_secret: str) -> None:
+    def __init__(self, logger: Logger, client_id: str, client_secret: str) -> None:
+        self.__logger = logger
         self.__client_secret = client_secret
         self.__client_id = client_id
 
@@ -31,7 +33,13 @@ class BitwardenPublicApi:
         try:
             response.raise_for_status()
         except HTTPError as e:
-            raise Exception("Failed to invite user", e) from e
+            if (
+                response.status_code == 400
+                and response.json().get("message", None) == "This user has already been invited."
+            ):
+                self.__logger.info("user already invited ignoring error")
+            else:
+                raise Exception("Failed to invite user", response.content, e) from e
 
     def __fetch_token(self) -> str:
         response = post(
