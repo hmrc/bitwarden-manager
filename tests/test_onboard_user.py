@@ -17,9 +17,7 @@ def test_onboard_user_invites_user_to_org() -> None:
 
 
 def test_onboard_user_rejects_bad_events() -> None:
-    event = {
-        "somthing?": 1
-    }
+    event = {"somthing?": 1}
     mock_client = Mock(spec=BitwardenPublicApi)
 
     with pytest.raises(ValidationError, match="'event_name' is a required property"):
