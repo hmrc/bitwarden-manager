@@ -1,6 +1,10 @@
+from typing import Dict, Any
+
 import boto3
 
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 
@@ -8,9 +12,23 @@ class BitwardenManager:
     def __init__(self) -> None:
         self._secretsmanager = AwsSecretsManagerClient(secretsmanager_client=boto3.client("secretsmanager"))
 
-    def run(self) -> None:
+    def run(self, event: Dict[str, Any]) -> None:
         logger = get_bitwarden_logger()
+
         logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
+
+        event_name = event["event_name"]
+        match event_name:
+            case "new_user":
+                logger.debug("handling event with OnboardUser")
+                OnboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+            case _:
+                logger.info(f"ignoring unknown event '{event_name}'")
+
+    def _get_bitwarden_public_api(self) -> BitwardenPublicApi:
+        return BitwardenPublicApi(
+            client_id=self._get_bitwarden_client_id(), client_secret=self._get_bitwarden_client_secret()
+        )
 
     def _get_bitwarden_client_id(self) -> str:
         return self._secretsmanager.get_secret_value("/bitwarden/api-client-id")

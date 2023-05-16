@@ -3,4 +3,4 @@ from typing import Any, Dict
 
 
 def handler(event: Dict[str, Any], context: Dict[str, Any]) -> None:
-    BitwardenManager().run()
+    BitwardenManager().run(event)
