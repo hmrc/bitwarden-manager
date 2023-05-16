@@ -1,11 +1,12 @@
 import logging
 
 from _pytest.logging import LogCaptureFixture
+from _pytest.monkeypatch import MonkeyPatch
 
-from bitwarden_manager.redacting_formatter import get_bitwarden_logger
+from bitwarden_manager.redacting_formatter import get_bitwarden_logger, get_log_level
 
 
-def test_config_logging(caplog: LogCaptureFixture) -> None:
+def test_get_bitwarden_logger(caplog: LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO):
         logger = get_bitwarden_logger()
 
@@ -21,3 +22,17 @@ def test_config_logging(caplog: LogCaptureFixture) -> None:
     assert "256STjxZJR2dVbspPY7TLb7CVKR7Wv" not in caplog.text
 
     assert "some other log line" in caplog.text
+
+
+def test_get_bitwarden_logger_override_with_env_var(monkeypatch: MonkeyPatch) -> None:
+    assert get_bitwarden_logger().getEffectiveLevel() == logging.INFO
+
+    monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+    assert get_bitwarden_logger().getEffectiveLevel() == logging.DEBUG
+
+
+def test_get_log_level(monkeypatch: MonkeyPatch) -> None:
+    assert get_log_level() == "INFO"
+
+    monkeypatch.setenv("LOG_LEVEL", "DEBUG")
+    assert get_log_level() == "DEBUG"
