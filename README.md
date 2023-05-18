@@ -1,6 +1,24 @@
 # Bitwarden Manager
 
-This is a placeholder for a new repository that will automate administration of bitwarden orgs
+This code helps automate the administration of bitwarden orgs.
+Its intended use is to be run in AWS Lambda and to consume user related events
+
+## Example events
+
+Below are the events that this lambda accepts  
+
+### New user
+
+Sending this event will invite a new user to the org. 
+If the user already exists then the lambda will log this and exit successfully.
+
+```json
+{
+    "event_name": "new_user",
+    "username": "test.username",
+    "email": "test-email@example.com"
+}
+```
 
 ## averageDailyLogins & averageDailyUniqueUserLogins metrics
 
