@@ -9,7 +9,7 @@ Below are the events that this lambda accepts
 
 ### New user
 
-Sending this event will invite a new user to the org. If the user already exists then it will no-op 
+Sending this event will invite a new user to the org. If the user already exists then the lambda will log this and exit successfully
 
 ```json
 {
