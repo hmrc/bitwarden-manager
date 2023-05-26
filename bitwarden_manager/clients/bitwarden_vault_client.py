@@ -37,5 +37,14 @@ class BitwardenVaultClient:
         else:
             raise Exception("Failed to logout")
 
-    def export_vault(self) -> str:
+    def export_vault(self, password: str) -> str:
+        if not self.__session_token:
+            return "Must unlock vault first"
+        proc = subprocess.Popen([
+            "./bw", "export",
+            "--session", self.__session_token,
+            "--format", "encrypted_json",
+            "--password", password
+        ], stdout=subprocess.PIPE, shell=False)
+        (out, _err) = proc.communicate()
         return "Placeholder"

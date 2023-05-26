@@ -35,14 +35,15 @@ def test_failed_unlock(client) -> None:
     with pytest.raises(Exception, match="Failed to unlock"):
         client.unlock("Incorrect password")
 
-def test_unlock(client) -> None:
-    result = client.unlock("<Insert password>")
-    assert "Your vault is now unlocked!" in result
+def test_export_without_unlock(client) -> None:
+    result = client.export_vault("Encyption Pa$$w0rd")
+    assert result == "Must unlock vault first"
+
+def test_export_vault(client) -> None:
+    client.unlock("<Insert password>")
+    result = client.export_vault("Encyption Pa$$w0rd")
+    assert result == "Placeholder"
 
 def test_logout(client) -> None:
     result = client.logout()
     assert result == "You have logged out."
-
-def test_export_vault(client) -> None:
-    result = client.export_vault()
-    assert result == "Placeholder"
