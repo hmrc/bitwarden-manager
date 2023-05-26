@@ -2,10 +2,11 @@ import subprocess, os
 from logging import Logger
 
 class BitwardenVaultClient:
-    def __init__(self, logger: Logger, client_id: str, client_secret: str) -> None:
+    def __init__(self, logger: Logger, client_id: str, client_secret: str, password: str) -> None:
         self.__logger = logger
         self.__client_secret = client_secret
         self.__client_id = client_id
+        self.__password = password
         self.__session_token = ""
 
     def login(self) -> str:
@@ -19,8 +20,8 @@ class BitwardenVaultClient:
         else:
             raise Exception("Failed to login")
 
-    def unlock(self, password: str) -> str:
-        proc = subprocess.Popen(["./bw", "unlock", password], stdout=subprocess.PIPE, shell=False)
+    def unlock(self) -> str:
+        proc = subprocess.Popen(["./bw", "unlock", self.__password], stdout=subprocess.PIPE, shell=False)
         (out, _err) = proc.communicate()
         if out:
             string = out.decode("utf-8")

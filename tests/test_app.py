@@ -8,6 +8,7 @@ from _pytest.logging import LogCaptureFixture
 from app import handler
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 from bitwarden_manager.onboard_user import OnboardUser
+from bitwarden_manager.export_vault import ExportVault
 
 
 @mock.patch("boto3.client")
@@ -40,6 +41,14 @@ def test_handler_ignores_unknown_events(boto_mock: Mock, caplog: LogCaptureFixtu
 def test_handler_routes_new_user_events(boto_mock: Mock) -> None:
     event = dict(event_name="new_user")
     with patch.object(OnboardUser, "run") as mock_method:
+        handler(event=event, context={})
+
+    mock_method.assert_called_once_with(event=event)
+
+@mock.patch("boto3.client")
+def test_handler_routes_export_vault_events(boto_mock: Mock) -> None:
+    event = dict(event_name="export_vault")
+    with patch.object(ExportVault, "run") as mock_method:
         handler(event=event, context={})
 
     mock_method.assert_called_once_with(event=event)

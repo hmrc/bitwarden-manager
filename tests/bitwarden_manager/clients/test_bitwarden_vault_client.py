@@ -9,6 +9,16 @@ def client():
         logger=logging.getLogger(),
         client_id="<Insert valid cred>",
         client_secret="<Insert valid cred>",
+        password="<Insert valid cred>"
+    )
+
+@pytest.fixture
+def client_invalid_password():
+    return BitwardenVaultClient(
+        logger=logging.getLogger(),
+        client_id="<Insert valid cred>",
+        client_secret="<Insert valid cred>",
+        password="baz"
     )
 
 @pytest.fixture
@@ -17,6 +27,7 @@ def invalid_client():
         logger=logging.getLogger(),
         client_id="foo",
         client_secret="bar",
+        password="baz"
     )
 
 def test_failed_login(invalid_client) -> None:
@@ -31,16 +42,16 @@ def test_login(client) -> None:
     result = client.login()
     assert result == "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
 
-def test_failed_unlock(client) -> None:
+def test_failed_unlock(client_invalid_password) -> None:
     with pytest.raises(Exception, match="Failed to unlock"):
-        client.unlock("Incorrect password")
+        client_invalid_password.unlock()
 
 def test_export_without_unlock(client) -> None:
     result = client.export_vault("Encyption Pa$$w0rd")
     assert result == "Must unlock vault first"
 
 def test_export_vault(client) -> None:
-    client.unlock("<Insert password>")
+    client.unlock()
     result = client.export_vault("Encyption Pa$$w0rd")
     assert result == "Placeholder"
 
