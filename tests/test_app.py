@@ -45,6 +45,7 @@ def test_handler_routes_new_user_events(boto_mock: Mock) -> None:
 
     mock_method.assert_called_once_with(event=event)
 
+
 @mock.patch("boto3.client")
 def test_handler_routes_export_vault_events(boto_mock: Mock) -> None:
     event = dict(event_name="export_vault")

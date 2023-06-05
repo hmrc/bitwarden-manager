@@ -1112,6 +1112,28 @@ url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
 reference = "artifactory"
 
 [[package]]
+name = "mock"
+version = "5.0.2"
+description = "Rolling backport of unittest.mock for all Pythons"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "mock-5.0.2-py3-none-any.whl", hash = "sha256:0e0bc5ba78b8db3667ad636d964eb963dc97a59f04c6f6214c5f0e4a8f726c56"},
+    {file = "mock-5.0.2.tar.gz", hash = "sha256:06f18d7d65b44428202b145a9a36e99c2ee00d1eb992df0caf881d4664377891"},
+]
+
+[package.extras]
+build = ["blurb", "twine", "wheel"]
+docs = ["sphinx"]
+test = ["pytest", "pytest-cov"]
+
+[package.source]
+type = "legacy"
+url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
+reference = "artifactory"
+
+[[package]]
 name = "mypy"
 version = "1.2.0"
 description = "Optional static typing for Python"
@@ -1949,4 +1971,4 @@ reference = "artifactory"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "bade24561d82f1c666f0531ca223e1029aebc4334963d1c607b5cc44335bdb5b"
+content-hash = "11738ab860039fa1c488a0745a8ce2d52a1bd795e512c326dcd7841a6ce209c4"

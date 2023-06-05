@@ -1,5 +1,7 @@
-import subprocess, os
+import subprocess
+import os
 from logging import Logger
+
 
 class BitwardenVaultClient:
     def __init__(self, logger: Logger, client_id: str, client_secret: str, password: str) -> None:
@@ -41,11 +43,10 @@ class BitwardenVaultClient:
     def export_vault(self, password: str) -> str:
         if not self.__session_token:
             return "Must unlock vault first"
-        proc = subprocess.Popen([
-            "./bw", "export",
-            "--session", self.__session_token,
-            "--format", "encrypted_json",
-            "--password", password
-        ], stdout=subprocess.PIPE, shell=False)
+        proc = subprocess.Popen(
+            ["./bw", "export", "--session", self.__session_token, "--format", "encrypted_json", "--password", password],
+            stdout=subprocess.PIPE,
+            shell=False,
+        )
         (out, _err) = proc.communicate()
         return "Placeholder"

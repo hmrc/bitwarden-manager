@@ -38,6 +38,7 @@ def test_get_bitwarden_api_creds(mock_secretsmanager: Mock) -> None:
         ]
     )
 
+
 @mock.patch("boto3.client")
 def test_get_bitwarden_vault_creds(mock_secretsmanager: Mock) -> None:
     get_secret_value = Mock(return_value={"SecretString": "secret"})
