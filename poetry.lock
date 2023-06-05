@@ -1830,6 +1830,23 @@ url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
 reference = "artifactory"
 
 [[package]]
+name = "types-mock"
+version = "5.0.0.6"
+description = "Typing stubs for mock"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "types-mock-5.0.0.6.tar.gz", hash = "sha256:3abdee238948c6678ef5b4fd740bd41d30289a2fe4d91aac4ae9f6869e6c9333"},
+    {file = "types_mock-5.0.0.6-py3-none-any.whl", hash = "sha256:6946f4b2240160a1740db7d6c8e8736705acd133afd98555897db0116d41a6fc"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
+reference = "artifactory"
+
+[[package]]
 name = "types-pyyaml"
 version = "6.0.12.9"
 description = "Typing stubs for PyYAML"
@@ -1971,4 +1988,4 @@ reference = "artifactory"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "11738ab860039fa1c488a0745a8ce2d52a1bd795e512c326dcd7841a6ce209c4"
+content-hash = "b54187262ce7a9229a5a29f3076a6f29e705d11e82418a01afca12f68da69719"
