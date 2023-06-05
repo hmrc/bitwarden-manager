@@ -1,6 +1,7 @@
-import subprocess
+import subprocess  # nosec B404
 import os
 from logging import Logger
+from typing import Optional
 
 
 class BitwardenVaultClient:
@@ -9,13 +10,15 @@ class BitwardenVaultClient:
         self.__client_secret = client_secret
         self.__client_id = client_id
         self.__password = password
-        self.__session_token = ""
+        self.__session_token: Optional[str] = None
 
     def login(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
-        proc = subprocess.Popen(["./bw", "login", "--apikey"], stdout=subprocess.PIPE, env=tmp_env, shell=False)
+        proc = subprocess.Popen(
+            ["./bw", "login", "--apikey"], stdout=subprocess.PIPE, env=tmp_env, shell=False
+        )  # nosec B603
         (out, _err) = proc.communicate()
         if out:
             return out.decode("utf-8")
@@ -23,7 +26,7 @@ class BitwardenVaultClient:
             raise Exception("Failed to login")
 
     def unlock(self) -> str:
-        proc = subprocess.Popen(["./bw", "unlock", self.__password], stdout=subprocess.PIPE, shell=False)
+        proc = subprocess.Popen(["./bw", "unlock", self.__password], stdout=subprocess.PIPE, shell=False)  # nosec B603
         (out, _err) = proc.communicate()
         if out:
             string = out.decode("utf-8")
@@ -33,7 +36,7 @@ class BitwardenVaultClient:
             raise Exception("Failed to unlock")
 
     def logout(self) -> str:
-        proc = subprocess.Popen(["./bw", "logout"], stdout=subprocess.PIPE, shell=False)
+        proc = subprocess.Popen(["./bw", "logout"], stdout=subprocess.PIPE, shell=False)  # nosec B603
         (out, _err) = proc.communicate()
         if out:
             return out.decode("utf-8")
@@ -47,6 +50,6 @@ class BitwardenVaultClient:
             ["./bw", "export", "--session", self.__session_token, "--format", "encrypted_json", "--password", password],
             stdout=subprocess.PIPE,
             shell=False,
-        )
+        )  # nosec B603
         (out, _err) = proc.communicate()
         return "Placeholder"
