@@ -55,5 +55,5 @@ class BitwardenVaultClient:
         )  # nosec B603
         (out, _err) = proc.communicate()
         self.__logger.info("Tried to export")
-        self.__logger.info(f"Out: {out}")
+        self.__logger.info(f"Out: {out.decode('utf-8')}")
         return "Placeholder"
