@@ -20,6 +20,11 @@ class ExportVault:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=export_vault_event_schema)
-        self.bitwarden_vault_client.export_vault(
+        filepath = self.bitwarden_vault_client.export_vault(
             password=event["password"],
+        )
+        bucket_name = "bitwarden-exports-development-7eh4g0"
+        self.bitwarden_vault_client.write_file_to_s3(
+            bucket_name,
+            filepath
         )

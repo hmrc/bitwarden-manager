@@ -1,6 +1,7 @@
 import logging
 import pytest
 import mock
+import re
 
 from typing import Optional
 from typing import Self
@@ -81,9 +82,9 @@ def test_failed_login(client: BitwardenVaultClient) -> None:
 
 @mock.patch("subprocess.Popen", MockedPopen)
 def test_export_without_unlock(client: BitwardenVaultClient) -> None:
-    with pytest.raises(Exception, match="No such file or directory"):
-        result = client.export_vault("Encyption Pa$$w0rd")
-        client.assert_has_calls(write_file_to_s3)
+    result = client.export_vault("Encyption Pa$$w0rd")
+    pattern = re.compile("bw_backup_.*.json")
+    assert pattern.match(result)
 
 
 @mock.patch("subprocess.Popen", FailedMockedPopen)
@@ -102,3 +103,9 @@ def test_logout(client: BitwardenVaultClient) -> None:
 def test_failed_logout(client: BitwardenVaultClient) -> None:
     with pytest.raises(Exception, match="Failed to logout"):
         client.logout()
+
+def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
+    bucket_name = "test_bucket"
+    filepath = "/tmp/bw_backup_2023.json"
+    result = client.write_file_to_s3(bucket_name, filepath)
+    assert result == None
