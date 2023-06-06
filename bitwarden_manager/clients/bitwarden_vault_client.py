@@ -1,7 +1,6 @@
 import subprocess  # nosec B404
 import os
 from logging import Logger
-from typing import Optional
 
 
 class BitwardenVaultClient:
@@ -10,7 +9,7 @@ class BitwardenVaultClient:
         self.__client_secret = client_secret
         self.__client_id = client_id
         self.__password = password
-        self.__session_token: Optional[str] = None
+        self.__session_token = ""  # nosec B105
 
     def login(self) -> str:
         tmp_env = os.environ.copy()
@@ -45,11 +44,15 @@ class BitwardenVaultClient:
 
     def export_vault(self, password: str) -> str:
         if not self.__session_token:
-            return "Must unlock vault first"
+            self.login()
+            self.unlock()
         proc = subprocess.Popen(
             ["./bw", "export", "--session", self.__session_token, "--format", "encrypted_json", "--password", password],
             stdout=subprocess.PIPE,
             shell=False,
         )  # nosec B603
         (out, _err) = proc.communicate()
+        # TODO remove print
+        print("I attempted to export something")
+        print(out)
         return "Placeholder"

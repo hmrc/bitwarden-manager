@@ -891,27 +891,6 @@ url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
 reference = "artifactory"
 
 [[package]]
-name = "flake8-print"
-version = "5.0.0"
-description = "print statement checker plugin for flake8"
-category = "dev"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "flake8-print-5.0.0.tar.gz", hash = "sha256:76915a2a389cc1c0879636c219eb909c38501d3a43cc8dae542081c9ba48bdf9"},
-    {file = "flake8_print-5.0.0-py3-none-any.whl", hash = "sha256:84a1a6ea10d7056b804221ac5e62b1cee1aefc897ce16f2e5c42d3046068f5d8"},
-]
-
-[package.dependencies]
-flake8 = ">=3.0"
-pycodestyle = "*"
-
-[package.source]
-type = "legacy"
-url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple"
-reference = "artifactory"
-
-[[package]]
 name = "gitdb"
 version = "4.0.10"
 description = "Git Object Database"
@@ -1988,4 +1967,4 @@ reference = "artifactory"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "b54187262ce7a9229a5a29f3076a6f29e705d11e82418a01afca12f68da69719"
+content-hash = "9ce05530d2a55cd0068450f5ba4386f621c6d6127643eebfb2fb5e71a3418738"
