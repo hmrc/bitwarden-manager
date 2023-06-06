@@ -15,6 +15,8 @@ class BitwardenVaultClient:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
+        self.__logger.info(f"retrieved vault creds with client id {self.__client_id}")
+        self.__logger.info(f"retrieved vault creds with client secret {self.__client_secret}")
         proc = subprocess.Popen(
             ["./bw", "login", "--apikey"], stdout=subprocess.PIPE, env=tmp_env, shell=False
         )  # nosec B603
