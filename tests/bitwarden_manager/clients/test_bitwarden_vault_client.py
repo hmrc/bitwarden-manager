@@ -133,3 +133,8 @@ def test_failed_write_file_to_s3(client: BitwardenVaultClient) -> None:
     bucket_name = "test_bucket"
     with pytest.raises(Exception, match="Failed to write to S3"):
         result = client.write_file_to_s3(bucket_name, filepath)
+
+def test_file_from_path(client: BitwardenVaultClient) -> None:
+    with pytest.raises(Exception, match="No such file or directory"):
+        filepath = "bw_backup_2023.json"
+        client.file_from_path(filepath)
