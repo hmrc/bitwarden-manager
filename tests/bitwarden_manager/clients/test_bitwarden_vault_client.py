@@ -3,6 +3,9 @@ import pytest
 import mock
 import re
 
+from mock import mock_open
+from mock import patch
+from moto import mock_s3
 from typing import Optional
 from typing import Self
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
@@ -104,8 +107,11 @@ def test_failed_logout(client: BitwardenVaultClient) -> None:
     with pytest.raises(Exception, match="Failed to logout"):
         client.logout()
 
+
+@mock_s3
+@patch('builtins.open', mock_open(read_data=bytes("data", "utf-8")))
 def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
+    filepath = "bw_backup_2023.json"
     bucket_name = "test_bucket"
-    filepath = "/tmp/bw_backup_2023.json"
-    result = client.write_file_to_s3(bucket_name, filepath)
+    result = client.write_file_to_s3(filepath, bucket_name)
     assert result == None

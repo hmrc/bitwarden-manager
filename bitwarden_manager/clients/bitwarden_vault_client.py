@@ -74,9 +74,10 @@ class BitwardenVaultClient:
         (_out, _err) = proc.communicate()
         return output_path
 
-    def write_file_to_s3(self, bucket_name: str, filepath: str) -> None:
+    def write_file_to_s3(self, filepath: str, bucket_name: str) -> None:
         try:
-            s3 = boto3.resource("s3")
-            s3.Object(bucket_name, filepath).put(Body=open(f"/tmp/{filepath}", "rb"))
+            file = open(f"/tmp/{filepath}", "rb")
+            s3 = boto3.client("s3")
+            s3.Object(bucket_name, filepath).put(Body=file)
         except (BotoCoreError, ClientError) as e:
             raise Exception(f"Failed to write to S3", e) from e
