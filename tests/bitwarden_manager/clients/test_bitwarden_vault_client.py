@@ -123,3 +123,13 @@ def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
     bucket.create()
     result = client.write_file_to_s3(bucket_name, filepath)
     assert result == None
+
+@mock_s3
+def test_failed_write_file_to_s3(client: BitwardenVaultClient) -> None:
+    filepath = "bw_backup_2023.json"
+    file_contents = json.dumps('{"some_key": "some_data"}')
+    file = gzip.compress(bytes(file_contents, "utf-8"))
+    client.file_from_path = MagicMock(return_value=file)
+    bucket_name = "test_bucket"
+    with pytest.raises(Exception, match="Failed to write to S3"):
+        result = client.write_file_to_s3(bucket_name, filepath)
