@@ -78,7 +78,7 @@ class BitwardenVaultClient:
     def write_file_to_s3(self, filepath: str, bucket_name: str) -> None:
         try:
             s3 = boto3.client("s3")
-            s3.Object(bucket_name, filepath).put(Body=file_from_path(filepath))
+            s3.put_object(Bucket=bucket_name, Key=filepath, Body=self.file_from_path(filepath))
         except (BotoCoreError, ClientError) as e:
             raise Exception(f"Failed to write to S3", e) from e
 
