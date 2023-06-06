@@ -4,6 +4,8 @@ import subprocess  # nosec B404
 import os
 from logging import Logger
 
+from botocore.exceptions import BotoCoreError, ClientError
+
 
 class BitwardenVaultClient:
     def __init__(self, logger: Logger, client_id: str, client_secret: str, password: str) -> None:
@@ -70,6 +72,7 @@ class BitwardenVaultClient:
             shell=False,
         )  # nosec B603
         (out, _err) = proc.communicate()
+        self.write_file_to_s3(output_path)
         self.__logger.info(f"Exported vault backup to {output_path}")
 
     def write_file_to_s3(self, filepath: str) -> None:
@@ -77,5 +80,5 @@ class BitwardenVaultClient:
         try:
             s3 = boto3.resource("s3")
             s3.Object(bucket_name, filepath).put(Body=open(f"/tmp/{filepath}", "rb"))
-        except botocore.exceptions.ClientError as e:
-            raise Exception(f"Failed to write to S3: {e}")
+        except (BotoCoreError, ClientError) as e:
+            raise Exception(f"Failed to write to S3", e) from e

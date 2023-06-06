@@ -81,8 +81,9 @@ def test_failed_login(client: BitwardenVaultClient) -> None:
 
 @mock.patch("subprocess.Popen", MockedPopen)
 def test_export_without_unlock(client: BitwardenVaultClient) -> None:
-    result = client.export_vault("Encyption Pa$$w0rd")
-    assert result == "Placeholder"
+    with pytest.raises(Exception, match="No such file or directory"):
+        result = client.export_vault("Encyption Pa$$w0rd")
+        client.assert_has_calls(write_file_to_s3)
 
 
 @mock.patch("subprocess.Popen", FailedMockedPopen)
