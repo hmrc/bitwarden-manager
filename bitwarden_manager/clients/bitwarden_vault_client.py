@@ -52,7 +52,6 @@ class BitwardenVaultClient:
             shell=False,
         )  # nosec B603
         (out, _err) = proc.communicate()
-        # TODO remove print
-        print("I attempted to export something")
-        print(out)
+        self.__logger.info("Tried to export")
+        self.__logger.info(f"Out: {}", out)
         return "Placeholder"

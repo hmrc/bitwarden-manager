@@ -16,14 +16,14 @@ class BitwardenManager:
         self._secretsmanager = AwsSecretsManagerClient(secretsmanager_client=boto3.client("secretsmanager"))
 
     def run(self, event: Dict[str, Any]) -> None:
-        self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
-
         event_name = event["event_name"]
         match event_name:
             case "new_user":
+                self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
                 self.__logger.debug("handling event with OnboardUser")
                 OnboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
             case "export_vault":
+                self.__logger.info(f"retrieved bitwarden vault creds with client id {self._get_bitwarden_vault_client_id()}")
                 self.__logger.debug("handling event with ExportVault")
                 ExportVault(bitwarden_vault_client=self._get_bitwarden_vault_client()).run(event=event)
             case _:
