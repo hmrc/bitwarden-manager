@@ -5,6 +5,7 @@ import os
 from logging import Logger
 
 from botocore.exceptions import BotoCoreError, ClientError
+from typing import TextIO
 
 
 class BitwardenVaultClient:
@@ -76,8 +77,10 @@ class BitwardenVaultClient:
 
     def write_file_to_s3(self, filepath: str, bucket_name: str) -> None:
         try:
-            file = open(f"/tmp/{filepath}", "rb")
             s3 = boto3.client("s3")
-            s3.Object(bucket_name, filepath).put(Body=file)
+            s3.Object(bucket_name, filepath).put(Body=file_from_path(filepath))
         except (BotoCoreError, ClientError) as e:
             raise Exception(f"Failed to write to S3", e) from e
+
+    def file_from_path(self, filepath: str) -> TextIO:
+        open(f"/tmp/{filepath}", "rb")

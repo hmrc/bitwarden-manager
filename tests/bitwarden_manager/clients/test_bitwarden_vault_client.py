@@ -1,8 +1,11 @@
+import gzip
+import json
 import logging
-import pytest
 import mock
+import pytest
 import re
 
+from mock import MagicMock
 from mock import mock_open
 from mock import patch
 from moto import mock_s3
@@ -107,11 +110,12 @@ def test_failed_logout(client: BitwardenVaultClient) -> None:
     with pytest.raises(Exception, match="Failed to logout"):
         client.logout()
 
-
 @mock_s3
-@patch('builtins.open', mock_open(read_data=bytes("data", "utf-8")))
 def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
     filepath = "bw_backup_2023.json"
+    file_contents = json.dumps('{"some_key": "some_data"}')
+    file = gzip.compress(bytes(file_contents, "utf-8"))
+    client.file_from_path = MagicMock(return_value=file)
     bucket_name = "test_bucket"
-    result = client.write_file_to_s3(filepath, bucket_name)
+    result = client.write_file_to_s3(bucket_name, filepath)
     assert result == None
