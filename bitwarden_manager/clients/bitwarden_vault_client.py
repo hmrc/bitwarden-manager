@@ -78,4 +78,4 @@ class BitwardenVaultClient:
             s3 = boto3.resource("s3")
             s3.Object(bucket_name, filepath).put(Body=open(f"/tmp/{filepath}", "rb"))
         except botocore.exceptions.ClientError as e:
-            raise Exception("Failed to write to S3")
+            raise Exception(f"Failed to write to S3: {e}")
