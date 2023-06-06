@@ -85,13 +85,6 @@ def test_export_without_unlock(client: BitwardenVaultClient) -> None:
     assert result == "Placeholder"
 
 
-@mock.patch("subprocess.Popen", MockedPopen)
-def test_export_vault(client: BitwardenVaultClient) -> None:
-    client.unlock()
-    result = client.export_vault("Encyption Pa$$w0rd")
-    assert result == "Placeholder"
-
-
 @mock.patch("subprocess.Popen", FailedMockedPopen)
 def test_failed_unlock(client: BitwardenVaultClient) -> None:
     with pytest.raises(Exception, match="Failed to unlock"):
