@@ -65,7 +65,7 @@ class BitwardenVaultClient:
                 "encrypted_json",
                 "--password",
                 password,
-                "--ouput",
+                "--output",
                 f"/tmp/{output_path}",
             ],
             stdout=subprocess.PIPE,

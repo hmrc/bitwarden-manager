@@ -33,7 +33,7 @@ class MockedPopen:
             stderr = b""
             self.returncode = 0
         elif self.args[0] == "./bw" and self.args[1] == "export":
-            stdout = b"Placeholder"
+            stdout = b""
             stderr = b""
             self.returncode = 0
         else:
