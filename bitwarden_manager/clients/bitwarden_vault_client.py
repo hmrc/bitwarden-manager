@@ -20,6 +20,7 @@ class BitwardenVaultClient:
         )  # nosec B603
         (out, _err) = proc.communicate()
         if out:
+            self.__logger.info("Logged in to Bitwarden Vault")
             return out.decode("utf-8")
         else:
             raise Exception("Failed to login")
@@ -29,6 +30,7 @@ class BitwardenVaultClient:
         (out, _err) = proc.communicate()
         if out:
             string = out.decode("utf-8")
+            self.__logger.info("Unlocked Bitwarden Vault")
             self.__session_token = string.split()[-1]
             return string
         else:
@@ -53,5 +55,5 @@ class BitwardenVaultClient:
         )  # nosec B603
         (out, _err) = proc.communicate()
         self.__logger.info("Tried to export")
-        self.__logger.info(f"Out: {}", out)
+        self.__logger.info(f"Out: {out}")
         return "Placeholder"
