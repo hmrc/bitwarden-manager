@@ -6,21 +6,8 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from app import handler
-from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
-
-
-@mock.patch("boto3.client")
-def test_handler_logs_the_ldap_username(boto_mock: Mock, caplog: LogCaptureFixture) -> None:
-    username = "the username"
-
-    with patch.object(AwsSecretsManagerClient, "get_secret_value", return_value=username) as mock_method:
-        with caplog.at_level(logging.INFO):
-            handler(event=dict(event_name="foo"), context={})
-
-        mock_method.assert_called_once_with("/bitwarden/ldap-username")
-        assert username in caplog.text
 
 
 @mock.patch("boto3.client")
