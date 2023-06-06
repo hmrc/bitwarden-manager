@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, MagicMock
 
 import pytest
 from jsonschema.exceptions import ValidationError
@@ -7,18 +7,16 @@ from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClien
 from bitwarden_manager.export_vault import ExportVault
 
 
-def test_export_vault(mock_client: BitwardenVaultClient) -> None:
+def test_export_vault() -> None:
     event = {"password": "Encryption Pa$$w0rd"}
     bucket_name = "bitwarden-exports-development-7eh4g0"
     filepath = "test.json"
+    mock_client = Mock(spec=BitwardenVaultClient)
+    mock_client.export_vault = MagicMock(return_value=filepath)
 
     ExportVault(bitwarden_vault_client=mock_client).run(event)
 
     mock_client.export_vault.assert_called_with(password="Encryption Pa$$w0rd")
-
-    export_vault = Mock(return_value=filepath)
-    mock_client.return_value = Mock(export_vault=export_vault)
-    mock_client.return_value.export_vault.return_value = filepath
     mock_client.write_file_to_s3.assert_called_with(bucket_name, filepath)
 
 

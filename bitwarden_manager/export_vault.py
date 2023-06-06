@@ -24,7 +24,4 @@ class ExportVault:
             password=event["password"],
         )
         bucket_name = "bitwarden-exports-development-7eh4g0"
-        self.bitwarden_vault_client.write_file_to_s3(
-            bucket_name,
-            filepath
-        )
+        self.bitwarden_vault_client.write_file_to_s3(bucket_name, filepath)
