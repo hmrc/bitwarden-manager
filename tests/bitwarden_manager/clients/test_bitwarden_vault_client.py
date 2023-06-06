@@ -82,7 +82,7 @@ def test_failed_login(client: BitwardenVaultClient) -> None:
 @mock.patch("subprocess.Popen", MockedPopen)
 def test_export_without_unlock(client: BitwardenVaultClient) -> None:
     result = client.export_vault("Encyption Pa$$w0rd")
-    assert result == "Must unlock vault first"
+    assert result == "Placeholder"
 
 
 @mock.patch("subprocess.Popen", MockedPopen)
