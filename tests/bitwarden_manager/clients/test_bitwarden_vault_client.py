@@ -7,8 +7,6 @@ import pytest
 import re
 
 from mock import MagicMock
-from mock import mock_open
-from mock import patch
 from moto import mock_s3
 from typing import Optional
 from typing import Self
@@ -111,6 +109,7 @@ def test_failed_logout(client: BitwardenVaultClient) -> None:
     with pytest.raises(Exception, match="Failed to logout"):
         client.logout()
 
+
 @mock_s3
 def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
     filepath = "bw_backup_2023.json"
@@ -122,7 +121,8 @@ def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
     bucket = s3.Bucket(bucket_name)
     bucket.create()
     result = client.write_file_to_s3(bucket_name, filepath)
-    assert result == None
+    assert result is None
+
 
 @mock_s3
 def test_failed_write_file_to_s3(client: BitwardenVaultClient) -> None:
@@ -132,7 +132,8 @@ def test_failed_write_file_to_s3(client: BitwardenVaultClient) -> None:
     client.file_from_path = MagicMock(return_value=file)
     bucket_name = "test_bucket"
     with pytest.raises(Exception, match="Failed to write to S3"):
-        result = client.write_file_to_s3(bucket_name, filepath)
+        client.write_file_to_s3(bucket_name, filepath)
+
 
 def test_file_from_path(client: BitwardenVaultClient) -> None:
     with pytest.raises(Exception, match="No such file or directory"):
