@@ -55,7 +55,7 @@ class BitwardenVaultClient:
             self.login()
             self.unlock()
         now = datetime.datetime.now()
-        output_path = f"bw_backup_{now}.json"
+        output_path = f"/tmp/bw_backup_{now}.json"  # nosec B108
         proc = subprocess.Popen(
             [
                 "./bw",
@@ -67,7 +67,7 @@ class BitwardenVaultClient:
                 "--password",
                 password,
                 "--output",
-                f"/tmp/{output_path}",
+                output_path,
             ],
             stdout=subprocess.PIPE,
             shell=False,
@@ -83,4 +83,4 @@ class BitwardenVaultClient:
             raise Exception("Failed to write to S3", e) from e
 
     def file_from_path(self, filepath: str) -> IO[bytes]:
-        return open(f"/tmp/{filepath}", "rb")
+        return open(filepath, "rb")
