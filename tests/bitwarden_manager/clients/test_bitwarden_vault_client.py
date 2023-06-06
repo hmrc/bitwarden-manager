@@ -1,3 +1,4 @@
+import boto3
 import gzip
 import json
 import logging
@@ -117,5 +118,8 @@ def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
     file = gzip.compress(bytes(file_contents, "utf-8"))
     client.file_from_path = MagicMock(return_value=file)
     bucket_name = "test_bucket"
+    s3 = boto3.resource("s3")
+    bucket = s3.Bucket(bucket_name)
+    bucket.create()
     result = client.write_file_to_s3(bucket_name, filepath)
     assert result == None
