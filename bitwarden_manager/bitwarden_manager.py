@@ -23,9 +23,6 @@ class BitwardenManager:
                 self.__logger.debug("handling event with OnboardUser")
                 OnboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
             case "export_vault":
-                self.__logger.info(
-                    f"retrieved bitwarden vault creds with client id {self._get_bitwarden_vault_client_id()}"
-                )
                 self.__logger.debug("handling event with ExportVault")
                 ExportVault(bitwarden_vault_client=self._get_bitwarden_vault_client()).run(event=event)
             case _:
