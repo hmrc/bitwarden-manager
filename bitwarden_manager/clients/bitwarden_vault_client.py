@@ -9,7 +9,7 @@ class BitwardenVaultClient:
         self.__client_secret = client_secret
         self.__client_id = client_id
         self.__password = password
-        self.__session_token = "" # nosec B105
+        self.__session_token = ""  # nosec B105
 
     def login(self) -> str:
         tmp_env = os.environ.copy()
