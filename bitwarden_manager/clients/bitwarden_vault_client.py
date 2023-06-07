@@ -50,7 +50,6 @@ class BitwardenVaultClient:
             raise Exception("Failed to logout")
 
     def export_vault(self, password: str) -> str:
-        self.__logger.info("Exported vault backup to")
         if not self.__session_token:
             self.login()
             self.unlock()
@@ -73,6 +72,7 @@ class BitwardenVaultClient:
             shell=False,
         )  # nosec B603
         (_out, _err) = proc.communicate()
+        self.__logger.info(f"Exported vault backup to {output_path}")
         return output_path
 
     def write_file_to_s3(self, bucket_name: str, filepath: str) -> None:
