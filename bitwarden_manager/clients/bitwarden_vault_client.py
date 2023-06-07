@@ -1,6 +1,11 @@
+import boto3
+import datetime
 import subprocess  # nosec B404
 import os
 from logging import Logger
+
+from botocore.exceptions import BotoCoreError, ClientError
+from typing import IO
 
 
 class BitwardenVaultClient:
@@ -15,8 +20,6 @@ class BitwardenVaultClient:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
-        self.__logger.info(f"retrieved vault creds with client id {self.__client_id}")
-        self.__logger.info(f"retrieved vault creds with client secret {self.__client_secret}")
         proc = subprocess.Popen(
             ["./bw", "login", "--apikey"], stdout=subprocess.PIPE, env=tmp_env, shell=False
         )  # nosec B603
@@ -50,12 +53,34 @@ class BitwardenVaultClient:
         if not self.__session_token:
             self.login()
             self.unlock()
+        now = datetime.datetime.now()
+        output_path = f"/tmp/bw_backup_{now}.json"  # nosec B108
         proc = subprocess.Popen(
-            ["./bw", "export", "--session", self.__session_token, "--format", "encrypted_json", "--password", password],
+            [
+                "./bw",
+                "export",
+                "--session",
+                self.__session_token,
+                "--format",
+                "encrypted_json",
+                "--password",
+                password,
+                "--output",
+                output_path,
+            ],
             stdout=subprocess.PIPE,
             shell=False,
         )  # nosec B603
-        (out, _err) = proc.communicate()
-        self.__logger.info("Tried to export")
-        self.__logger.info(f"Out: {out.decode('utf-8')}")
-        return "Placeholder"
+        (_out, _err) = proc.communicate()
+        self.__logger.info(f"Exported vault backup to {output_path}")
+        return output_path
+
+    def write_file_to_s3(self, bucket_name: str, filepath: str) -> None:
+        try:
+            s3 = boto3.client("s3")
+            s3.put_object(Bucket=bucket_name, Key=filepath, Body=self.file_from_path(filepath))
+        except (BotoCoreError, ClientError) as e:
+            raise Exception("Failed to write to S3", e) from e
+
+    def file_from_path(self, filepath: str) -> IO[bytes]:
+        return open(filepath, "rb")

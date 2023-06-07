@@ -1,7 +1,7 @@
+import os
+
 from typing import Dict, Any
-
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
-
 from jsonschema import validate
 
 export_vault_event_schema = {
@@ -20,6 +20,8 @@ class ExportVault:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=export_vault_event_schema)
-        self.bitwarden_vault_client.export_vault(
+        filepath = self.bitwarden_vault_client.export_vault(
             password=event["password"],
         )
+        bucket_name = os.environ["BITWARDEN_BACKUP_BUCKET"]
+        self.bitwarden_vault_client.write_file_to_s3(bucket_name, filepath)
