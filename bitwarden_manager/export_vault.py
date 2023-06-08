@@ -25,3 +25,4 @@ class ExportVault:
         )
         bucket_name = os.environ["BITWARDEN_BACKUP_BUCKET"]
         self.bitwarden_vault_client.write_file_to_s3(bucket_name, filepath)
+        self.bitwarden_vault_client.logout()
