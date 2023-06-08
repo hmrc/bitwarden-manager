@@ -27,8 +27,7 @@ and store it in S3 - `arn:aws:s3:::bitwarden-exports-development-7eh4g0`.
 
 ```json
 {
-  "event_name": "export_vault",
-  "password": "my_very_secure_password"
+  "event_name": "export_vault"
 }
 ```
 

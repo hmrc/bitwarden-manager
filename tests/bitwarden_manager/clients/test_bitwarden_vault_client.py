@@ -69,7 +69,11 @@ class FailedMockedPopen:
 @pytest.fixture
 def client() -> BitwardenVaultClient:
     return BitwardenVaultClient(
-        logger=logging.getLogger(), client_id="test_id", client_secret="test_secret", password="very secure pa$$w0rd!"
+        logger=logging.getLogger(),
+        client_id="test_id",
+        client_secret="test_secret",
+        password="very secure pa$$w0rd!",
+        export_enc_password="hmrc2023",
     )
 
 
@@ -87,7 +91,7 @@ def test_failed_login(client: BitwardenVaultClient) -> None:
 
 @mock.patch("subprocess.Popen", MockedPopen)
 def test_export_without_unlock(client: BitwardenVaultClient) -> None:
-    result = client.export_vault("abc-123", "Encyption Pa$$w0rd")
+    result = client.export_vault("abc-123")
     pattern = re.compile("/tmp/bw_backup_.*.json")
     assert pattern.match(result)
 
