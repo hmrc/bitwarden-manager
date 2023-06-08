@@ -9,11 +9,14 @@ from typing import IO
 
 
 class BitwardenVaultClient:
-    def __init__(self, logger: Logger, client_id: str, client_secret: str, password: str) -> None:
+    def __init__(
+        self, logger: Logger, client_id: str, client_secret: str, password: str, export_enc_password: str
+    ) -> None:
         self.__logger = logger
         self.__client_secret = client_secret
         self.__client_id = client_id
         self.__password = password
+        self.__export_enc_password = export_enc_password
         self.__session_token = ""  # nosec B105
 
     def login(self) -> str:
@@ -49,7 +52,7 @@ class BitwardenVaultClient:
         else:
             raise Exception("Failed to logout")
 
-    def export_vault(self, org_id: str, password: str) -> str:
+    def export_vault(self, org_id: str) -> str:
         if not self.__session_token:
             self.login()
             self.unlock()
@@ -64,7 +67,7 @@ class BitwardenVaultClient:
                 "--format",
                 "encrypted_json",
                 "--password",
-                password,
+                self.__export_enc_password,
                 "--output",
                 output_path,
                 "--organizationid",

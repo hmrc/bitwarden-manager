@@ -54,10 +54,15 @@ def test_get_bitwarden_vault_creds(mock_secretsmanager: Mock) -> None:
 
     assert manager._get_bitwarden_vault_password() == "secret"
     assert get_secret_value.call_count == 3
+
+    assert manager._get_bitwarden_export_encryption_password() == "secret"
+    assert get_secret_value.call_count == 4
+
     get_secret_value.assert_has_calls(
         [
             call(SecretId="/bitwarden/vault-client-id"),
             call(SecretId="/bitwarden/vault-client-secret"),
             call(SecretId="/bitwarden/vault-password"),
+            call(SecretId="/bitwarden/export-encryption-password"),
         ]
     )

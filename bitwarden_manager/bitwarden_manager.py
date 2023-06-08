@@ -41,6 +41,7 @@ class BitwardenManager:
             client_id=self._get_bitwarden_vault_client_id(),
             client_secret=self._get_bitwarden_vault_client_secret(),
             password=self._get_bitwarden_vault_password(),
+            export_enc_password=self._get_bitwarden_export_encryption_password(),
         )
 
     def _get_bitwarden_client_id(self) -> str:
@@ -57,6 +58,9 @@ class BitwardenManager:
 
     def _get_bitwarden_vault_password(self) -> str:
         return self._secretsmanager.get_secret_value("/bitwarden/vault-password")
+
+    def _get_bitwarden_export_encryption_password(self) -> str:
+        return self._secretsmanager.get_secret_value("/bitwarden/export-encryption-password")
 
     def _get_ldap_username(self) -> str:
         return self._secretsmanager.get_secret_value("/bitwarden/ldap-username")
