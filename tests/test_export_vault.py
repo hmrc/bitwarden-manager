@@ -19,6 +19,7 @@ def test_export_vault() -> None:
 
     mock_client.export_vault.assert_called_with(password="Encryption Pa$$w0rd")
     mock_client.write_file_to_s3.assert_called_with("test-bucket", filepath)
+    assert mock_client.logout.called
 
 
 def test_export_vault_rejects_bad_events() -> None:
