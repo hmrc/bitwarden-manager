@@ -20,7 +20,9 @@ class ExportVault:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=export_vault_event_schema)
+        org_id = os.environ["ORGANISATION_ID"]
         filepath = self.bitwarden_vault_client.export_vault(
+            org_id=org_id,
             password=event["password"],
         )
         bucket_name = os.environ["BITWARDEN_BACKUP_BUCKET"]

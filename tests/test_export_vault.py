@@ -8,7 +8,7 @@ from jsonschema.exceptions import ValidationError
 from unittest.mock import Mock, MagicMock
 
 
-@mock.patch.dict(os.environ, {"BITWARDEN_BACKUP_BUCKET": "test-bucket"})
+@mock.patch.dict(os.environ, {"BITWARDEN_BACKUP_BUCKET": "test-bucket", "ORGANISATION_ID": "abc-123"})
 def test_export_vault() -> None:
     event = {"password": "Encryption Pa$$w0rd"}
     filepath = "test.json"
@@ -17,7 +17,7 @@ def test_export_vault() -> None:
 
     ExportVault(bitwarden_vault_client=mock_client).run(event)
 
-    mock_client.export_vault.assert_called_with(password="Encryption Pa$$w0rd")
+    mock_client.export_vault.assert_called_with(org_id="abc-123", password="Encryption Pa$$w0rd")
     mock_client.write_file_to_s3.assert_called_with("test-bucket", filepath)
     assert mock_client.logout.called
 
