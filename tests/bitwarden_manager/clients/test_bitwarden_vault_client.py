@@ -87,7 +87,7 @@ def test_failed_login(client: BitwardenVaultClient) -> None:
 
 @mock.patch("subprocess.Popen", MockedPopen)
 def test_export_without_unlock(client: BitwardenVaultClient) -> None:
-    result = client.export_vault("Encyption Pa$$w0rd")
+    result = client.export_vault("abc-123", "Encyption Pa$$w0rd")
     pattern = re.compile("/tmp/bw_backup_.*.json")
     assert pattern.match(result)
 

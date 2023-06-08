@@ -49,7 +49,7 @@ class BitwardenVaultClient:
         else:
             raise Exception("Failed to logout")
 
-    def export_vault(self, password: str) -> str:
+    def export_vault(self, org_id: str, password: str) -> str:
         if not self.__session_token:
             self.login()
             self.unlock()
@@ -67,6 +67,8 @@ class BitwardenVaultClient:
                 password,
                 "--output",
                 output_path,
+                "--organizationid",
+                org_id,
             ],
             stdout=subprocess.PIPE,
             shell=False,
