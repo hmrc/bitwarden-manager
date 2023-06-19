@@ -25,6 +25,7 @@ class BitwardenManager:
                 OnboardUser(
                     bitwarden_api=self._get_bitwarden_public_api(),
                     user_management_api=self._get_user_management_api(),
+                    bitwarden_vault_client=self._get_bitwarden_vault_client(),
                 ).run(event=event)
             case "export_vault":
                 self.__logger.debug("handling event with ExportVault")

@@ -6,7 +6,7 @@ from bitwarden_manager.export_vault import ExportVault
 from unittest.mock import Mock, MagicMock
 
 
-@mock.patch.dict(os.environ, {"BITWARDEN_BACKUP_BUCKET": "test-bucket", "ORGANISATION_ID": "abc-123"})
+@mock.patch.dict(os.environ, {"BITWARDEN_BACKUP_BUCKET": "test-bucket"})
 def test_export_vault() -> None:
     event = {"event_name": "export_vault"}
     filepath = "test.json"
@@ -15,6 +15,5 @@ def test_export_vault() -> None:
 
     ExportVault(bitwarden_vault_client=mock_client).run(event)
 
-    mock_client.export_vault.assert_called_with(org_id="abc-123")
     mock_client.write_file_to_s3.assert_called_with("test-bucket", filepath)
     assert mock_client.logout.called

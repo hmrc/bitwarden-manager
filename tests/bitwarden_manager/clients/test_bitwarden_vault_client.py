@@ -1,12 +1,14 @@
+import os
+
 import boto3
 import gzip
 import json
 import logging
-import mock
 import pytest
 import re
 
-from mock import MagicMock
+from _pytest.logging import LogCaptureFixture
+from mock import MagicMock, mock
 from moto import mock_s3
 from typing import Optional
 from typing import Self
@@ -41,6 +43,10 @@ class MockedPopen:
             stdout = b""
             stderr = b""
             self.returncode = 0
+        elif self.args[0] == "./bw" and self.args[1] == "create":
+            stdout = b"Collection successfully created"
+            stderr = b""
+            self.returncode = 0
         else:
             stdout = b""
             stderr = b"unknown command"
@@ -68,19 +74,14 @@ class FailedMockedPopen:
 
 @pytest.fixture
 def client() -> BitwardenVaultClient:
-    return BitwardenVaultClient(
-        logger=logging.getLogger(),
-        client_id="test_id",
-        client_secret="test_secret",
-        password="very secure pa$$w0rd!",
-        export_enc_password="hmrc2023",
-    )
-
-
-@mock.patch("subprocess.Popen", MockedPopen)
-def test_login(client: BitwardenVaultClient) -> None:
-    result = client.login()
-    assert result == "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
+    with mock.patch.dict(os.environ, {"ORGANISATION_ID": "abc-123"}):
+        return BitwardenVaultClient(
+            logger=logging.getLogger(),
+            client_id="test_id",
+            client_secret="test_secret",
+            password="very secure pa$$w0rd!",
+            export_enc_password="hmrc2023",
+        )
 
 
 @mock.patch("subprocess.Popen", FailedMockedPopen)
@@ -91,7 +92,7 @@ def test_failed_login(client: BitwardenVaultClient) -> None:
 
 @mock.patch("subprocess.Popen", MockedPopen)
 def test_export_without_unlock(client: BitwardenVaultClient) -> None:
-    result = client.export_vault("abc-123")
+    result = client.export_vault()
     pattern = re.compile("/tmp/bw_backup_.*.json")
     assert pattern.match(result)
 
@@ -114,7 +115,6 @@ def test_failed_logout(client: BitwardenVaultClient) -> None:
         client.logout()
 
 
-# see https://github.com/getmoto/moto/issues/4944
 @mock_s3  # type: ignore
 def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
     filepath = "bw_backup_2023.json"
@@ -142,7 +142,43 @@ def test_failed_write_file_to_s3(client: BitwardenVaultClient) -> None:
         client.write_file_to_s3(bucket_name, filepath)
 
 
+@mock.patch("subprocess.Popen", MockedPopen)
+def test_login(client: BitwardenVaultClient) -> None:
+    result = client.login()
+    assert result == "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
+
+
 def test_file_from_path(client: BitwardenVaultClient) -> None:
     with pytest.raises(Exception, match="No such file or directory"):
         filepath = "bw_backup_2023.json"
         client.file_from_path(filepath)
+
+
+@mock.patch("subprocess.Popen", MockedPopen)
+def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    teams = ["Team Name None"]
+    existing_collections = {"Non Matching Collection": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    with caplog.at_level(logging.INFO):
+        client.create_collection(teams, existing_collections)
+    assert f"Created {teams[0]} successfully" in caplog.text
+
+
+@mock.patch("subprocess.Popen", MockedPopen)
+def test_create_collection_unlocked(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    client.unlock()
+    client.login()
+    teams = ["Team Name None"]
+    existing_collections = {"Team Name One": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    client.create_collection(teams, existing_collections)
+    with caplog.at_level(logging.INFO):
+        client.create_collection(teams, existing_collections)
+    assert f"Created {teams[0]} successfully" in caplog.text
+
+
+@mock.patch("subprocess.Popen", MockedPopen)
+def test_no_missing_collections(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    teams = ["Existing Collection Name"]
+    existing_collections = {"Existing Collection Name": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    with caplog.at_level(logging.INFO):
+        client.create_collection(teams, existing_collections)
+    assert "No missing collections found" in caplog.text
