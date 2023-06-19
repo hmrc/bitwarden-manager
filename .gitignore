@@ -23,3 +23,6 @@ coverage.xml
 __pycache__
 .vscode
 .DS_Store
+bw
+docker.tar
+event.json
