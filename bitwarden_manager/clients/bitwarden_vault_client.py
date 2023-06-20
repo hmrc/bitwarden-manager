@@ -1,8 +1,10 @@
 import boto3
 import datetime
+import json
 import subprocess  # nosec B404
 import os
 from logging import Logger
+import base64
 
 from botocore.exceptions import BotoCoreError, ClientError
 from typing import IO
@@ -10,7 +12,12 @@ from typing import IO
 
 class BitwardenVaultClient:
     def __init__(
-        self, logger: Logger, client_id: str, client_secret: str, password: str, export_enc_password: str
+        self,
+        logger: Logger,
+        client_id: str,
+        client_secret: str,
+        password: str,
+        export_enc_password: str,
     ) -> None:
         self.__logger = logger
         self.__client_secret = client_secret
@@ -18,15 +25,17 @@ class BitwardenVaultClient:
         self.__password = password
         self.__export_enc_password = export_enc_password
         self.__session_token = ""  # nosec B105
+        self.organisation_id = os.environ["ORGANISATION_ID"]
 
     def login(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
         proc = subprocess.Popen(
-            ["./bw", "login", "--apikey"], stdout=subprocess.PIPE, env=tmp_env, shell=False
+            ["./bw", "login", "--apikey"], env=tmp_env, shell=False, stdout=subprocess.PIPE
         )  # nosec B603
         (out, _err) = proc.communicate()
+        self.__logger.info(f"Response {str(_err)}")
         if out:
             self.__logger.info("Logged in to Bitwarden Vault")
             return out.decode("utf-8")
@@ -52,7 +61,7 @@ class BitwardenVaultClient:
         else:
             raise Exception("Failed to logout")
 
-    def export_vault(self, org_id: str) -> str:
+    def export_vault(self) -> str:
         if not self.__session_token:
             self.login()
             self.unlock()
@@ -71,7 +80,7 @@ class BitwardenVaultClient:
                 "--output",
                 output_path,
                 "--organizationid",
-                org_id,
+                self.organisation_id,
             ],
             stdout=subprocess.PIPE,
             shell=False,
@@ -89,3 +98,42 @@ class BitwardenVaultClient:
 
     def file_from_path(self, filepath: str) -> IO[bytes]:
         return open(filepath, "rb")
+
+    def create_collection(self, teams: list[str], existing_collections: dict[str, str]) -> None:
+        missing_collection = [team for team in teams if not existing_collections.get(team)]
+        if not missing_collection:
+            self.__logger.info("No missing collections found")
+            return
+
+        if not self.__session_token:
+            self.login()
+            self.unlock()
+        for collection in missing_collection:
+            collection_object = {
+                "organizationId": self.organisation_id,
+                "name": collection,
+                "externalId": collection,
+            }
+            json_collection = json.dumps(collection_object).encode("utf-8")
+            json_encoded = base64.b64encode(json_collection)
+            create_collection = subprocess.Popen(
+                [
+                    "./bw",
+                    "create",
+                    "org-collection",
+                    "--organizationid",
+                    self.organisation_id,
+                    "--session",
+                    self.__session_token,
+                    json_encoded,
+                ],
+                shell=False,
+                stdout=subprocess.PIPE,
+                text=True,
+            )  # nosec B603
+            (out, _err) = create_collection.communicate(timeout=15)
+
+            if not _err:
+                self.__logger.info(f"Created {collection} successfully")
+
+        self.logout()

@@ -5,6 +5,7 @@ import boto3
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
@@ -21,7 +22,11 @@ class BitwardenManager:
             case "new_user":
                 self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
                 self.__logger.debug("handling event with OnboardUser")
-                OnboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+                OnboardUser(
+                    bitwarden_api=self._get_bitwarden_public_api(),
+                    user_management_api=self._get_user_management_api(),
+                    bitwarden_vault_client=self._get_bitwarden_vault_client(),
+                ).run(event=event)
             case "export_vault":
                 self.__logger.debug("handling event with ExportVault")
                 ExportVault(bitwarden_vault_client=self._get_bitwarden_vault_client()).run(event=event)
@@ -42,6 +47,13 @@ class BitwardenManager:
             client_secret=self._get_bitwarden_vault_client_secret(),
             password=self._get_bitwarden_vault_password(),
             export_enc_password=self._get_bitwarden_export_encryption_password(),
+        )
+
+    def _get_user_management_api(self) -> UserManagementApi:
+        return UserManagementApi(
+            logger=self.__logger,
+            client_id=self._get_ldap_username(),
+            client_secret=self._get_ldap_password(),
         )
 
     def _get_bitwarden_client_id(self) -> str:

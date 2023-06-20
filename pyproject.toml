@@ -22,6 +22,7 @@ boto3 = "^1.26.127"
 boto3-stubs = "^1.26.131"
 jsonschema = "^4.17.3"
 types-jsonschema = "^4.17.0.8"
+moto = "^4.1.11"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"
