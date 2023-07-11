@@ -47,6 +47,7 @@ class BitwardenManager:
             client_secret=self._get_bitwarden_vault_client_secret(),
             password=self._get_bitwarden_vault_password(),
             export_enc_password=self._get_bitwarden_export_encryption_password(),
+            cli_executable_path="./bw",
         )
 
     def _get_user_management_api(self) -> UserManagementApi:

@@ -18,6 +18,7 @@ class BitwardenVaultClient:
         client_secret: str,
         password: str,
         export_enc_password: str,
+        cli_executable_path: str,
     ) -> None:
         self.__logger = logger
         self.__client_secret = client_secret
@@ -26,13 +27,14 @@ class BitwardenVaultClient:
         self.__export_enc_password = export_enc_password
         self.__session_token = ""  # nosec B105
         self.organisation_id = os.environ["ORGANISATION_ID"]
+        self.cli_executable_path = cli_executable_path
 
     def login(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
         proc = subprocess.Popen(
-            ["./bw", "login", "--apikey"], env=tmp_env, shell=False, stdout=subprocess.PIPE
+            [self.cli_executable_path, "login", "--apikey"], env=tmp_env, shell=False, stdout=subprocess.PIPE
         )  # nosec B603
         (out, _err) = proc.communicate()
         self.__logger.info(f"Response {str(_err)}")
@@ -43,7 +45,9 @@ class BitwardenVaultClient:
             raise Exception("Failed to login")
 
     def unlock(self) -> str:
-        proc = subprocess.Popen(["./bw", "unlock", self.__password], stdout=subprocess.PIPE, shell=False)  # nosec B603
+        proc = subprocess.Popen(
+            [self.cli_executable_path, "unlock", self.__password], stdout=subprocess.PIPE, shell=False
+        )  # nosec B603
         (out, _err) = proc.communicate()
         if out:
             string = out.decode("utf-8")
@@ -54,7 +58,7 @@ class BitwardenVaultClient:
             raise Exception("Failed to unlock")
 
     def logout(self) -> str:
-        proc = subprocess.Popen(["./bw", "logout"], stdout=subprocess.PIPE, shell=False)  # nosec B603
+        proc = subprocess.Popen([self.cli_executable_path, "logout"], stdout=subprocess.PIPE, shell=False)  # nosec B603
         (out, _err) = proc.communicate()
         if out:
             return out.decode("utf-8")
@@ -69,7 +73,7 @@ class BitwardenVaultClient:
         output_path = f"/tmp/bw_backup_{now}.json"  # nosec B108
         proc = subprocess.Popen(
             [
-                "./bw",
+                self.cli_executable_path,
                 "export",
                 "--session",
                 self.__session_token,
@@ -118,7 +122,7 @@ class BitwardenVaultClient:
             json_encoded = base64.b64encode(json_collection)
             create_collection = subprocess.Popen(
                 [
-                    "./bw",
+                    self.cli_executable_path,
                     "create",
                     "org-collection",
                     "--organizationid",
