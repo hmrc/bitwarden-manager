@@ -10,7 +10,10 @@ import re
 from _pytest.logging import LogCaptureFixture
 from mock import MagicMock
 from moto import mock_s3
-from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
+from bitwarden_manager.clients.bitwarden_vault_client import (
+    BitwardenVaultClient,
+    BitwardenVaultClientError,
+)
 
 
 @pytest.fixture
@@ -57,7 +60,7 @@ def failing_authentication_client() -> BitwardenVaultClient:
 
 
 def test_failed_login(failing_authentication_client: BitwardenVaultClient) -> None:
-    with pytest.raises(BitwardenVaultClientError, match="asdasd"):
+    with pytest.raises(BitwardenVaultClientError, match="login"):
         failing_authentication_client.login()
 
 
@@ -75,6 +78,7 @@ def test_failed_unlock(failing_authentication_client: BitwardenVaultClient) -> N
 def test_logout(client: BitwardenVaultClient) -> None:
     result = client.logout()
     assert result == "You have logged out."
+
 
 def test_failed_logout(failing_authentication_client: BitwardenVaultClient) -> None:
     with pytest.raises(BitwardenVaultClientError, match="logout"):

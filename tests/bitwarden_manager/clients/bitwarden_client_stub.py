@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import os
 import sys
 
 list_user_output = [
@@ -41,6 +42,15 @@ list_user_output = [
     },
 ]
 
+
+def fail_if_no_session_set():
+    if not os.environ.get("BW_SESSION", None):
+        raise Exception(
+            "BW_SESSION env var is missing, we want to provide the session token via env var so that it "
+            "does not apper in the output of any stack trace"
+        )
+
+
 if __name__ == "__main__":
     match sys.argv[1]:
         case "login":
@@ -56,18 +66,22 @@ if __name__ == "__main__":
             stderr = ""
             return_code = 0
         case "export":
+            fail_if_no_session_set()
             stdout = ""
             stderr = ""
             return_code = 0
         case "create":
+            fail_if_no_session_set()
             stdout = "Collection successfully created"
             stderr = ""
             return_code = 0
         case "list":
+            fail_if_no_session_set()
             stdout = json.dumps(list_user_output)
             stderr = ""
             return_code = 0
         case "confirm":
+            fail_if_no_session_set()
             stdout = ""
             stderr = ""
             return_code = 0
