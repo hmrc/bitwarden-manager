@@ -5,6 +5,7 @@ import boto3
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.clients.s3_client import S3Client
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
@@ -29,7 +30,9 @@ class BitwardenManager:
                 ).run(event=event)
             case "export_vault":
                 self.__logger.debug("handling event with ExportVault")
-                ExportVault(bitwarden_vault_client=self._get_bitwarden_vault_client()).run(event=event)
+                ExportVault(bitwarden_vault_client=self._get_bitwarden_vault_client(), s3_client=S3Client()).run(
+                    event=event
+                )
             case _:
                 self.__logger.info(f"ignoring unknown event '{event_name}'")
 

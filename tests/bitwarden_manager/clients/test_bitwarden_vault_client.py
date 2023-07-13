@@ -1,15 +1,9 @@
-import os
 import pathlib
-import boto3
-import gzip
-import json
 import logging
 import pytest
 import re
 
 from _pytest.logging import LogCaptureFixture
-from mock import MagicMock
-from moto import mock_s3
 from bitwarden_manager.clients.bitwarden_vault_client import (
     BitwardenVaultClient,
     BitwardenVaultClientError,
@@ -85,42 +79,9 @@ def test_failed_logout(failing_authentication_client: BitwardenVaultClient) -> N
         failing_authentication_client.logout()
 
 
-@mock_s3  # type: ignore
-def test_write_file_to_s3(client: BitwardenVaultClient) -> None:
-    filepath = "bw_backup_2023.json"
-    file_contents = json.dumps('{"some_key": "some_data"}')
-    file = gzip.compress(bytes(file_contents, "utf-8"))
-    # see https://github.com/python/mypy/issues/2427
-    client.file_from_path = MagicMock(return_value=file)  # type: ignore
-    bucket_name = "test_bucket"
-    s3 = boto3.resource("s3")
-    bucket = s3.Bucket(bucket_name)
-    bucket.create()
-    client.write_file_to_s3(bucket_name, filepath)
-
-
-# see https://github.com/getmoto/moto/issues/4944
-@mock_s3  # type: ignore
-def test_failed_write_file_to_s3(client: BitwardenVaultClient) -> None:
-    filepath = "bw_backup_2023.json"
-    file_contents = json.dumps('{"some_key": "some_data"}')
-    file = gzip.compress(bytes(file_contents, "utf-8"))
-    # see https://github.com/python/mypy/issues/2427
-    client.file_from_path = MagicMock(return_value=file)  # type: ignore
-    bucket_name = "test_bucket"
-    with pytest.raises(Exception, match="Failed to write to S3"):
-        client.write_file_to_s3(bucket_name, filepath)
-
-
 def test_login(client: BitwardenVaultClient) -> None:
     result = client.login()
     assert result == "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
-
-
-def test_file_from_path(client: BitwardenVaultClient) -> None:
-    with pytest.raises(Exception, match="No such file or directory"):
-        filepath = "bw_backup_2023.json"
-        client.file_from_path(filepath)
 
 
 def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:

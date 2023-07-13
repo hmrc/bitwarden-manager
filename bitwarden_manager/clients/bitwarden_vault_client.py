@@ -92,7 +92,7 @@ class BitwardenVaultClient:
             self.login()
             self.unlock()
         now = datetime.datetime.now()
-        output_path = f"/tmp/bw_backup_{now}.json"  # nosec B108
+        output_path = f"/tmp/bw_backup_{now}.json"
         tmp_env = os.environ.copy()
         tmp_env["BW_SESSION"] = self._session_token
         try:
@@ -103,7 +103,7 @@ class BitwardenVaultClient:
                     "--format",
                     "encrypted_json",
                     "--password",
-                    self.__export_enc_password,  # todo we want to hide this, what do do here?
+                    self.__export_enc_password,
                     "--output",
                     output_path,
                     "--organizationid",
@@ -118,17 +118,6 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
 
         return output_path
-
-    # TODO: this should be extracted to its own client and the boto client passed into the class
-    def write_file_to_s3(self, bucket_name: str, filepath: str) -> None:
-        try:
-            s3 = boto3.client("s3")
-            s3.put_object(Bucket=bucket_name, Key=filepath, Body=self.file_from_path(filepath))
-        except (BotoCoreError, ClientError) as e:
-            raise Exception("Failed to write to S3", e) from e
-
-    def file_from_path(self, filepath: str) -> IO[bytes]:
-        return open(filepath, "rb")
 
     def create_collection(self, teams: list[str], existing_collections: dict[str, str]) -> None:
         missing_collection = [team for team in teams if not existing_collections.get(team)]
