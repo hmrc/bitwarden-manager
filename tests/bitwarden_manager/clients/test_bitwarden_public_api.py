@@ -282,7 +282,12 @@ def test_get_collections_failure() -> None:
             content_type="application/json",
             method="GET",
             url=f"https://api.bitwarden.com/public/collections/{collection_id}",
-            json={"externalId": "Team Name One", "object": "collection", "id": collection_id, "groups": []},
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
         )
 
         client = BitwardenPublicApi(
@@ -296,7 +301,9 @@ def test_get_collections_failure() -> None:
             match="Failed to get collections",
         ):
             client.update_collection_groups(
-                collection_name=collection_name, group_id=group_id, collection_id=collection_id
+                collection_name=collection_name,
+                group_id=group_id,
+                collection_id=collection_id,
             )
 
 
@@ -417,14 +424,24 @@ def test_failed_to_update_collection_group() -> None:
             content_type="application/json",
             method="GET",
             url=f"https://api.bitwarden.com/public/collections/{collection_id}",
-            json={"externalId": "Team Name One", "object": "collection", "id": collection_id, "groups": []},
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
         )
         rsps.add(
             status=400,
             content_type="application/json",
             method="PUT",
             url=f"https://api.bitwarden.com/public/collections/{collection_id}",
-            json={"externalId": "Team Name One", "object": "collection", "id": collection_id, "groups": []},
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
         )
 
         client = BitwardenPublicApi(
@@ -438,7 +455,9 @@ def test_failed_to_update_collection_group() -> None:
             match="Failed to associate collection to group-ids",
         ):
             client.update_collection_groups(
-                collection_name=collection_name, collection_id=collection_id, group_id=group_id
+                collection_name=collection_name,
+                collection_id=collection_id,
+                group_id=group_id,
             )
 
 
@@ -663,7 +682,12 @@ def test_collate_user_group_ids() -> None:
             content_type="application/json",
             method="GET",
             url="https://api.bitwarden.com/public/collections/ZZZZZZZZ",
-            json={"externalId": "Team Name One", "object": "collection", "id": "ZZZZZZZZ", "groups": []},
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": "ZZZZZZZZ",
+                "groups": [],
+            },
         )
         rsps.add(
             status=200,

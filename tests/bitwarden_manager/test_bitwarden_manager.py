@@ -15,7 +15,10 @@ def test_get_ldap_credentials(mock_secretsmanager: Mock) -> None:
 
     assert get_secret_value.call_count == 2
     get_secret_value.assert_has_calls(
-        [call(SecretId="/bitwarden/ldap-username"), call(SecretId="/bitwarden/ldap-password")]
+        [
+            call(SecretId="/bitwarden/ldap-username"),
+            call(SecretId="/bitwarden/ldap-password"),
+        ]
     )
 
 

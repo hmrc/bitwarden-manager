@@ -12,9 +12,17 @@ onboard_user_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
     "properties": {
-        "event_name": {"type": "string", "description": "name of the current event", "pattern": "new_user"},
+        "event_name": {
+            "type": "string",
+            "description": "name of the current event",
+            "pattern": "new_user",
+        },
         "username": {"type": "string", "description": "the users ldap username"},
-        "email": {"type": "string", "pattern": "^(.+)@(.+)$", "description": "The users full work email address"},
+        "email": {
+            "type": "string",
+            "pattern": "^(.+)@(.+)$",
+            "description": "The users full work email address",
+        },
     },
     "required": ["event_name", "username", "email"],
 }

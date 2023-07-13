@@ -10,7 +10,11 @@ from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClien
 
 
 def test_onboard_user_invites_user_to_org() -> None:
-    event = {"event_name": "new_user", "username": "test.user", "email": "testemail@example.com"}
+    event = {
+        "event_name": "new_user",
+        "username": "test.user",
+        "email": "testemail@example.com",
+    }
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_user_management = MagicMock(spec=UserManagementApi)
     mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
