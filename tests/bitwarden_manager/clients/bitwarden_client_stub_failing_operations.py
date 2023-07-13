@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import json
+import os
 import sys
 
-list_user_output = [
+bad_list_user_output = [
     {
         "object": "org-member",
         "email": "example@example.co.uk",
@@ -43,38 +44,14 @@ list_user_output = [
 
 if __name__ == "__main__":
     match sys.argv[1]:
-        case "login":
-            stdout = "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
-            stderr = ""
-            return_code = 0
-        case "logout":
-            stdout = "You have logged out."
-            stderr = ""
-            return_code = 0
-        case "unlock":
-            stdout = "You have unlocked"
-            stderr = ""
-            return_code = 0
-        case "export":
-            stdout = ""
-            stderr = ""
-            return_code = 0
-        case "create":
-            stdout = "Collection successfully created"
-            stderr = ""
-            return_code = 0
-        case "list":
-            stdout = json.dumps(list_user_output)
-            stderr = ""
-            return_code = 0
-        case "confirm":
-            stdout = ""
-            stderr = ""
-            return_code = 0
+        case "login":  # we want tests to pass this stage to surface other errors
+            sys.stdout.write("You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock")
+            sys.stderr.write("")
+            sys.exit(0)
+        case "unlock":  # we want tests to pass this stage to surface other errors
+            sys.stdout.write("You have unlocked")
+            sys.stderr.write("")
+            sys.exit(0)
         case _:
-            stdout = ""
-            stderr = "unknown command"
-            return_code = 1
-    sys.stdout.write(stdout)
-    sys.stderr.write(stderr)
-    sys.exit(return_code)
+            sys.stderr.write("This is an fake error")
+            sys.exit(1)

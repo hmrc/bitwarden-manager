@@ -48,6 +48,7 @@ class BitwardenManager:
             password=self._get_bitwarden_vault_password(),
             export_enc_password=self._get_bitwarden_export_encryption_password(),
             cli_executable_path="./bw",
+            organisation_id=self._get_organisation_id(),
         )
 
     def _get_user_management_api(self) -> UserManagementApi:
@@ -80,3 +81,6 @@ class BitwardenManager:
 
     def _get_ldap_password(self) -> str:
         return self._secretsmanager.get_secret_value("/bitwarden/ldap-password")
+
+    def _get_organisation_id(self) -> str:
+        return self._secretsmanager.get_secret_value("/bitwarden/organisation-id")

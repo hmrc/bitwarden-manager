@@ -1,5 +1,4 @@
 import logging
-import os
 from unittest import mock
 from unittest.mock import patch, Mock
 
@@ -28,16 +27,25 @@ def test_handler_ignores_unknown_events(boto_mock: Mock, caplog: LogCaptureFixtu
 @mock.patch("boto3.client")
 def test_handler_routes_new_user_events(boto_mock: Mock) -> None:
     event = dict(event_name="new_user")
-    with patch.object(OnboardUser, "run") as mock_method, mock.patch.dict(os.environ, {"ORGANISATION_ID": "abc-123"}):
+    with patch.object(OnboardUser, "run") as new_user_mock:
         handler(event=event, context={})
 
-    mock_method.assert_called_once_with(event=event)
+    new_user_mock.assert_called_once_with(event=event)
 
 
 @mock.patch("boto3.client")
 def test_handler_routes_export_vault_events(boto_mock: Mock) -> None:
     event = dict(event_name="export_vault")
-    with patch.object(ExportVault, "run") as mock_method, mock.patch.dict(os.environ, {"ORGANISATION_ID": "abc-123"}):
+    with patch.object(ExportVault, "run") as export_vault_mock:
         handler(event=event, context={})
 
-    mock_method.assert_called_once_with(event=event)
+    export_vault_mock.assert_called_once_with(event=event)
+
+
+@mock.patch("boto3.client")
+def test_handler_routes_confirm_user(boto_mock: Mock) -> None:
+    event = dict(event_name="confirm_user")
+    with patch.object(ConfirmUser, "run") as confirm_user_mock:
+        handler(event=event, context={})
+
+    confirm_user_mock.assert_called_once_with(event=event)

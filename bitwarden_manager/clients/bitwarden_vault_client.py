@@ -3,94 +3,117 @@ import datetime
 import json
 import subprocess  # nosec B404
 import os
-from logging import Logger
 import base64
-
+from logging import Logger
 from botocore.exceptions import BotoCoreError, ClientError
-from typing import IO
+from typing import IO, Dict
+
+BITWARDEN_CLIENT_TIMEOUT = 15
+
+
+class BitwardenVaultClientError(Exception):
+    pass
 
 
 class BitwardenVaultClient:
     def __init__(
-        self,
-        logger: Logger,
-        client_id: str,
-        client_secret: str,
-        password: str,
-        export_enc_password: str,
-        cli_executable_path: str,
+            self,
+            logger: Logger,
+            client_id: str,
+            client_secret: str,
+            password: str,
+            export_enc_password: str,
+            cli_executable_path: str,
+            organisation_id: str,
     ) -> None:
         self.__logger = logger
         self.__client_secret = client_secret
         self.__client_id = client_id
         self.__password = password
         self.__export_enc_password = export_enc_password
-        self.__session_token = ""  # nosec B105
-        self.organisation_id = os.environ["ORGANISATION_ID"]
+        self._session_token = None
+        self.organisation_id = organisation_id
         self.cli_executable_path = cli_executable_path
 
-    def login(self) -> str:
+    def login(self) -> None:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
-        proc = subprocess.Popen(
-            [self.cli_executable_path, "login", "--apikey"], env=tmp_env, shell=False, stdout=subprocess.PIPE
-        )  # nosec B603
-        (out, _err) = proc.communicate()
-        self.__logger.info(f"Response {str(_err)}")
-        if out:
-            self.__logger.info("Logged in to Bitwarden Vault")
-            return out.decode("utf-8")
-        else:
-            raise Exception("Failed to login")
+        try:
+            subprocess.check_call(
+                [self.cli_executable_path, "login", "--apikey"],
+                env=tmp_env,
+                shell=False,
+                timeout=BITWARDEN_CLIENT_TIMEOUT,
+            )  # nosec B603
+        except subprocess.CalledProcessError as e:
+            raise BitwardenVaultClientError(e)
 
     def unlock(self) -> str:
-        proc = subprocess.Popen(
-            [self.cli_executable_path, "unlock", self.__password], stdout=subprocess.PIPE, shell=False
-        )  # nosec B603
-        (out, _err) = proc.communicate()
-        if out:
-            string = out.decode("utf-8")
-            self.__logger.info("Unlocked Bitwarden Vault")
-            self.__session_token = string.split()[-1]
-            return string
-        else:
-            raise Exception("Failed to unlock")
+        tmp_env = os.environ.copy()
+        tmp_env["BW_PASSWORD"] = self.__password
+        try:
+            output = subprocess.check_output(
+                [self.cli_executable_path,
+                 "unlock",
+                 "--passwordenv",
+                 "BW_PASSWORD",
+                 ],
+                shell=False,
+                env=tmp_env,
+                text=True,
+                encoding="utf-8",
+                timeout=BITWARDEN_CLIENT_TIMEOUT,
+            )
+            session_token = output.split()[-1]
+            self._session_token = session_token
+        except subprocess.CalledProcessError as e:
+            raise BitwardenVaultClientError(e)
+
 
     def logout(self) -> str:
-        proc = subprocess.Popen([self.cli_executable_path, "logout"], stdout=subprocess.PIPE, shell=False)  # nosec B603
-        (out, _err) = proc.communicate()
-        if out:
-            return out.decode("utf-8")
-        else:
-            raise Exception("Failed to logout")
+        try:
+            output = subprocess.check_output(
+                [self.cli_executable_path, "logout"],
+                shell=False,
+                text=True,
+                encoding="utf-8",
+                timeout=BITWARDEN_CLIENT_TIMEOUT,
+            )
+            self._session_token = None
+            return output
+        except subprocess.CalledProcessError as e:
+            raise BitwardenVaultClientError(e)
 
     def export_vault(self) -> str:
-        if not self.__session_token:
+        if not self._session_token:
             self.login()
             self.unlock()
         now = datetime.datetime.now()
         output_path = f"/tmp/bw_backup_{now}.json"  # nosec B108
-        proc = subprocess.Popen(
-            [
-                self.cli_executable_path,
-                "export",
-                "--session",
-                self.__session_token,
-                "--format",
-                "encrypted_json",
-                "--password",
-                self.__export_enc_password,
-                "--output",
-                output_path,
-                "--organizationid",
-                self.organisation_id,
-            ],
-            stdout=subprocess.PIPE,
-            shell=False,
-        )  # nosec B603
-        (_out, _err) = proc.communicate()
-        self.__logger.info(f"Exported vault backup to {output_path}")
+        try:
+            subprocess.check_call(
+                [
+                    self.cli_executable_path,
+                    "export",
+                    "--session",
+                    self._session_token,
+                    "--format",
+                    "encrypted_json",
+                    "--password",
+                    self.__export_enc_password,
+                    "--output",
+                    output_path,
+                    "--organizationid",
+                    self.organisation_id,
+                ],
+                stdout=subprocess.PIPE,
+                shell=False,
+            )  # nosec B603
+            self.__logger.info(f"Exported vault backup to {output_path}")
+        except subprocess.CalledProcessError as e:
+            raise BitwardenVaultClientError(e)
+
         return output_path
 
     def write_file_to_s3(self, bucket_name: str, filepath: str) -> None:
@@ -109,7 +132,7 @@ class BitwardenVaultClient:
             self.__logger.info("No missing collections found")
             return
 
-        if not self.__session_token:
+        if not self._session_token:
             self.login()
             self.unlock()
         for collection in missing_collection:
@@ -120,19 +143,25 @@ class BitwardenVaultClient:
             }
             json_collection = json.dumps(collection_object).encode("utf-8")
             json_encoded = base64.b64encode(json_collection)
-            create_collection = subprocess.Popen(
-                [
-                    self.cli_executable_path,
-                    "create",
-                    "org-collection",
-                    "--organizationid",
-                    self.organisation_id,
-                    "--session",
-                    self.__session_token,
-                    json_encoded,
-                ],
-                shell=False,
-                stdout=subprocess.PIPE,
+            try:
+                subprocess.check_call(
+                    [
+                        self.cli_executable_path,
+                        "create",
+                        "org-collection",
+                        "--organizationid",
+                        self.organisation_id,
+                        "--session",
+                        self._session_token,
+                        json_encoded,
+                    ],
+                    shell=False,
+                    timeout=BITWARDEN_CLIENT_TIMEOUT,
+                )  # nosec B603
+                self.__logger.info(f"Created {collection} successfully")
+            except subprocess.CalledProcessError as e:
+                raise BitwardenVaultClientError(e)
+
                 text=True,
             )  # nosec B603
             (out, _err) = create_collection.communicate(timeout=15)

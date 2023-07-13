@@ -8,40 +8,57 @@ import pytest
 import re
 
 from _pytest.logging import LogCaptureFixture
-from mock import MagicMock, mock
+from mock import MagicMock
 from moto import mock_s3
-from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
 
 
 @pytest.fixture
 def client() -> BitwardenVaultClient:
-    with mock.patch.dict(os.environ, {"ORGANISATION_ID": "abc-123"}):
-        return BitwardenVaultClient(
-            logger=logging.getLogger(),
-            client_id="test_id",
-            client_secret="test_secret",
-            password="very secure pa$$w0rd!",
-            export_enc_password="hmrc2023",
-            cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub.py")),
-        )
+    return BitwardenVaultClient(
+        cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub.py")),
+        client_id="test_id",
+        client_secret="test_secret",
+        export_enc_password="hmrc2023",
+        logger=logging.getLogger(),
+        organisation_id="abc-123",
+        password="very secure pa$$w0rd!",
+    )
 
 
 @pytest.fixture
 def failing_client() -> BitwardenVaultClient:
-    with mock.patch.dict(os.environ, {"ORGANISATION_ID": "abc-123"}):
-        return BitwardenVaultClient(
-            logger=logging.getLogger(),
-            client_id="test_id",
-            client_secret="test_secret",
-            password="very secure pa$$w0rd!",
-            export_enc_password="hmrc2023",
-            cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub_failing.py")),
-        )
+    return BitwardenVaultClient(
+        cli_executable_path=str(
+            pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub_failing_operations.py")
+        ),
+        client_id="test_id",
+        client_secret="test_secret",
+        export_enc_password="hmrc2023",
+        logger=logging.getLogger(),
+        organisation_id="abc-123",
+        password="very secure pa$$w0rd!",
+    )
 
 
-def test_failed_login(failing_client: BitwardenVaultClient) -> None:
-    with pytest.raises(Exception, match="Failed to login"):
-        failing_client.login()
+@pytest.fixture
+def failing_authentication_client() -> BitwardenVaultClient:
+    return BitwardenVaultClient(
+        cli_executable_path=str(
+            pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub_failing_authentication.py")
+        ),
+        client_id="test_id",
+        client_secret="test_secret",
+        export_enc_password="hmrc2023",
+        logger=logging.getLogger(),
+        organisation_id="abc-123",
+        password="very secure pa$$w0rd!",
+    )
+
+
+def test_failed_login(failing_authentication_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError, match="asdasd"):
+        failing_authentication_client.login()
 
 
 def test_export_without_unlock(client: BitwardenVaultClient) -> None:
@@ -50,19 +67,18 @@ def test_export_without_unlock(client: BitwardenVaultClient) -> None:
     assert pattern.match(result)
 
 
-def test_failed_unlock(failing_client: BitwardenVaultClient) -> None:
-    with pytest.raises(Exception, match="Failed to unlock"):
-        failing_client.unlock()
+def test_failed_unlock(failing_authentication_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError, match="unlock"):
+        failing_authentication_client.unlock()
 
 
 def test_logout(client: BitwardenVaultClient) -> None:
     result = client.logout()
     assert result == "You have logged out."
 
-
-def test_failed_logout(failing_client: BitwardenVaultClient) -> None:
-    with pytest.raises(Exception, match="Failed to logout"):
-        failing_client.logout()
+def test_failed_logout(failing_authentication_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError, match="logout"):
+        failing_authentication_client.logout()
 
 
 @mock_s3  # type: ignore
@@ -104,7 +120,7 @@ def test_file_from_path(client: BitwardenVaultClient) -> None:
 
 
 def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
-    teams = ["Team Name None"]
+    teams = ["Team Name"]
     existing_collections = {"Non Matching Collection": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
