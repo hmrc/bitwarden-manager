@@ -115,7 +115,7 @@ class BitwardenVaultClient:
             )  # nosec B603
             self.__logger.info(f"Exported vault backup to {output_path}")
         except subprocess.CalledProcessError as e:
-            raise BitwardenVaultClientError(e)
+            raise BitwardenVaultClientError("Redacting stack trace information to avoid logging export password")
 
         return output_path
 
