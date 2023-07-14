@@ -5,7 +5,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 
 
 class S3Client:
-    def __init__(self):
+    def __init__(self) -> None:
         self._boto_s3 = boto3.client("s3")
 
     def write_file_to_s3(self, bucket_name: str, filepath: str) -> None:

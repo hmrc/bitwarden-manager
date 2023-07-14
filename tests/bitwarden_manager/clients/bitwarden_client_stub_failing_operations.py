@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-import json
-import os
 import sys
 
 bad_list_user_output = [

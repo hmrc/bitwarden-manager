@@ -14,8 +14,10 @@ from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 class BitwardenManager:
     def __init__(self) -> None:
-        self.__logger = get_bitwarden_logger()
         self._secretsmanager = AwsSecretsManagerClient(secretsmanager_client=boto3.client("secretsmanager"))
+        self.__logger = get_bitwarden_logger(
+            extra_redaction_patterns=[self._get_bitwarden_export_encryption_password()]
+        )
 
     def run(self, event: Dict[str, Any]) -> None:
         event_name = event["event_name"]

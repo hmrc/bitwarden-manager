@@ -13,7 +13,7 @@ def test_get_ldap_credentials(mock_secretsmanager: Mock) -> None:
     assert manager._get_ldap_username() == "secret"
     assert manager._get_ldap_password() == "secret"
 
-    assert get_secret_value.call_count == 2
+    assert get_secret_value.call_count == 3
     get_secret_value.assert_has_calls(
         [
             call(SecretId="/bitwarden/ldap-username"),
@@ -29,11 +29,9 @@ def test_get_bitwarden_api_creds(mock_secretsmanager: Mock) -> None:
     manager = BitwardenManager()
 
     assert manager._get_bitwarden_client_id() == "secret"
-    assert get_secret_value.call_count == 1
     get_secret_value.assert_has_calls([call(SecretId="/bitwarden/api-client-id")])
 
     assert manager._get_bitwarden_client_secret() == "secret"
-    assert get_secret_value.call_count == 2
     get_secret_value.assert_has_calls(
         [
             call(SecretId="/bitwarden/api-client-id"),
@@ -49,17 +47,11 @@ def test_get_bitwarden_vault_creds(mock_secretsmanager: Mock) -> None:
     manager = BitwardenManager()
 
     assert manager._get_bitwarden_vault_client_id() == "secret"
-    assert get_secret_value.call_count == 1
     get_secret_value.assert_has_calls([call(SecretId="/bitwarden/vault-client-id")])
 
     assert manager._get_bitwarden_vault_client_secret() == "secret"
-    assert get_secret_value.call_count == 2
-
     assert manager._get_bitwarden_vault_password() == "secret"
-    assert get_secret_value.call_count == 3
-
     assert manager._get_bitwarden_export_encryption_password() == "secret"
-    assert get_secret_value.call_count == 4
 
     get_secret_value.assert_has_calls(
         [

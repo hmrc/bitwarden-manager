@@ -1,5 +1,6 @@
 import logging
 
+import pytest
 from _pytest.logging import LogCaptureFixture
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -8,7 +9,7 @@ from bitwarden_manager.redacting_formatter import get_bitwarden_logger, get_log_
 
 def test_get_bitwarden_logger(caplog: LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO):
-        logger = get_bitwarden_logger()
+        logger = get_bitwarden_logger(extra_redaction_patterns=[])
 
         # these are not real secrets
         logger.info("CLIENT_ID organization.KPL8P83fWXAvYvNYcbNWAKAcdNmn4Ssgne7w")
@@ -24,11 +25,32 @@ def test_get_bitwarden_logger(caplog: LogCaptureFixture) -> None:
     assert "some other log line" in caplog.text
 
 
+def test_get_bitwarden_logger_extra_pattersn(caplog: LogCaptureFixture) -> None:
+    with caplog.at_level(logging.INFO):
+        logger = get_bitwarden_logger(extra_redaction_patterns=["remove me"])
+
+        # these are not real secrets
+        logger.info("some other log line")
+        logger.info("something else remove me")
+
+    assert "something else <REDACTED>" in caplog.text
+    assert "remove me" not in caplog.text
+
+    assert "some other log line" in caplog.text
+
+
+def test_get_bitwarden_logger_empty_string_should_error(caplog: LogCaptureFixture) -> None:
+    with pytest.raises(
+        ValueError, match="Empty string as a pattern is not allowed as this will match and redact all log lines"
+    ):
+        get_bitwarden_logger(extra_redaction_patterns=[""])
+
+
 def test_get_bitwarden_logger_override_with_env_var(monkeypatch: MonkeyPatch) -> None:
-    assert get_bitwarden_logger().getEffectiveLevel() == logging.INFO
+    assert get_bitwarden_logger(extra_redaction_patterns=[]).getEffectiveLevel() == logging.INFO
 
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
-    assert get_bitwarden_logger().getEffectiveLevel() == logging.DEBUG
+    assert get_bitwarden_logger(extra_redaction_patterns=[]).getEffectiveLevel() == logging.DEBUG
 
 
 def test_get_log_level(monkeypatch: MonkeyPatch) -> None:

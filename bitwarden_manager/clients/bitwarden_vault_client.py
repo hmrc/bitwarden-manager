@@ -1,12 +1,9 @@
-import boto3
 import datetime
 import json
 import subprocess  # nosec B404
 import os
 import base64
 from logging import Logger
-from botocore.exceptions import BotoCoreError, ClientError
-from typing import IO, Dict
 
 BITWARDEN_CLIENT_TIMEOUT = 15
 
@@ -16,6 +13,8 @@ class BitwardenVaultClientError(Exception):
 
 
 class BitwardenVaultClient:
+    _session_token: str
+
     def __init__(
         self,
         logger: Logger,
@@ -31,11 +30,11 @@ class BitwardenVaultClient:
         self.__client_id = client_id
         self.__password = password
         self.__export_enc_password = export_enc_password
-        self._session_token = None
+        self._session_token = ""
         self.organisation_id = organisation_id
         self.cli_executable_path = cli_executable_path
 
-    def login(self) -> None:
+    def login(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
@@ -51,7 +50,7 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
         return output
 
-    def unlock(self) -> str:
+    def unlock(self) -> None:
         tmp_env = os.environ.copy()
         tmp_env["BW_PASSWORD"] = self.__password
         try:
@@ -67,7 +66,7 @@ class BitwardenVaultClient:
                 text=True,
                 encoding="utf-8",
                 timeout=BITWARDEN_CLIENT_TIMEOUT,
-            )
+            )  # nosec B603
             session_token = output.split()[-1]
             self._session_token = session_token
         except subprocess.CalledProcessError as e:
@@ -81,8 +80,8 @@ class BitwardenVaultClient:
                 text=True,
                 encoding="utf-8",
                 timeout=BITWARDEN_CLIENT_TIMEOUT,
-            )
-            self._session_token = None
+            )  # nosec B603
+            self._session_token = ""
             return output
         except subprocess.CalledProcessError as e:
             raise BitwardenVaultClientError(e)
@@ -115,7 +114,10 @@ class BitwardenVaultClient:
             )  # nosec B603
             self.__logger.info(f"Exported vault backup to {output_path}")
         except subprocess.CalledProcessError as e:
-            raise BitwardenVaultClientError("Redacting stack trace information to avoid logging export password")
+            # do not raise the called process error unless you want the export password in the stacktrace
+            # https://github.com/bitwarden/clients/issues/5835
+            e.cmd = "Redacting stack trace information for export to avoid logging password"
+            raise BitwardenVaultClientError(e)
 
         return output_path
 

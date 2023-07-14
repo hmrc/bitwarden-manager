@@ -58,10 +58,17 @@ def test_failed_login(failing_authentication_client: BitwardenVaultClient) -> No
         failing_authentication_client.login()
 
 
-def test_export_without_unlock(client: BitwardenVaultClient) -> None:
+def test_export(client: BitwardenVaultClient) -> None:
     result = client.export_vault()
     pattern = re.compile("/tmp/bw_backup_.*.json")
     assert pattern.match(result)
+
+
+def test_export_fails(failing_client: BitwardenVaultClient) -> None:
+    with pytest.raises(
+        BitwardenVaultClientError, match="Redacting stack trace information for export to avoid logging password"
+    ):
+        failing_client.export_vault()
 
 
 def test_failed_unlock(failing_authentication_client: BitwardenVaultClient) -> None:
@@ -90,6 +97,13 @@ def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixtu
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
     assert f"Created {teams[0]} successfully" in caplog.text
+
+
+def test_create_collection_fails(failing_client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    teams = ["Team Name"]
+    existing_collections = {"Non Matching Collection": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    with pytest.raises(BitwardenVaultClientError, match="create', 'org-collection'"):
+        failing_client.create_collection(teams, existing_collections)
 
 
 def test_create_collection_unlocked(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:

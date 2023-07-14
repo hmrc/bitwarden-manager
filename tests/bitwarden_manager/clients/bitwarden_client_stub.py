@@ -43,7 +43,7 @@ list_user_output = [
 ]
 
 
-def fail_if_no_session_set():
+def fail_if_no_session_set() -> None:
     if not os.environ.get("BW_SESSION", None):
         raise Exception(
             "BW_SESSION env var is missing, we want to provide the session token via env var so that it "
