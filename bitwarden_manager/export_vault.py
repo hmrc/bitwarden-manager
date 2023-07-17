@@ -16,4 +16,3 @@ class ExportVault:
         with tempfile.NamedTemporaryFile() as backup_file:
             self.bitwarden_vault_client.export_vault(file_path=backup_file.name)
             self.s3_client.write_file_to_s3(bucket_name, backup_file.name)
-        self.bitwarden_vault_client.logout()
