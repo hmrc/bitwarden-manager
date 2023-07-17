@@ -76,11 +76,11 @@ def test_export_fails(failing_client: BitwardenVaultClient) -> None:
 
 
 def test_unlock(client: BitwardenVaultClient) -> None:
-    assert client.unlock() == "thisisatoken"
+    assert client._unlock() == "thisisatoken"
 
 
 def test_session_token_remembers_token(client: BitwardenVaultClient) -> None:
-    with patch.object(BitwardenVaultClient, "unlock") as unlock_mock:
+    with patch.object(BitwardenVaultClient, "_unlock") as unlock_mock:
         client.session_token()
         client.session_token()
 
@@ -89,17 +89,25 @@ def test_session_token_remembers_token(client: BitwardenVaultClient) -> None:
 
 def test_failed_unlock(failing_authentication_client: BitwardenVaultClient) -> None:
     with pytest.raises(BitwardenVaultClientError, match="unlock"):
-        failing_authentication_client.unlock()
+        failing_authentication_client._unlock()
 
 
 def test_logout(client: BitwardenVaultClient) -> None:
-    result = client.logout()
-    assert result == "You have logged out."
+    client.authenticate()
+    assert client._BitwardenVaultClient__session_token  # type: ignore
+    client.logout()
+    assert client._BitwardenVaultClient__session_token is None  # type: ignore
 
 
 def test_failed_logout(failing_authentication_client: BitwardenVaultClient) -> None:
+    # pretending we're logged in
+    failing_authentication_client._BitwardenVaultClient__session_token = "foo"  # type: ignore
     with pytest.raises(BitwardenVaultClientError, match="logout"):
         failing_authentication_client.logout()
+
+
+def test_only_logout_if_logged_in(failing_authentication_client: BitwardenVaultClient) -> None:
+    failing_authentication_client.logout()
 
 
 def test_login(client: BitwardenVaultClient) -> None:
@@ -123,7 +131,7 @@ def test_create_collection_fails(failing_client: BitwardenVaultClient, caplog: L
 
 
 def test_create_collection_unlocked(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
-    client.unlock()
+    client._unlock()
     client.login()
     teams = ["Team Name None"]
     existing_collections = {"Team Name One": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}

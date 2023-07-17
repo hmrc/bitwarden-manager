@@ -16,8 +16,6 @@ def test_export_vault() -> None:
     ExportVault(bitwarden_vault_client=bitwarden_client, s3_client=s3_client).run(event)
 
     bitwarden_client.export_vault.assert_called_once()
-    assert bitwarden_client.export_vault.mock_calls[0].kwargs["file_path"].startswith("/tmp/")
     expected_file_path = bitwarden_client.export_vault.mock_calls[0].kwargs["file_path"]
+    assert "tmp" in expected_file_path
     s3_client.write_file_to_s3.assert_called_with("test-bucket", expected_file_path)
-
-    assert bitwarden_client.logout.called

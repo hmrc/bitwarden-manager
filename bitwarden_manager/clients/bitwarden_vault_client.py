@@ -50,7 +50,7 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
         return output
 
-    def unlock(self) -> str:
+    def _unlock(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_PASSWORD"] = self.__password
         try:
@@ -72,27 +72,31 @@ class BitwardenVaultClient:
         except subprocess.CalledProcessError as e:
             raise BitwardenVaultClientError(e)
 
-    def logout(self) -> str:
-        try:
-            output = subprocess.check_output(
-                [self.cli_executable_path, "logout"],
-                shell=False,
-                text=True,
-                encoding="utf-8",
-                timeout=BITWARDEN_CLIENT_TIMEOUT,
-            )  # nosec B603
-            self.__session_token = None
-            return output
-        except subprocess.CalledProcessError as e:
-            raise BitwardenVaultClientError(e)
+    def logout(self) -> None:
+        if self.__session_token:
+            try:
+                output = subprocess.check_output(
+                    [self.cli_executable_path, "logout"],
+                    shell=False,
+                    text=True,
+                    encoding="utf-8",
+                    timeout=BITWARDEN_CLIENT_TIMEOUT,
+                )  # nosec B603
+                self.__session_token = None
+                self.__logger.debug(output)
+            except subprocess.CalledProcessError as e:
+                raise BitwardenVaultClientError(e)
+        else:
+            self.__logger.warning("Not logged in so ignoring call to logout")
 
     def session_token(self) -> str:
-        if self.__session_token:
-            return self.__session_token
-        else:
-            self.login()
-            self.__session_token = self.unlock()
-            return self.__session_token
+        if not self.__session_token:
+            self.authenticate()
+        return self.__session_token  # type: ignore
+
+    def authenticate(self) -> None:
+        self.login()
+        self.__session_token = self._unlock()
 
     def export_vault(self, file_path: str) -> str:
         tmp_env = os.environ.copy()
