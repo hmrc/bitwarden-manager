@@ -14,7 +14,8 @@ from bitwarden_manager.clients.s3_client import S3Client
 def test_write_file_to_s3() -> None:
     client = S3Client()
 
-    filepath = "bw_backup_2023.json"
+    filename = "bw_backup_2023.json"
+    filepath = "/tmp/dir"
     file_contents = json.dumps('{"some_key": "some_data"}')
     file = gzip.compress(bytes(file_contents, "utf-8"))
     # see https://github.com/python/mypy/issues/2427
@@ -22,7 +23,9 @@ def test_write_file_to_s3() -> None:
     bucket_name = "test_bucket"
     s3 = boto3.client("s3")
     create_bucket_in_local_region(s3, bucket_name)
-    client.write_file_to_s3(bucket_name, filepath)
+    client.write_file_to_s3(bucket_name, filepath, filename)
+    assert len(s3.list_objects_v2(Bucket=bucket_name)["Contents"]) == 1
+    assert s3.list_objects_v2(Bucket=bucket_name)["Contents"][0]["Key"] == filename
 
 
 def create_bucket_in_local_region(s3: s3.Client, bucket_name: str) -> None:
@@ -37,14 +40,15 @@ def create_bucket_in_local_region(s3: s3.Client, bucket_name: str) -> None:
 def test_failed_write_file_to_s3() -> None:
     client = S3Client()
 
-    filepath = "bw_backup_2023.json"
+    filename = "bw_backup_2023.json"
+    filepath = "/tmp/dir"
     file_contents = json.dumps('{"some_key": "some_data"}')
     file = gzip.compress(bytes(file_contents, "utf-8"))
     # see https://github.com/python/mypy/issues/2427
     client.file_from_path = MagicMock(return_value=file)  # type: ignore
     bucket_name = "test_bucket"
     with pytest.raises(Exception, match="Failed to write to S3"):
-        client.write_file_to_s3(bucket_name, filepath)
+        client.write_file_to_s3(bucket_name, filepath, filename)
 
 
 def test_file_from_path() -> None:

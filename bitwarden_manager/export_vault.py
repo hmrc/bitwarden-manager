@@ -4,6 +4,7 @@ import tempfile
 from typing import Dict, Any
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.clients.s3_client import S3Client
+from datetime import datetime
 
 
 class ExportVault:
@@ -12,7 +13,8 @@ class ExportVault:
         self.s3_client = s3_client
 
     def run(self, event: Dict[str, Any]) -> None:
+        backup_name = f"bw_backup_{datetime.now().isoformat()}.json"
         bucket_name = os.environ["BITWARDEN_BACKUP_BUCKET"]
         with tempfile.NamedTemporaryFile() as backup_file:
             self.bitwarden_vault_client.export_vault(file_path=backup_file.name)
-            self.s3_client.write_file_to_s3(bucket_name, backup_file.name)
+            self.s3_client.write_file_to_s3(bucket_name=bucket_name, filepath=backup_file.name, filename=backup_name)
