@@ -21,6 +21,7 @@ class BitwardenManager:
 
     def run(self, event: Dict[str, Any]) -> None:
         event_name = event["event_name"]
+        bitwarden_vault_client = self._get_bitwarden_vault_client()
         match event_name:
             case "new_user":
                 self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
@@ -28,15 +29,14 @@ class BitwardenManager:
                 OnboardUser(
                     bitwarden_api=self._get_bitwarden_public_api(),
                     user_management_api=self._get_user_management_api(),
-                    bitwarden_vault_client=self._get_bitwarden_vault_client(),
+                    bitwarden_vault_client=bitwarden_vault_client,
                 ).run(event=event)
             case "export_vault":
                 self.__logger.debug("handling event with ExportVault")
-                ExportVault(bitwarden_vault_client=self._get_bitwarden_vault_client(), s3_client=S3Client()).run(
-                    event=event
-                )
+                ExportVault(bitwarden_vault_client=bitwarden_vault_client, s3_client=S3Client()).run(event=event)
             case _:
                 self.__logger.info(f"ignoring unknown event '{event_name}'")
+        bitwarden_vault_client.logout()
 
     def _get_bitwarden_public_api(self) -> BitwardenPublicApi:
         return BitwardenPublicApi(

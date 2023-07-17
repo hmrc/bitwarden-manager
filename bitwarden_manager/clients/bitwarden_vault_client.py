@@ -1,9 +1,9 @@
-import datetime
 import json
 import subprocess  # nosec B404
 import os
 import base64
 from logging import Logger
+from typing import Optional
 
 BITWARDEN_CLIENT_TIMEOUT = 15
 
@@ -13,7 +13,7 @@ class BitwardenVaultClientError(Exception):
 
 
 class BitwardenVaultClient:
-    _session_token: str
+    __session_token: Optional[str]
 
     def __init__(
         self,
@@ -30,7 +30,7 @@ class BitwardenVaultClient:
         self.__client_id = client_id
         self.__password = password
         self.__export_enc_password = export_enc_password
-        self._session_token = ""
+        self.__session_token = None
         self.organisation_id = organisation_id
         self.cli_executable_path = cli_executable_path
 
@@ -50,7 +50,7 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
         return output
 
-    def unlock(self) -> None:
+    def unlock(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_PASSWORD"] = self.__password
         try:
@@ -68,7 +68,7 @@ class BitwardenVaultClient:
                 timeout=BITWARDEN_CLIENT_TIMEOUT,
             )  # nosec B603
             session_token = output.split()[-1]
-            self._session_token = session_token
+            return session_token
         except subprocess.CalledProcessError as e:
             raise BitwardenVaultClientError(e)
 
@@ -81,19 +81,22 @@ class BitwardenVaultClient:
                 encoding="utf-8",
                 timeout=BITWARDEN_CLIENT_TIMEOUT,
             )  # nosec B603
-            self._session_token = ""
+            self.__session_token = None
             return output
         except subprocess.CalledProcessError as e:
             raise BitwardenVaultClientError(e)
 
-    def export_vault(self) -> str:
-        if not self._session_token:
+    def session_token(self) -> str:
+        if self.__session_token:
+            return self.__session_token
+        else:
             self.login()
-            self.unlock()
-        now = datetime.datetime.now()
-        output_path = f"/tmp/bw_backup_{now}.json"
+            self.__session_token = self.unlock()
+            return self.__session_token
+
+    def export_vault(self, file_path: str) -> str:
         tmp_env = os.environ.copy()
-        tmp_env["BW_SESSION"] = self._session_token
+        tmp_env["BW_SESSION"] = self.session_token()
         try:
             subprocess.check_call(
                 [
@@ -104,7 +107,7 @@ class BitwardenVaultClient:
                     "--password",
                     self.__export_enc_password,
                     "--output",
-                    output_path,
+                    file_path,
                     "--organizationid",
                     self.organisation_id,
                 ],
@@ -112,14 +115,14 @@ class BitwardenVaultClient:
                 stdout=subprocess.PIPE,
                 shell=False,
             )  # nosec B603
-            self.__logger.info(f"Exported vault backup to {output_path}")
+            self.__logger.info(f"Exported vault backup to {file_path}")
         except subprocess.CalledProcessError as e:
             # do not raise the called process error unless you want the export password in the stacktrace
             # https://github.com/bitwarden/clients/issues/5835
             e.cmd = "Redacting stack trace information for export to avoid logging password"
             raise BitwardenVaultClientError(e)
 
-        return output_path
+        return file_path
 
     def create_collection(self, teams: list[str], existing_collections: dict[str, str]) -> None:
         missing_collection = [team for team in teams if not existing_collections.get(team)]
@@ -127,9 +130,6 @@ class BitwardenVaultClient:
             self.__logger.info("No missing collections found")
             return
 
-        if not self._session_token:
-            self.login()
-            self.unlock()
         for collection in missing_collection:
             collection_object = {
                 "organizationId": self.organisation_id,
@@ -139,7 +139,7 @@ class BitwardenVaultClient:
             json_collection = json.dumps(collection_object).encode("utf-8")
             json_encoded = base64.b64encode(json_collection)
             tmp_env = os.environ.copy()
-            tmp_env["BW_SESSION"] = self._session_token
+            tmp_env["BW_SESSION"] = self.session_token()
             try:
                 subprocess.check_call(
                     [
@@ -157,4 +157,3 @@ class BitwardenVaultClient:
                 self.__logger.info(f"Created {collection} successfully")
             except subprocess.CalledProcessError as e:
                 raise BitwardenVaultClientError(e)
-        self.logout()

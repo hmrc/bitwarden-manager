@@ -3,9 +3,9 @@ import json
 
 import boto3
 import pytest
-
-from moto import mock_s3
+from boto3_type_annotations import s3
 from mock import MagicMock
+from moto import mock_s3
 
 from bitwarden_manager.clients.s3_client import S3Client
 
@@ -20,10 +20,16 @@ def test_write_file_to_s3() -> None:
     # see https://github.com/python/mypy/issues/2427
     client.file_from_path = MagicMock(return_value=file)  # type: ignore
     bucket_name = "test_bucket"
-    s3 = boto3.resource("s3")
-    bucket = s3.Bucket(bucket_name)
-    bucket.create()
+    s3 = boto3.client("s3")
+    create_bucket_in_local_region(s3, bucket_name)
     client.write_file_to_s3(bucket_name, filepath)
+
+
+def create_bucket_in_local_region(s3: s3.Client, bucket_name: str) -> None:
+    if s3.meta.region_name == "us-east-1":
+        s3.create_bucket(Bucket=bucket_name)
+    else:
+        s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={"LocationConstraint": s3.meta.region_name})
 
 
 # see https://github.com/getmoto/moto/issues/4944

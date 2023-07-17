@@ -62,11 +62,14 @@ if __name__ == "__main__":
             stderr = ""
             return_code = 0
         case "unlock":
-            stdout = "You have unlocked"
+            stdout = "unlocked thisisatoken"
             stderr = ""
             return_code = 0
         case "export":
             fail_if_no_session_set()
+            with open(sys.argv[7], "r+") as file:
+                file.writelines(json.dumps(dict(test="foo")))
+
             stdout = ""
             stderr = ""
             return_code = 0

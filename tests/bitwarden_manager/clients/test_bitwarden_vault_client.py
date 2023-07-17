@@ -1,7 +1,9 @@
 import pathlib
 import logging
+import tempfile
+from unittest.mock import patch
+
 import pytest
-import re
 
 from _pytest.logging import LogCaptureFixture
 from bitwarden_manager.clients.bitwarden_vault_client import (
@@ -59,16 +61,30 @@ def test_failed_login(failing_authentication_client: BitwardenVaultClient) -> No
 
 
 def test_export(client: BitwardenVaultClient) -> None:
-    result = client.export_vault()
-    pattern = re.compile("/tmp/bw_backup_.*.json")
-    assert pattern.match(result)
+    with tempfile.NamedTemporaryFile() as tmpfile:
+        client.export_vault(file_path=tmpfile.name)
+        file_content = tmpfile.readlines()
+
+    assert b'{"test": "foo"}' in file_content
 
 
 def test_export_fails(failing_client: BitwardenVaultClient) -> None:
     with pytest.raises(
         BitwardenVaultClientError, match="Redacting stack trace information for export to avoid logging password"
     ):
-        failing_client.export_vault()
+        failing_client.export_vault(file_path="foo")
+
+
+def test_unlock(client: BitwardenVaultClient) -> None:
+    assert client.unlock() == "thisisatoken"
+
+
+def test_session_token_remembers_token(client: BitwardenVaultClient) -> None:
+    with patch.object(BitwardenVaultClient, "unlock") as unlock_mock:
+        client.session_token()
+        client.session_token()
+
+    unlock_mock.assert_called_once()
 
 
 def test_failed_unlock(failing_authentication_client: BitwardenVaultClient) -> None:
