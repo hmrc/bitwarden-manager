@@ -15,7 +15,7 @@ from bitwarden_manager.clients.bitwarden_vault_client import (
 @pytest.fixture
 def client() -> BitwardenVaultClient:
     return BitwardenVaultClient(
-        cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub.py")),
+        cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_stub.py")),
         client_id="test_id",
         client_secret="test_secret",
         export_enc_password="hmrc2023",
@@ -29,7 +29,7 @@ def client() -> BitwardenVaultClient:
 def failing_client() -> BitwardenVaultClient:
     return BitwardenVaultClient(
         cli_executable_path=str(
-            pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub_failing_operations.py")
+            pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_failing_operations_stub.py")
         ),
         client_id="test_id",
         client_secret="test_secret",
@@ -44,7 +44,7 @@ def failing_client() -> BitwardenVaultClient:
 def failing_authentication_client() -> BitwardenVaultClient:
     return BitwardenVaultClient(
         cli_executable_path=str(
-            pathlib.Path(__file__).parent.joinpath("./bitwarden_client_stub_failing_authentication.py")
+            pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_failing_authentication_stub.py")
         ),
         client_id="test_id",
         client_secret="test_secret",
