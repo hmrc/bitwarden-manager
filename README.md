@@ -5,7 +5,7 @@ Its intended use is to be run in AWS Lambda and to consume user related events
 
 ## Example events
 
-Below are the events that this lambda accepts  
+Below are the events that this lambda accepts
 
 ### New user
 
@@ -20,16 +20,16 @@ If the user already exists within BitWarden then the lambda will log this.
 }
 ```
 
-This passes the `username` to the user-management portal. This retrieves the users assigned teams.
-Subsequently, a group & collection is associated to the new user within BitWarden.
+This passes the `username` to the user-management portal (an internal API) which retrieves each user's assigned teams.
 
+Subsequently, a group & collection is associated to the new user within BitWarden.
 The user is granted `edit` privileges on the group/collection they're assigned to.
 More information regarding access control can be found here [Bitwarden Access Control](https://bitwarden.com/help/user-types-access-control/#permissions)
 
 ### Export Vault
 
-Sending this event will take an backup of all the secrets in the vault, encrypted with the supplied password
-and store it in S3 - `arn:aws:s3:::bitwarden-exports-development-7eh4g0`.
+Sending this event will take a backup of all the **org** secrets in the vault, encrypt with the supplied password
+and upload it to the bucket name defined in the env var - `BITWARDEN_BACKUP_BUCKET`.
 
 ```json
 {
