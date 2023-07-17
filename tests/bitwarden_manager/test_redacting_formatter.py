@@ -25,7 +25,7 @@ def test_get_bitwarden_logger(caplog: LogCaptureFixture) -> None:
     assert "some other log line" in caplog.text
 
 
-def test_get_bitwarden_logger_extra_pattersn(caplog: LogCaptureFixture) -> None:
+def test_get_bitwarden_logger_extra_patterns(caplog: LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO):
         logger = get_bitwarden_logger(extra_redaction_patterns=["remove me"])
 

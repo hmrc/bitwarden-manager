@@ -5,7 +5,7 @@ Its intended use is to be run in AWS Lambda and to consume user related events
 
 ## Example events
 
-Below are the events that this lambda accepts  
+Below are the events that this lambda accepts
 
 ### New user
 
@@ -20,7 +20,7 @@ If the user already exists within BitWarden then the lambda will log this.
 }
 ```
 
-This passes the `username` to the user-management portal (an internal API) to retrieves the users assigned teams.
+This passes the `username` to the user-management portal (an internal API) which retrieves each user's assigned teams.
 
 Subsequently, a group & collection is associated to the new user within BitWarden.
 The user is granted `edit` privileges on the group/collection they're assigned to.
