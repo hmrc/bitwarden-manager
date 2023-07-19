@@ -147,3 +147,27 @@ def test_no_missing_collections(client: BitwardenVaultClient, caplog: LogCapture
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
     assert "No missing collections found" in caplog.text
+
+
+def test_list_org_users(client: BitwardenVaultClient) -> None:
+    unconfirmed_users = client.list_unconfirmed_users()
+    assert isinstance(unconfirmed_users, list)
+    assert isinstance(unconfirmed_users[0], dict)
+    assert isinstance(unconfirmed_users[0]["id"], str)
+    assert isinstance(unconfirmed_users[0]["email"], str)
+
+
+def test_list_org_users_failed(failing_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError, match="'list', 'org-members'"):
+        failing_client.list_unconfirmed_users()
+
+
+def test_confirm_user(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    with caplog.at_level(logging.DEBUG):
+        client.confirm_user(user_id="example_id")
+    assert "User example_id confirmed successfully" in caplog.text
+
+
+def test_confirm_user_failed_to_parse(failing_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError, match="'confirm', 'org-member'"):
+        failing_client.confirm_user(user_id="example_id")
