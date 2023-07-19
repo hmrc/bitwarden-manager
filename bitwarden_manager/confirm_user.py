@@ -7,20 +7,20 @@ confirm_user_event_schema = {
     "type": "object",
     "properties": {
         "event_name": {"type": "string", "description": "name of the current event", "pattern": "confirm_user"},
-        "allowed_domains": {"type": "array", "description": "approved domains that can be automatically confirmed"},
     },
-    "required": ["event_name", "allowed_domains"],
+    "required": ["event_name"],
 }
 
 
 class ConfirmUser:
-    def __init__(self, bitwarden_vault_client: BitwardenVaultClient):
+    def __init__(self, bitwarden_vault_client: BitwardenVaultClient, allowed_domains: list[str]):
         self.bitwarden_vault_client = bitwarden_vault_client
+        self.allowed_domains = allowed_domains
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=confirm_user_event_schema)
         unconfirmed_users = self.bitwarden_vault_client.list_unconfirmed_users()
-        self.confirm_valid_users(unconfirmed_users, event["allowed_domains"])
+        self.confirm_valid_users(unconfirmed_users, self.allowed_domains)
 
     def confirm_valid_users(self, unconfirmed_users: list[Dict[str, str]], allowed_domains: list[str]) -> None:
         errors = []
@@ -30,7 +30,7 @@ class ConfirmUser:
 
             if user_email.split("@")[-1] in allowed_domains:
                 try:
-                    self.bitwarden_vault_client.confirm_user(user_id)
+                    self.bitwarden_vault_client.confirm_user(user_id=user_id)
                 except BitwardenVaultClientError as e:
                     errors.append(e)
         if errors:

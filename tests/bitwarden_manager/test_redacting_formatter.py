@@ -46,6 +46,18 @@ def test_get_bitwarden_logger_empty_string_should_error(caplog: LogCaptureFixtur
         get_bitwarden_logger(extra_redaction_patterns=[""])
 
 
+def test_get_redacting_formater_errors_on_non_string_input(caplog: LogCaptureFixture) -> None:
+    with pytest.raises(ValueError, match="Patterns must be of type string"):
+        get_bitwarden_logger(extra_redaction_patterns=[12])  # type: ignore
+
+    get_bitwarden_logger(extra_redaction_patterns=[r"organization.[\w-]{36}"])
+
+    class TestStringClass(str):
+        pass
+
+    get_bitwarden_logger(extra_redaction_patterns=[TestStringClass("foo")])
+
+
 def test_get_bitwarden_logger_override_with_env_var(monkeypatch: MonkeyPatch) -> None:
     assert get_bitwarden_logger(extra_redaction_patterns=[]).getEffectiveLevel() == logging.INFO
 
