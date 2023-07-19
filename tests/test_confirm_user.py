@@ -8,25 +8,25 @@ from jsonschema.exceptions import ValidationError
 
 
 def test_list_users() -> None:
-    event = {"event_name": "confirm_user", "allowed_domains": ["example.co.uk"]}
+    event = {"event_name": "confirm_user"}
     mock_client = MagicMock(spec=BitwardenVaultClient)
-    ConfirmUser(bitwarden_vault_client=mock_client).run(event)
+    ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
 
     assert mock_client.list_unconfirmed_users.called
 
 
 def test_confirm_user() -> None:
-    event = {"event_name": "confirm_user", "allowed_domains": ["example.co.uk"]}
+    event = {"event_name": "confirm_user"}
     mock_client = MagicMock(spec=BitwardenVaultClient)
 
     mock_client.list_unconfirmed_users = MagicMock(return_value=[{"email": "test@example.co.uk", "id": "example_id"}])
-    ConfirmUser(bitwarden_vault_client=mock_client).run(event)
+    ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
 
-    assert mock_client.confirm_user.called
+    mock_client.confirm_user.assert_called_with(user_id="example_id")
 
 
 def test_confirm_user_invalid_domain() -> None:
-    event = {"event_name": "confirm_user", "allowed_domains": ["example.co.uk"]}
+    event = {"event_name": "confirm_user"}
     mock_client = MagicMock(spec=BitwardenVaultClient)
 
     mock_client.list_unconfirmed_users = MagicMock(
@@ -35,13 +35,13 @@ def test_confirm_user_invalid_domain() -> None:
             {"email": "test@example.co.uk@invaliddomain.co.uk", "id": "example_id"},
         ]
     )
-    ConfirmUser(bitwarden_vault_client=mock_client).run(event)
+    ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
 
     assert mock_client.confirm_user.not_called
 
 
 def test_confirm_user_handles_errors(caplog: LogCaptureFixture) -> None:
-    event = {"event_name": "confirm_user", "allowed_domains": ["example.co.uk"]}
+    event = {"event_name": "confirm_user"}
     mock_client = MagicMock(spec=BitwardenVaultClient)
 
     mock_client.list_unconfirmed_users = MagicMock(
@@ -55,16 +55,16 @@ def test_confirm_user_handles_errors(caplog: LogCaptureFixture) -> None:
     mock_client.confirm_user = MagicMock(side_effect=BitwardenVaultClientError())
 
     with pytest.raises(BitwardenVaultClientError, match="Confirmation process failed"):
-        ConfirmUser(bitwarden_vault_client=mock_client).run(event)
+        ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
 
     assert mock_client.confirm_user.call_count == 2
 
 
 def test_confirm_user_validates_events() -> None:
-    event = {"event_name": "confirm_user", "allowed_domains": "example.com"}
+    event = {"event_name": "not the right event"}
     mock_client = Mock(spec=BitwardenVaultClient)
 
-    with pytest.raises(ValidationError, match="'example.com' is not of type 'array'"):
-        ConfirmUser(bitwarden_vault_client=mock_client).run(event)
+    with pytest.raises(ValidationError, match="'not the right event' does not match 'confirm_user'"):
+        ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.com"]).run(event)
 
     assert not mock_client.confirm_user.called

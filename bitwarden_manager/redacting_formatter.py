@@ -15,7 +15,9 @@ class RedactingFormatter(logging.Filter):
     @staticmethod
     def validate_patterns(patterns_list: List[str]) -> None:
         for pattern in patterns_list:
-            if pattern == "":
+            if not isinstance(pattern, str):
+                raise ValueError("Patterns must be of type string")
+            elif pattern == "":
                 raise ValueError("Empty string as a pattern is not allowed as this will match and redact all log lines")
 
     def filter(self, record: logging.LogRecord) -> bool:

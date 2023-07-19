@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Any
 
 import boto3
@@ -7,9 +8,9 @@ from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.clients.s3_client import S3Client
 from bitwarden_manager.clients.user_management_api import UserManagementApi
+from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
-from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 
@@ -37,10 +38,19 @@ class BitwardenManager:
                 ExportVault(bitwarden_vault_client=bitwarden_vault_client, s3_client=S3Client()).run(event=event)
             case "confirm_user":
                 self.__logger.debug("handling event with ConfirmUser")
-                ConfirmUser(bitwarden_vault_client=bitwarden_vault_client).run(event=event)
+                ConfirmUser(
+                    bitwarden_vault_client=bitwarden_vault_client, allowed_domains=self._get_allowed_email_domains()
+                ).run(event=event)
             case _:
                 self.__logger.info(f"ignoring unknown event '{event_name}'")
         bitwarden_vault_client.logout()
+
+    def _get_allowed_email_domains(self) -> list[str]:
+        domain_list = os.environ.get("ALLOWED_DOMAINS", "").split(",")
+        if domain_list == [""]:
+            return []
+        else:
+            return list(map(lambda txt: txt.strip(), domain_list))
 
     def _get_bitwarden_public_api(self) -> BitwardenPublicApi:
         return BitwardenPublicApi(
