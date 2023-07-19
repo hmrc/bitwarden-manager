@@ -30,7 +30,10 @@ def test_confirm_user_invalid_domain() -> None:
     mock_client = MagicMock(spec=BitwardenVaultClient)
 
     mock_client.list_unconfirmed_users = MagicMock(
-        return_value=[{"email": "test@invaliddomain.co.uk", "id": "example_id"}]
+        return_value=[
+            {"email": "test@invaliddomain.co.uk", "id": "example_id"},
+            {"email": "test@example.co.uk@invaliddomain.co.uk", "id": "example_id"},
+        ]
     )
     ConfirmUser(bitwarden_vault_client=mock_client).run(event)
 

@@ -28,7 +28,7 @@ class ConfirmUser:
             user_email = user["email"]
             user_id = user["id"]
 
-            if user_email.split("@")[1] in allowed_domains:
+            if user_email.split("@")[-1] in allowed_domains:
                 try:
                     self.bitwarden_vault_client.confirm_user(user_id)
                 except BitwardenVaultClientError as e:
