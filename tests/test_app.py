@@ -10,6 +10,7 @@ from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManage
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
+from bitwarden_manager.confirm_user import ConfirmUser
 
 
 @mock.patch("boto3.client")
@@ -67,10 +68,14 @@ def test_handler_routes_export_vault_events(_: Mock) -> None:
     bitwarden_logout.assert_called_once()
 
 
-# @mock.patch("boto3.client")
-# def test_handler_routes_confirm_user(boto_mock: Mock) -> None:
-#     event = dict(event_name="confirm_user")
-#     with patch.object(ConfirmUser, "run") as confirm_user_mock:
-#         handler(event=event, context={})
-#
-#     confirm_user_mock.assert_called_once_with(event=event)
+@mock.patch("boto3.client")
+def test_handler_routes_confirm_user(_: Mock) -> None:
+    event = dict(event_name="confirm_user", allowed_domains=["example.co.uk"])
+    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+        secrets_manager_mock.return_value = "23497858247589473589734805734853"
+        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+            with patch.object(ConfirmUser, "run") as confirm_user_mock:
+                handler(event=event, context={})
+
+    confirm_user_mock.assert_called_once_with(event=event)
+    bitwarden_logout.assert_called_once()

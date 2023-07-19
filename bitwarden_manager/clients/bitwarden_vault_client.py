@@ -161,3 +161,57 @@ class BitwardenVaultClient:
                 self.__logger.info(f"Created {collection} successfully")
             except subprocess.CalledProcessError as e:
                 raise BitwardenVaultClientError(e)
+
+    def list_unconfirmed_users(self) -> list[dict[str, str]]:
+        unconfirmed_users = []
+        tmp_env = os.environ.copy()
+        tmp_env["BW_SESSION"] = self.session_token()
+        try:
+            out = subprocess.check_output(
+                [
+                    self.cli_executable_path,
+                    "list",
+                    "org-members",
+                    "--organizationid",
+                    self.organisation_id,
+                ],
+                shell=False,
+                env=tmp_env,
+                text=True,
+                encoding="utf-8",
+                timeout=BITWARDEN_CLIENT_TIMEOUT,
+            )  # nosec B603
+        except subprocess.CalledProcessError as e:
+            raise BitwardenVaultClientError(e)
+
+        json_response = json.loads(out)
+        for user in json_response:
+            if user.get("status") == 1:
+                unconfirmed_users.append(
+                    {
+                        "email": user.get("email"),
+                        "id": user.get("id"),
+                    }
+                )
+        return unconfirmed_users
+
+    def confirm_user(self, user_id: str) -> None:
+        tmp_env = os.environ.copy()
+        tmp_env["BW_SESSION"] = self.session_token()
+        try:
+            subprocess.check_call(
+                [
+                    self.cli_executable_path,
+                    "confirm",
+                    "org-member",
+                    user_id,
+                    "--organizationid",
+                    self.organisation_id,
+                ],
+                shell=False,
+                env=tmp_env,
+                timeout=BITWARDEN_CLIENT_TIMEOUT,
+            )  # nosec B603
+            self.__logger.debug(f"User {user_id} confirmed successfully")
+        except subprocess.CalledProcessError as e:
+            raise BitwardenVaultClientError(e)
