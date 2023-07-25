@@ -37,6 +37,28 @@ and upload it to the bucket name defined in the env var - `BITWARDEN_BACKUP_BUCK
 }
 ```
 
+### Confirm User
+
+This event is triggered via an EventBridge schedule. This iterates through all users in the **org** & confirms
+any that match the criteria.
+
+#### Confirmation Criteria
+
+- Email address domain matches `ALLOWED_DOMAINS` environment variable
+- User has been invited to & subsequently accepted the invite to said organisation
+
+```json
+{
+  "event_name": "confirm_user"
+}
+```
+
+## Environment Variables
+
+- `ALLOWED_DOMAINS` - accepts comma delimited `string`
+- `BITWARDEN_CLI_TIMEOUT` - accepts numeric `string`
+- `BITWARDEN_BACKUP_BUCKET` - accepts `string`
+
 ## averageDailyLogins & averageDailyUniqueUserLogins metrics
 
 See [events-log-parser script](scripts/events-log-parser/README.md), to get averageDailyLogins and
