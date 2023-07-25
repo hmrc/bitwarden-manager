@@ -88,7 +88,7 @@ def test_confirm_user_passed_allowed_domains(mock_secretsmanager: Mock) -> None:
 
 
 @mock.patch("boto3.client")
-def test_get_allowed_domains_retuns_empty_list_of_domains(mock_secretsmanager: Mock) -> None:
+def test_get_allowed_domains_returns_empty_list_of_domains(mock_secretsmanager: Mock) -> None:
     get_secret_value = Mock(return_value={"SecretString": "secret"})
     mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
 
@@ -111,3 +111,21 @@ def test_get_allowed_domains_handles_whitespace(mock_secretsmanager: Mock) -> No
     mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
 
     assert BitwardenManager()._get_allowed_email_domains() == ["example.com", "foo.com"]
+
+
+@mock.patch.dict(os.environ, {"BITWARDEN_CLI_TIMEOUT": "25"})
+@mock.patch("boto3.client")
+def test_bw_cli_timeout(mock_secretsmanager: Mock) -> None:
+    get_secret_value = Mock(return_value={"SecretString": "secret"})
+    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+
+    assert BitwardenManager()._get_bitwarden_cli_timeout() == 25.0
+
+
+@mock.patch.dict(os.environ, {"BITWARDEN_CLI_TIMEOUT": "text"})
+@mock.patch("boto3.client")
+def test_invalid_bw_cli_timeout(mock_secretsmanager: Mock) -> None:
+    get_secret_value = Mock(return_value={"SecretString": "secret"})
+    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+
+    assert BitwardenManager()._get_bitwarden_cli_timeout() == 20.0
