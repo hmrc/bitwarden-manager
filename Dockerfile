@@ -4,7 +4,7 @@ FROM python:${PYTHON_VERSION}-slim AS base
 
 WORKDIR /build
 
-RUN sed -i 's/http:/https:/g' /etc/apt/sources.list
+RUN sed -i 's/http:/https:/g' /etc/apt/sources.list.d/debian.sources
 RUN apt update && apt -y install curl unzip
 RUN curl -LO "https://github.com/bitwarden/clients/releases/download/cli-v2023.3.0/bw-linux-2023.3.0.zip" && unzip *.zip && rm bw-linux-2023.3.0.zip
 RUN chmod +x bw
