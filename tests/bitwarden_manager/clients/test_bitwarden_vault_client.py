@@ -1,6 +1,8 @@
+import os
 import pathlib
 import logging
 import tempfile
+from unittest import mock
 from unittest.mock import patch
 
 import pytest
@@ -22,6 +24,22 @@ def client() -> BitwardenVaultClient:
         logger=logging.getLogger(),
         organisation_id="abc-123",
         password="very secure pa$$w0rd!",
+        cli_timeout=20,
+    )
+
+
+@pytest.fixture
+@mock.patch.dict(os.environ, {"BITWARDEN_CLI_TIMEOUT": "1"})
+def timeout_client() -> BitwardenVaultClient:
+    return BitwardenVaultClient(
+        cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_stub.py")),
+        client_id="test_id",
+        client_secret="test_secret",
+        export_enc_password="hmrc2023",
+        logger=logging.getLogger(),
+        organisation_id="abc-123",
+        password="very secure pa$$w0rd!",
+        cli_timeout=float(os.environ.get("BITWARDEN_CLI_TIMEOUT", "20")),
     )
 
 
@@ -37,6 +55,7 @@ def failing_client() -> BitwardenVaultClient:
         logger=logging.getLogger(),
         organisation_id="abc-123",
         password="very secure pa$$w0rd!",
+        cli_timeout=20,
     )
 
 
@@ -52,12 +71,28 @@ def failing_authentication_client() -> BitwardenVaultClient:
         logger=logging.getLogger(),
         organisation_id="abc-123",
         password="very secure pa$$w0rd!",
+        cli_timeout=20,
     )
 
 
 def test_failed_login(failing_authentication_client: BitwardenVaultClient) -> None:
     with pytest.raises(BitwardenVaultClientError, match="login"):
         failing_authentication_client.login()
+
+
+def test_only_logout_if_logged_in(failing_authentication_client: BitwardenVaultClient) -> None:
+    failing_authentication_client.logout()
+
+
+@mock.patch.dict(os.environ, {"BITWARDEN_CLI_TIMEOUT": "1"})
+def test_login_timed_out(timeout_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError, match="timed out after 1.0 seconds"):
+        timeout_client.login()
+
+
+def test_login(client: BitwardenVaultClient) -> None:
+    result = client.login()
+    assert result == "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
 
 
 def test_export(client: BitwardenVaultClient) -> None:
@@ -104,15 +139,6 @@ def test_failed_logout(failing_authentication_client: BitwardenVaultClient) -> N
     failing_authentication_client._BitwardenVaultClient__session_token = "foo"  # type: ignore
     with pytest.raises(BitwardenVaultClientError, match="logout"):
         failing_authentication_client.logout()
-
-
-def test_only_logout_if_logged_in(failing_authentication_client: BitwardenVaultClient) -> None:
-    failing_authentication_client.logout()
-
-
-def test_login(client: BitwardenVaultClient) -> None:
-    result = client.login()
-    assert result == "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
 
 
 def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:

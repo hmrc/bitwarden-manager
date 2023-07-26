@@ -45,6 +45,12 @@ class BitwardenManager:
                 self.__logger.info(f"ignoring unknown event '{event_name}'")
         bitwarden_vault_client.logout()
 
+    def _get_bitwarden_cli_timeout(self) -> float:
+        timeout = os.environ.get("BITWARDEN_CLI_TIMEOUT", "20")
+        if timeout.isnumeric():
+            return float(timeout)
+        return 20.0
+
     def _get_allowed_email_domains(self) -> list[str]:
         domain_list = os.environ.get("ALLOWED_DOMAINS", "").split(",")
         if domain_list == [""]:
@@ -68,6 +74,7 @@ class BitwardenManager:
             export_enc_password=self._get_bitwarden_export_encryption_password(),
             cli_executable_path="./bw",
             organisation_id=self._get_organisation_id(),
+            cli_timeout=self._get_bitwarden_cli_timeout(),
         )
 
     def _get_user_management_api(self) -> UserManagementApi:

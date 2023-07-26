@@ -2,6 +2,12 @@
 import json
 import os
 import sys
+from time import sleep
+
+TIMEOUT = int(os.environ.get("BITWARDEN_CLI_TIMEOUT", 0))
+
+if TIMEOUT:
+    sleep(TIMEOUT + 1)
 
 list_user_output = [
     {
