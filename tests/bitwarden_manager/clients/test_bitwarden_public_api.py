@@ -338,6 +338,7 @@ def test_get_user_groups_failure() -> None:
 def test_associate_user_to_group() -> None:
     test_user_id = "XXXXXXXX"
     group_ids = ["ZZZZZZZZ"]
+    existing_group_ids = ["YYYYYYYY"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -345,7 +346,19 @@ def test_associate_user_to_group() -> None:
             content_type="application/json",
             method="GET",
             url=f"https://api.bitwarden.com/public/members/{test_user_id}/group-ids",
-            json=["ZZZZZZZZ", "YYYYYYYY"],
+            json=existing_group_ids,
+        )
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/groups/{group_ids[0]}",
+            json={
+                "externalId": "Some UMP Id",
+                "object": "group",
+                "id": group_ids[0],
+                "groups": [],
+            },
         )
         rsps.add(
             responses.PUT,
@@ -354,7 +367,7 @@ def test_associate_user_to_group() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "groupIds": group_ids,
+                        "groupIds": existing_group_ids + group_ids,
                     }
                 )
             ],
@@ -372,8 +385,44 @@ def test_associate_user_to_group() -> None:
 
 
 @responses.activate
+def test_associate_user_to_manually_created_group() -> None:
+    test_user_id = "XXXXXXXX"
+    group_ids = ["ZZZZZZZZ"]
+    existing_group_ids = ["YYYYYYYY"]
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/members/{test_user_id}/group-ids",
+            json=existing_group_ids,
+        )
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/groups/{group_ids[0]}",
+            json={
+                "externalId": "",
+                "object": "group",
+                "id": group_ids[0],
+                "groups": [],
+            },
+        )
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
+
+
+@responses.activate
 def test_failed_to_associate_user_to_groups() -> None:
     test_user_id = "XXXXXXXX"
+    existing_group_ids = ["YYYYYYYY"]
     group_ids = ["ZZZZZZZZ"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
@@ -382,7 +431,19 @@ def test_failed_to_associate_user_to_groups() -> None:
             content_type="application/json",
             method="GET",
             url=f"https://api.bitwarden.com/public/members/{test_user_id}/group-ids",
-            json=["ZZZZZZZZ"],
+            json=existing_group_ids,
+        )
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/groups/{group_ids[0]}",
+            json={
+                "externalId": "Some UMP Id",
+                "object": "group",
+                "id": group_ids[0],
+                "groups": [],
+            },
         )
         rsps.add(
             responses.PUT,
@@ -391,7 +452,7 @@ def test_failed_to_associate_user_to_groups() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "groupIds": group_ids,
+                        "groupIds": existing_group_ids + group_ids,
                     }
                 )
             ],
@@ -408,6 +469,40 @@ def test_failed_to_associate_user_to_groups() -> None:
         with pytest.raises(
             Exception,
             match="Failed to associate user to group-ids",
+        ):
+            client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
+
+
+@responses.activate
+def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
+    test_user_id = "XXXXXXXX"
+    existing_group_ids = ["YYYYYYYY"]
+    group_ids = ["ZZZZZZZZ"]
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/members/{test_user_id}/group-ids",
+            json=existing_group_ids,
+        )
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/groups/{group_ids[0]}",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        with pytest.raises(
+            Exception,
+            match="Failed to get group",
         ):
             client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
 
