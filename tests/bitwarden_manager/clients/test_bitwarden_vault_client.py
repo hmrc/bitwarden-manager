@@ -146,7 +146,7 @@ def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixtu
     existing_collections = {"Non Matching Collection": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
-    assert f"Created {teams[0]} successfully" in caplog.text
+    assert f"Created collection: {teams[0]}" in caplog.text
 
 
 def test_create_collection_fails(failing_client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
@@ -164,7 +164,7 @@ def test_create_collection_unlocked(client: BitwardenVaultClient, caplog: LogCap
     client.create_collection(teams, existing_collections)
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
-    assert f"Created {teams[0]} successfully" in caplog.text
+    assert f"Created collection: {teams[0]}" in caplog.text
 
 
 def test_no_missing_collections(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:

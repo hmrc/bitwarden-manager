@@ -157,8 +157,9 @@ class BitwardenVaultClient:
                     env=tmp_env,
                     shell=False,
                     timeout=self.cli_timeout,
+                    stdout=subprocess.DEVNULL,
                 )  # nosec B603
-                self.__logger.info(f"Created {collection} successfully")
+                self.__logger.info(f"Created collection: {collection}")
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 raise BitwardenVaultClientError(e)
 

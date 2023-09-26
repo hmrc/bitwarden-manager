@@ -115,9 +115,11 @@ class BitwardenPublicApi:
                 response.status_code == 400
                 and response.json().get("message", None) == "This user has already been invited."
             ):
-                self.__logger.info("user already invited ignoring error")
+                self.__logger.info("User already invited ignoring error")
                 return self.__fetch_user_id(email)
             raise Exception("Failed to invite user", response.content, error) from error
+
+        self.__logger.info("User has been invited to Bitwarden")
         response_json: Dict[str, str] = response.json()
         return response_json.get("id", "")
 
@@ -185,7 +187,7 @@ class BitwardenPublicApi:
             return
         group_ids = self.__get_collection_groups(collection_id)
         if group_id in group_ids:
-            self.__logger.info("Group already exists in collection")
+            self.__logger.info(f"Group already assigned to collection: {collection_name}")
             return
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
@@ -197,6 +199,7 @@ class BitwardenPublicApi:
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
+        self.__logger.info(f"Group assigned to collection: {collection_name}")
         try:
             response.raise_for_status()
         except HTTPError as error:

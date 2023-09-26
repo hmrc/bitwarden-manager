@@ -40,7 +40,7 @@ class UserManagementApi:
         if response_json.get("teams"):
             for team in response_json.get("teams", {}):
                 user_teams.append(team.get("team", ""))
-        self.__logger.info(f"ump_teams: {user_teams}")
+        self.__logger.info(f"User teams: {user_teams}")
         return user_teams
 
     def __fetch_token(self) -> str:

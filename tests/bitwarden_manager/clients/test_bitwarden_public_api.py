@@ -101,7 +101,7 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.INFO):
             client.invite_user(username="test.user", email="test@example.com")
 
-        assert "user already invited ignoring error" in caplog.text
+        assert "User already invited ignoring error" in caplog.text
 
 
 @responses.activate
@@ -134,7 +134,7 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.INFO):
             client.invite_user(username="test.user", email="no_match@example.com")
 
-        assert "user already invited ignoring error" in caplog.text
+        assert "User already invited ignoring error" in caplog.text
 
 
 @responses.activate
