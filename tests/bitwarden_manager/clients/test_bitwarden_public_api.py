@@ -453,7 +453,7 @@ def test_associate_user_to_manually_created_group() -> None:
             method="GET",
             url=f"https://api.bitwarden.com/public/groups/{group_ids[0]}",
             json={
-                "externalId": "",
+                "externalId": None,
                 "object": "group",
                 "id": group_ids[0],
                 "groups": [],
