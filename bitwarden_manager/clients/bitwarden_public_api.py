@@ -27,6 +27,28 @@ class BitwardenPublicApi:
         response_list: List[str] = response.json()
         return response_list
 
+    def __group_manually_created(self, group_id: str) -> bool:
+        response = session.get(f"{API_URL}/groups/{group_id}")
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to get group", response.content, error) from error
+        external_id: str = response.json().get("externalId", "")
+        # All groups created by automation have an external id. Manually created
+        # groups _may_ have an external id but we assume that in general they don't
+        return not bool(external_id.strip())
+
+    def __collection_manually_created(self, collection_id: str) -> bool:
+        response = session.get(f"{API_URL}/collections/{collection_id}")
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to get collections", response.content, error) from error
+        external_id: str = response.json().get("externalId", "")
+        # All collections created by automation have an external id. Manually created
+        # collections _may_ have an external id but we assume that in general they don't
+        return not bool(external_id.strip())
+
     def __fetch_user_id(self, email: str) -> str:
         response = session.get(f"{API_URL}/members")
         try:
@@ -141,20 +163,24 @@ class BitwardenPublicApi:
 
     def associate_user_to_groups(self, user_id: str, group_ids: List[str]) -> None:
         existing_user_group_ids = self.__get_user_groups(user_id)
-        for existing_group_id in existing_user_group_ids:
-            if existing_group_id not in group_ids:
-                group_ids.append(existing_group_id)
-        response = session.put(
-            f"{API_URL}/members/{user_id}/group-ids",
-            json={"groupIds": group_ids},
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
-        try:
-            response.raise_for_status()
-        except HTTPError as error:
-            raise Exception("Failed to associate user to group-ids", response.content, error) from error
+        user_group_ids = existing_user_group_ids[:]
+        for group_id in group_ids:
+            if group_id not in user_group_ids and not self.__group_manually_created(group_id):
+                user_group_ids.append(group_id)
+        if not existing_user_group_ids == user_group_ids:
+            response = session.put(
+                f"{API_URL}/members/{user_id}/group-ids",
+                json={"groupIds": user_group_ids},
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            try:
+                response.raise_for_status()
+            except HTTPError as error:
+                raise Exception("Failed to associate user to group-ids", response.content, error) from error
 
     def update_collection_groups(self, collection_name: str, collection_id: str, group_id: str) -> None:
+        if self.__collection_manually_created(collection_id):
+            return
         group_ids = self.__get_collection_groups(collection_id)
         if group_id in group_ids:
             self.__logger.info("Group already exists in collection")
