@@ -45,8 +45,8 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to get collections", response.content, error) from error
         external_id: str = response.json().get("externalId")
-        # All groups created by automation have an external id. Manually created
-        # groups _may_ have an external id but we assume that in general they don't
+        # All collections created by automation have an external id. Manually created
+        # collections _may_ have an external id but we assume that in general they don't
         return not bool(external_id and external_id.strip())
 
     def __fetch_user_id(self, email: str) -> str:
