@@ -33,10 +33,10 @@ class BitwardenPublicApi:
             response.raise_for_status()
         except HTTPError as error:
             raise Exception("Failed to get group", response.content, error) from error
-        external_id: str = response.json().get("externalId")
+        external_id: str = response.json().get("externalId", "")
         # All groups created by automation have an external id. Manually created
         # groups _may_ have an external id but we assume that in general they don't
-        return not bool(external_id and external_id.strip())
+        return not bool(external_id.strip())
 
     def __collection_manually_created(self, collection_id: str) -> bool:
         response = session.get(f"{API_URL}/collections/{collection_id}")
@@ -44,10 +44,10 @@ class BitwardenPublicApi:
             response.raise_for_status()
         except HTTPError as error:
             raise Exception("Failed to get collections", response.content, error) from error
-        external_id: str = response.json().get("externalId")
+        external_id: str = response.json().get("externalId", "")
         # All collections created by automation have an external id. Manually created
         # collections _may_ have an external id but we assume that in general they don't
-        return not bool(external_id and external_id.strip())
+        return not bool(external_id.strip())
 
     def __fetch_user_id(self, email: str) -> str:
         response = session.get(f"{API_URL}/members")
