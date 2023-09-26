@@ -38,6 +38,17 @@ class BitwardenPublicApi:
         # groups _may_ have an external id but we assume that in general they don't
         return not bool(external_id and external_id.strip())
 
+    def __collection_manually_created(self, collection_id: str) -> bool:
+        response = session.get(f"{API_URL}/collections/{collection_id}")
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to get collections", response.content, error) from error
+        external_id: str = response.json().get("externalId")
+        # All groups created by automation have an external id. Manually created
+        # groups _may_ have an external id but we assume that in general they don't
+        return not bool(external_id and external_id.strip())
+
     def __fetch_user_id(self, email: str) -> str:
         response = session.get(f"{API_URL}/members")
         try:
@@ -168,6 +179,8 @@ class BitwardenPublicApi:
                 raise Exception("Failed to associate user to group-ids", response.content, error) from error
 
     def update_collection_groups(self, collection_name: str, collection_id: str, group_id: str) -> None:
+        if self.__collection_manually_created(collection_id):
+            return
         group_ids = self.__get_collection_groups(collection_id)
         if group_id in group_ids:
             self.__logger.info("Group already exists in collection")

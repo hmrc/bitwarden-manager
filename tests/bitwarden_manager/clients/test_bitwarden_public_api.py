@@ -308,6 +308,55 @@ def test_get_collections_failure() -> None:
 
 
 @responses.activate
+def test_get_collection_groups_failure() -> None:
+    collection_name = "test_name"
+    group_id = "XXXXXXXX"
+    collection_id = "ZZZZZZZZ"
+    with responses.RequestsMock() as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        with pytest.raises(
+            Exception,
+            match="Failed to get collections",
+        ):
+            client.update_collection_groups(
+                collection_name=collection_name,
+                group_id=group_id,
+                collection_id=collection_id,
+            )
+
+
+@responses.activate
 def test_get_user_groups_failure() -> None:
     user_id = "XXXXXXXX"
     group_ids = ["ZZZZZZZZ"]
@@ -505,6 +554,37 @@ def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
             match="Failed to get group",
         ):
             client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
+
+
+@responses.activate
+def test_update_manually_created_collection_group() -> None:
+    collection_name = "Team Name One"
+    collection_id = "XXXXXXXX"
+    group_id = "ZZZZZZZZ"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            json={
+                "externalId": "",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        client.update_collection_groups(
+            collection_name=collection_name,
+            collection_id=collection_id,
+            group_id=group_id,
+        )
 
 
 @responses.activate
