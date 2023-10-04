@@ -33,7 +33,7 @@ class OffboardUser:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=offboard_user_event_schema)
-        user_id = self.bitwarden_api.remove_user(
+        self.bitwarden_api.remove_user(
             username=event["username"],
             email=event["email"],
         )
