@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from requests import HTTPError, Session
 
@@ -51,7 +51,7 @@ class BitwardenPublicApi:
         # since you cannot add one through the UI - only through the API
         return not bool(external_id and external_id.strip())
 
-    def __fetch_user_id(self, email: str) -> str:
+    def __fetch_user_id(self, email: str, external_id: Optional[str] = None) -> str:
         response = session.get(f"{API_URL}/members")
         try:
             response.raise_for_status()
@@ -59,6 +59,8 @@ class BitwardenPublicApi:
             raise Exception("Failed to retrieve users", response.content, error) from error
         response_json: Dict[str, Any] = response.json()
         for user in response_json.get("data", ""):
+            if external_id and external_id == user.get("externalId", ""):
+                return str(user.get("id", ""))
             if email == user.get("email", ""):
                 return str(user.get("id", ""))
         return ""
@@ -122,6 +124,24 @@ class BitwardenPublicApi:
         self.__logger.info("User has been invited to Bitwarden")
         response_json: Dict[str, str] = response.json()
         return response_json.get("id", "")
+
+    def remove_user(self, username: str, email: str) -> None:
+        self.__fetch_token()
+        id = self.__fetch_user_id(email=email, external_id=username)
+        if not id:
+            self.__logger.info(f"User {email} not found in the Bitwarden organisation")
+            return
+
+        response = session.delete(
+            f"{API_URL}/members/{id}",
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception(f"Failed to delete user {email}", response.content, error) from error
+
+        self.__logger.info(f"User {email} has been removed from the Bitwarden organisation")
 
     def list_existing_groups(self, users_teams: List[str]) -> Dict[str, str]:
         existing_groups: Dict[str, str] = {}
