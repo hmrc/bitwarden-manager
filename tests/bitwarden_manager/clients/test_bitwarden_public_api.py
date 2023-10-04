@@ -944,7 +944,7 @@ def test_fetch_user_id_by_email() -> None:
             client_id="foo",
             client_secret="bar",
         )
-        user_id = client._BitwardenPublicApi__fetch_user_id(
+        user_id = client._BitwardenPublicApi__fetch_user_id(  # type: ignore
             email="test.user01@example.com",
         )
 
@@ -966,7 +966,7 @@ def test_fetch_user_id_by_external_id() -> None:
             client_id="foo",
             client_secret="bar",
         )
-        user_id = client._BitwardenPublicApi__fetch_user_id(
+        user_id = client._BitwardenPublicApi__fetch_user_id(  # type: ignore
             email="test.user02@example.com",
             external_id="test.user02",
         )
