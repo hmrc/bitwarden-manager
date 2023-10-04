@@ -8,7 +8,6 @@ from responses import matchers
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
 
-@responses.activate
 def test_invite_user() -> None:
     test_user = "test.user"
     test_email = "test@example.com"
@@ -50,7 +49,6 @@ def test_invite_user() -> None:
         assert user_id == "XXXXXXXX"
 
 
-@responses.activate
 def test_failed_invite() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
@@ -71,7 +69,6 @@ def test_failed_invite() -> None:
             client.invite_user(username="test.user", email="test@example.com")
 
 
-@responses.activate
 def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
@@ -104,7 +101,6 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
         assert "User already invited ignoring error" in caplog.text
 
 
-@responses.activate
 def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
@@ -137,7 +133,6 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
         assert "User already invited ignoring error" in caplog.text
 
 
-@responses.activate
 def test_handle_already_invited_http_error(caplog: LogCaptureFixture) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
@@ -168,7 +163,6 @@ def test_handle_already_invited_http_error(caplog: LogCaptureFixture) -> None:
             client.invite_user(username="test.user", email="test@example.com")
 
 
-@responses.activate
 def test_failed_login() -> None:
     test_user = "test.user"
     test_email = "test@example.com"
@@ -194,7 +188,6 @@ def test_failed_login() -> None:
             client.invite_user(test_user, test_email)
 
 
-@responses.activate
 def test_create_group() -> None:
     test_group = "Group Name"
     collection_id = "XXXXXXXX"
@@ -228,7 +221,6 @@ def test_create_group() -> None:
         assert group_id == "XXXXXXXXX"
 
 
-@responses.activate
 def test_invalid_group_name(caplog: LogCaptureFixture) -> None:
     test_group = ""
     client = BitwardenPublicApi(
@@ -244,7 +236,6 @@ def test_invalid_group_name(caplog: LogCaptureFixture) -> None:
     assert new_group == ""
 
 
-@responses.activate
 def test_failed_to_create_group() -> None:
     test_group = "bad group"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -270,7 +261,6 @@ def test_failed_to_create_group() -> None:
             client.create_group(group_name=test_group, collection_id="XXXXXX")
 
 
-@responses.activate
 def test_get_collections_failure() -> None:
     collection_name = "test_name"
     group_id = "XXXXXXXX"
@@ -307,7 +297,6 @@ def test_get_collections_failure() -> None:
             )
 
 
-@responses.activate
 def test_get_collection_groups_failure() -> None:
     collection_name = "test_name"
     group_id = "XXXXXXXX"
@@ -356,7 +345,6 @@ def test_get_collection_groups_failure() -> None:
             )
 
 
-@responses.activate
 def test_get_user_groups_failure() -> None:
     user_id = "XXXXXXXX"
     group_ids = ["ZZZZZZZZ"]
@@ -383,7 +371,6 @@ def test_get_user_groups_failure() -> None:
             client.associate_user_to_groups(user_id=user_id, group_ids=group_ids)
 
 
-@responses.activate
 def test_associate_user_to_group() -> None:
     test_user_id = "XXXXXXXX"
     group_ids = ["ZZZZZZZZ"]
@@ -433,7 +420,6 @@ def test_associate_user_to_group() -> None:
         client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
 
 
-@responses.activate
 def test_associate_user_to_manually_created_group() -> None:
     test_user_id = "XXXXXXXX"
     group_ids = ["ZZZZZZZZ"]
@@ -468,7 +454,6 @@ def test_associate_user_to_manually_created_group() -> None:
         client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
 
 
-@responses.activate
 def test_failed_to_associate_user_to_groups() -> None:
     test_user_id = "XXXXXXXX"
     existing_group_ids = ["YYYYYYYY"]
@@ -522,7 +507,6 @@ def test_failed_to_associate_user_to_groups() -> None:
             client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
 
 
-@responses.activate
 def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
     test_user_id = "XXXXXXXX"
     existing_group_ids = ["YYYYYYYY"]
@@ -556,7 +540,6 @@ def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
             client.associate_user_to_groups(user_id=test_user_id, group_ids=group_ids)
 
 
-@responses.activate
 def test_update_manually_created_collection_group() -> None:
     collection_name = "Team Name One"
     collection_id = "XXXXXXXX"
@@ -587,7 +570,6 @@ def test_update_manually_created_collection_group() -> None:
         )
 
 
-@responses.activate
 def test_failed_to_update_collection_group() -> None:
     collection_name = "Team Name One"
     collection_id = "XXXXXXXX"
@@ -636,7 +618,6 @@ def test_failed_to_update_collection_group() -> None:
             )
 
 
-@responses.activate
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -669,7 +650,6 @@ def test_list_existing_collections() -> None:
         assert collections == {"Team Name One": "XXXXXXXX"}
 
 
-@responses.activate
 def test_list_existing_collections_duplicate() -> None:
     teams = ["Team Name One"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -708,7 +688,6 @@ def test_list_existing_collections_duplicate() -> None:
         assert collections == {"Team Name One": "duplicate"}
 
 
-@responses.activate
 def test_no_matching_collections() -> None:
     teams = ["Team Name One", "Team Name Two"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -741,7 +720,6 @@ def test_no_matching_collections() -> None:
         assert collections == {}
 
 
-@responses.activate
 def test_fail_to_list_collections() -> None:
     teams = ["Team Name One", "Team Name Two"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -767,7 +745,6 @@ def test_fail_to_list_collections() -> None:
             client.list_existing_collections(teams)
 
 
-@responses.activate
 def test_list_existing_groups() -> None:
     teams = ["Team Name One", "Team Name Two"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -792,7 +769,6 @@ def test_list_existing_groups() -> None:
         assert successful_response == {teams[0]: "YYYYYYYY"}
 
 
-@responses.activate
 def test_list_existing_groups_with_duplicates() -> None:
     teams = ["Team Name One", "Team Name Two"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -845,7 +821,6 @@ def test_failed_to_list_groups() -> None:
             client.list_existing_groups(users_teams=teams)
 
 
-@responses.activate
 def test_collate_user_group_ids() -> None:
     teams = ["Team Name One", "Team Name Two"]
     groups = {"Team Name Two": "WWWWWWWW"}
@@ -922,7 +897,6 @@ def test_collate_user_group_ids() -> None:
         assert successful_response == ["YYYYYYYY", "WWWWWWWW"]
 
 
-@responses.activate
 def test_collate_user_group_ids_duplicates() -> None:
     teams = ["Team Name One"]
     groups = {"Team Name One": "duplicate"}
@@ -953,3 +927,140 @@ MOCKED_LOGIN = responses.Response(
         "token_type": "Bearer",
     },
 )
+
+
+def test_fetch_user_id_by_email() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.com/public/members",
+            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        user_id = client._BitwardenPublicApi__fetch_user_id(
+            email="test.user01@example.com",
+        )
+
+        assert user_id == "11111111"
+
+
+def test_fetch_user_id_by_external_id() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.com/public/members",
+            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        user_id = client._BitwardenPublicApi__fetch_user_id(
+            email="test.user02@example.com",
+            external_id="test.user02",
+        )
+
+        assert user_id == "22222222"
+
+
+def test_remove_user(caplog: LogCaptureFixture) -> None:
+    username = "test.user02"
+    email = "test.user02@example.com"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.com/public/members",
+            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            status=200,
+            content_type="application/json",
+        )
+        rsps.add(
+            responses.DELETE,
+            "https://api.bitwarden.com/public/members/22222222",
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with caplog.at_level(logging.INFO):
+            client.remove_user(
+                username=username,
+                email=email,
+            )
+
+        rsps.assert_call_count("https://api.bitwarden.com/public/members/22222222", 1) is True
+        assert f"User {email} has been removed from the Bitwarden organisation" in caplog.text
+
+
+def test_remove_user_no_longer_in_org(caplog: LogCaptureFixture) -> None:
+    username = "unknown.user"
+    email = "unknown.user@example.com"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.com/public/members",
+            body='{"data": []}',
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with caplog.at_level(logging.INFO):
+            client.remove_user(
+                username=username,
+                email=email,
+            )
+
+        assert f"User {email} not found in the Bitwarden organisation" in caplog.text
+
+
+def test_remove_user_with_failure(caplog: LogCaptureFixture) -> None:
+    username = "test.user02"
+    email = "test.user02@example.com"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.com/public/members",
+            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            status=200,
+            content_type="application/json",
+        )
+        rsps.add(
+            responses.DELETE,
+            "https://api.bitwarden.com/public/members/22222222",
+            status=500,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with pytest.raises(Exception, match=f"Failed to delete user {email}"):
+            client.remove_user(
+                username=username,
+                email=email,
+            )

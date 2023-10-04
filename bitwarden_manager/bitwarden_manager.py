@@ -9,6 +9,7 @@ from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClien
 from bitwarden_manager.clients.s3_client import S3Client
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.confirm_user import ConfirmUser
+from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
@@ -41,6 +42,9 @@ class BitwardenManager:
                 ConfirmUser(
                     bitwarden_vault_client=bitwarden_vault_client, allowed_domains=self._get_allowed_email_domains()
                 ).run(event=event)
+            case "remove_user":
+                self.__logger.debug("handling event with OffboardUser")
+                OffboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
             case _:
                 self.__logger.info(f"ignoring unknown event '{event_name}'")
         bitwarden_vault_client.logout()
