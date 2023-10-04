@@ -967,7 +967,6 @@ def test_fetch_user_id_by_external_id() -> None:
             client_secret="bar",
         )
         user_id = client._BitwardenPublicApi__fetch_user_id(  # type: ignore
-            email="test.user02@example.com",
             external_id="test.user02",
         )
 
@@ -976,7 +975,6 @@ def test_fetch_user_id_by_external_id() -> None:
 
 def test_remove_user(caplog: LogCaptureFixture) -> None:
     username = "test.user02"
-    email = "test.user02@example.com"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -1001,16 +999,14 @@ def test_remove_user(caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.INFO):
             client.remove_user(
                 username=username,
-                email=email,
             )
 
         rsps.assert_call_count("https://api.bitwarden.com/public/members/22222222", 1) is True
-        assert f"User {email} has been removed from the Bitwarden organisation" in caplog.text
+        assert f"User {username} has been removed from the Bitwarden organisation" in caplog.text
 
 
 def test_remove_user_no_longer_in_org(caplog: LogCaptureFixture) -> None:
     username = "unknown.user"
-    email = "unknown.user@example.com"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -1029,15 +1025,13 @@ def test_remove_user_no_longer_in_org(caplog: LogCaptureFixture) -> None:
         with caplog.at_level(logging.INFO):
             client.remove_user(
                 username=username,
-                email=email,
             )
 
-        assert f"User {email} not found in the Bitwarden organisation" in caplog.text
+        assert f"User {username} not found in the Bitwarden organisation" in caplog.text
 
 
 def test_remove_user_with_failure(caplog: LogCaptureFixture) -> None:
     username = "test.user02"
-    email = "test.user02@example.com"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -1059,8 +1053,7 @@ def test_remove_user_with_failure(caplog: LogCaptureFixture) -> None:
             client_id="foo",
             client_secret="bar",
         )
-        with pytest.raises(Exception, match=f"Failed to delete user {email}"):
+        with pytest.raises(Exception, match=f"Failed to delete user {username}"):
             client.remove_user(
                 username=username,
-                email=email,
             )

@@ -35,5 +35,4 @@ class OffboardUser:
         validate(instance=event, schema=offboard_user_event_schema)
         self.bitwarden_api.remove_user(
             username=event["username"],
-            email=event["email"],
         )

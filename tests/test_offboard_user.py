@@ -19,7 +19,7 @@ def test_offboard_user_removes_user_from_org() -> None:
         bitwarden_api=mock_client_bitwarden,
     ).run(event)
 
-    mock_client_bitwarden.remove_user.assert_called_with(username="test.user", email="testemail@example.com")
+    mock_client_bitwarden.remove_user.assert_called_with(username="test.user")
 
 
 def test_onboard_user_rejects_bad_events() -> None:
