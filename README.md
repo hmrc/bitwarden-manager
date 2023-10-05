@@ -9,14 +9,14 @@ Below are the events that this lambda accepts
 
 ### New user
 
-Sending this event will invite a new user to the org & onboard them to appropriate collections.
+Sending this event will invite a new user to the org and onboard them to appropriate collections.
 If the user already exists within BitWarden then the lambda will log this.
 
 ```json
 {
     "event_name": "new_user",
-    "username": "test.username",
-    "email": "test-email@example.com"
+    "username": "test.user01",
+    "email": "test.user01@example.com"
 }
 ```
 
@@ -25,6 +25,21 @@ This passes the `username` to the user-management portal (an internal API) which
 Subsequently, a group & collection is associated per corresponding team to the new user within BitWarden.
 The user is granted `edit` privileges on the group/collection they're assigned to.
 More information regarding access control can be found here [Bitwarden Access Control](https://bitwarden.com/help/user-types-access-control/#permissions)
+
+### Remove user
+
+Sending this event will remove a user from the Bitwarden organisation, revoke his/her access to collections 
+and all group memberships within the organisation.
+If the user is no longer a member of the Bitwarden organisation, the lambda will log this.
+
+```json
+{
+    "event_name": "remove_user",
+    "username": "test.user01"
+}
+```
+
+The `username` is the same as the user's `username` in the user-management portal.
 
 ### Export Vault
 
