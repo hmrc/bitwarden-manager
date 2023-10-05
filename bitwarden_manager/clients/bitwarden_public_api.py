@@ -51,7 +51,7 @@ class BitwardenPublicApi:
         # since you cannot add one through the UI - only through the API
         return not bool(external_id and external_id.strip())
 
-    def __fetch_user_id(self, email: str, external_id: Optional[str] = None) -> str:
+    def __fetch_user_id(self, email: Optional[str] = None, external_id: Optional[str] = None) -> str:
         response = session.get(f"{API_URL}/members")
         try:
             response.raise_for_status()
@@ -61,9 +61,15 @@ class BitwardenPublicApi:
         for user in response_json.get("data", ""):
             if external_id and external_id == user.get("externalId", ""):
                 return str(user.get("id", ""))
-            if email == user.get("email", ""):
+            if email and email == user.get("email", ""):
                 return str(user.get("id", ""))
         return ""
+
+    def __fetch_user_id_by_email(self, email: str) -> str:
+        return self.__fetch_user_id(email=email)
+
+    def __fetch_user_id_by_external_id(self, external_id: str) -> str:
+        return self.__fetch_user_id(external_id=external_id)
 
     def __fetch_token(self) -> str:
         response = session.post(
@@ -118,18 +124,18 @@ class BitwardenPublicApi:
                 and response.json().get("message", None) == "This user has already been invited."
             ):
                 self.__logger.info("User already invited ignoring error")
-                return self.__fetch_user_id(email)
+                return self.__fetch_user_id_by_email(email)
             raise Exception("Failed to invite user", response.content, error) from error
 
         self.__logger.info("User has been invited to Bitwarden")
         response_json: Dict[str, str] = response.json()
         return response_json.get("id", "")
 
-    def remove_user(self, username: str, email: str) -> None:
+    def remove_user(self, username: str) -> None:
         self.__fetch_token()
-        id = self.__fetch_user_id(email=email, external_id=username)
+        id = self.__fetch_user_id_by_external_id(external_id=username)
         if not id:
-            self.__logger.info(f"User {email} not found in the Bitwarden organisation")
+            self.__logger.info(f"User {username} not found in the Bitwarden organisation")
             return
 
         response = session.delete(
@@ -139,9 +145,9 @@ class BitwardenPublicApi:
         try:
             response.raise_for_status()
         except HTTPError as error:
-            raise Exception(f"Failed to delete user {email}", response.content, error) from error
+            raise Exception(f"Failed to delete user {username}", response.content, error) from error
 
-        self.__logger.info(f"User {email} has been removed from the Bitwarden organisation")
+        self.__logger.info(f"User {username} has been removed from the Bitwarden organisation")
 
     def list_existing_groups(self, users_teams: List[str]) -> Dict[str, str]:
         existing_groups: Dict[str, str] = {}
