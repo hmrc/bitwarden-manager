@@ -14,13 +14,8 @@ offboard_user_event_schema = {
             "pattern": "remove_user",
         },
         "username": {"type": "string", "description": "the users ldap username"},
-        "email": {
-            "type": "string",
-            "pattern": "^(.+)@(.+)$",
-            "description": "The users full work email address",
-        },
     },
-    "required": ["event_name", "username", "email"],
+    "required": ["event_name", "username"],
 }
 
 
