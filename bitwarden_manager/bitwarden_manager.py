@@ -25,29 +25,31 @@ class BitwardenManager:
     def run(self, event: Dict[str, Any]) -> None:
         event_name = event["event_name"]
         bitwarden_vault_client = self._get_bitwarden_vault_client()
-        match event_name:
-            case "new_user":
-                self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
-                self.__logger.debug("handling event with OnboardUser")
-                OnboardUser(
-                    bitwarden_api=self._get_bitwarden_public_api(),
-                    user_management_api=self._get_user_management_api(),
-                    bitwarden_vault_client=bitwarden_vault_client,
-                ).run(event=event)
-            case "export_vault":
-                self.__logger.debug("handling event with ExportVault")
-                ExportVault(bitwarden_vault_client=bitwarden_vault_client, s3_client=S3Client()).run(event=event)
-            case "confirm_user":
-                self.__logger.debug("handling event with ConfirmUser")
-                ConfirmUser(
-                    bitwarden_vault_client=bitwarden_vault_client, allowed_domains=self._get_allowed_email_domains()
-                ).run(event=event)
-            case "remove_user":
-                self.__logger.debug("handling event with OffboardUser")
-                OffboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
-            case _:
-                self.__logger.info(f"ignoring unknown event '{event_name}'")
-        bitwarden_vault_client.logout()
+        try:
+            match event_name:
+                case "new_user":
+                    self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
+                    self.__logger.debug("handling event with OnboardUser")
+                    OnboardUser(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                        user_management_api=self._get_user_management_api(),
+                        bitwarden_vault_client=bitwarden_vault_client,
+                    ).run(event=event)
+                case "export_vault":
+                    self.__logger.debug("handling event with ExportVault")
+                    ExportVault(bitwarden_vault_client=bitwarden_vault_client, s3_client=S3Client()).run(event=event)
+                case "confirm_user":
+                    self.__logger.debug("handling event with ConfirmUser")
+                    ConfirmUser(
+                        bitwarden_vault_client=bitwarden_vault_client, allowed_domains=self._get_allowed_email_domains()
+                    ).run(event=event)
+                case "remove_user":
+                    self.__logger.debug("handling event with OffboardUser")
+                    OffboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+                case _:
+                    self.__logger.info(f"ignoring unknown event '{event_name}'")
+        finally:
+            bitwarden_vault_client.logout()
 
     def _get_bitwarden_cli_timeout(self) -> float:
         timeout = os.environ.get("BITWARDEN_CLI_TIMEOUT", "20")
