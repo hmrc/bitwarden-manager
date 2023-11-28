@@ -1,5 +1,6 @@
 from logging import Logger
 from typing import Dict, List, Any, Optional
+import hashlib
 
 from requests import HTTPError, Session
 
@@ -17,6 +18,9 @@ class BitwardenPublicApi:
         self.__logger = logger
         self.__client_secret = client_secret
         self.__client_id = client_id
+
+    def __hash_externalID(self, string: str) -> str:
+        return hashlib.sha256(string.encode()).hexdigest()
 
     def __get_user_groups(self, user_id: str) -> List[str]:
         response = session.get(f"{API_URL}/members/{user_id}/group-ids")
@@ -170,6 +174,8 @@ class BitwardenPublicApi:
             self.__logger.info(f"Group name invalid: {group_name}")
             return ""
 
+        hashed_group_name = self.__hash_externalID(group_name)
+
         json_id = []
         if collection_id:
             json_id.append({"id": collection_id, "readOnly": False})
@@ -180,7 +186,7 @@ class BitwardenPublicApi:
                 "name": group_name,
                 "accessAll": False,
                 "collections": json_id,
-                "externalId": group_name,
+                "externalId": hashed_group_name,
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
@@ -217,10 +223,13 @@ class BitwardenPublicApi:
             return
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
+
+        hashed_collection_name = self.__hash_string(collection_name)
+
         response = session.put(
             f"{API_URL}/collections/{collection_id}",
             json={
-                "externalId": collection_name,
+                "externalId": hashed_collection_name,
                 "groups": group_json,
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
