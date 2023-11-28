@@ -272,3 +272,4 @@ class BitwardenPublicApi:
             else:
                 raise Exception(f"There are duplicate groups or collections for {team}")
         return groups_ids
+    testing gpg key
