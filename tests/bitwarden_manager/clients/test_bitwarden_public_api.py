@@ -4,6 +4,7 @@ import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
 from responses import matchers
+import hashlib
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
@@ -191,6 +192,9 @@ def test_failed_login() -> None:
 def test_create_group() -> None:
     test_group = "Group Name"
     collection_id = "XXXXXXXX"
+
+    hashed_test_group = hashlib.sha256(test_group.encode()).hexdigest()
+
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -202,7 +206,7 @@ def test_create_group() -> None:
                     {
                         "name": test_group,
                         "accessAll": False,
-                        "externalId": test_group,
+                        "externalId": hashed_test_group,
                         "collections": [{"id": f"{collection_id}", "readOnly": False}],
                     }
                 )
@@ -217,7 +221,7 @@ def test_create_group() -> None:
             client_secret="bar",
         )
 
-        group_id = client.create_group(group_name=test_group, collection_id=collection_id)
+        group_id = client.create_group(group_name_test=test_group, collection_id=collection_id)
         assert group_id == "XXXXXXXXX"
 
 
