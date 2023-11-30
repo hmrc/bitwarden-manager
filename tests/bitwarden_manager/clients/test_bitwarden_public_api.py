@@ -856,8 +856,6 @@ def test_collate_user_group_ids() -> None:
                 "groups": [{"id": "WWWWWWWW", "readOnly": False}],
             },
         )
-
-
         rsps.add(
             responses.PUT,
             "https://api.bitwarden.com/public/collections/ZZZZZZZZ",
