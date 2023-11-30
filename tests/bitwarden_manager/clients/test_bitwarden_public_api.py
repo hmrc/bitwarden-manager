@@ -221,7 +221,7 @@ def test_create_group() -> None:
             client_secret="bar",
         )
 
-        group_id = client.create_group(group_name_test=test_group, collection_id=collection_id)
+        group_id = client.create_group(group_name=test_group, collection_id=collection_id)
         assert group_id == "XXXXXXXXX"
 
 
