@@ -828,7 +828,7 @@ def test_failed_to_list_groups() -> None:
 def test_collate_user_group_ids() -> None:
     hashed_team_name_one = hashlib.sha256("Team Name One".encode()).hexdigest()
     hashed_team_name_two = hashlib.sha256("Team Name Two".encode()).hexdigest()
-    
+
     teams = ["Team Name One", "Team Name Two"]
     groups = {"Team Name Two": "WWWWWWWW"}
     collections = {"Team Name One": "ZZZZZZZZ", "Team Name Two": "XXXXXXXX"}
@@ -867,7 +867,7 @@ def test_collate_user_group_ids() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "externalId": "hashed_team_name_one",
+                        "externalId": hashed_team_name_one,
                         "groups": [{"id": "YYYYYYYY", "readOnly": False}],
                     }
                 )
@@ -887,7 +887,7 @@ def test_collate_user_group_ids() -> None:
                     {
                         "name": "Team Name One",
                         "accessAll": False,
-                        "externalId": "hashed_team_name_one",
+                        "externalId": hashed_team_name_one,
                         "collections": [{"id": "ZZZZZZZZ", "readOnly": False}],
                     }
                 )
