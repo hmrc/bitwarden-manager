@@ -827,8 +827,6 @@ def test_failed_to_list_groups() -> None:
 
 def test_collate_user_group_ids() -> None:
     hashed_team_name_one = hashlib.sha256("Team Name One".encode()).hexdigest()
-    hashed_team_name_two = hashlib.sha256("Team Name Two".encode()).hexdigest()
-
     teams = ["Team Name One", "Team Name Two"]
     groups = {"Team Name Two": "WWWWWWWW"}
     collections = {"Team Name One": "ZZZZZZZZ", "Team Name Two": "XXXXXXXX"}
