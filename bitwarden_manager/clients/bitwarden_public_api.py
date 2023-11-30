@@ -224,7 +224,7 @@ class BitwardenPublicApi:
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
-        hashed_collection_name = self.__hash_string(collection_name)
+        hashed_collection_name = self.__hash_externalID(collection_name)
 
         response = session.put(
             f"{API_URL}/collections/{collection_id}",
