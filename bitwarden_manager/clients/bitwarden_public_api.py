@@ -19,7 +19,7 @@ class BitwardenPublicApi:
         self.__client_secret = client_secret
         self.__client_id = client_id
 
-    def __hash_externalID(self, string: str) -> str:
+    def __hash_external_id(self, string: str) -> str:
         return hashlib.sha256(string.encode()).hexdigest()
 
     def __get_user_groups(self, user_id: str) -> List[str]:
@@ -50,6 +50,7 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to get collections", response.content, error) from error
         external_id: str = response.json().get("externalId", "")
+        hashed_external_id = self.__hash_collection_external_id(external_id)
         # All collections created by automation have an external id. Manually created
         # collections _may_ have an external id but we assume that in general they don't
         # since you cannot add one through the UI - only through the API
@@ -174,7 +175,7 @@ class BitwardenPublicApi:
             self.__logger.info(f"Group name invalid: {group_name}")
             return ""
 
-        hashed_group_name = self.__hash_externalID(group_name)
+        hashed_group_name = self.__hash_external_id(group_name)
 
         json_id = []
         if collection_id:
@@ -224,7 +225,8 @@ class BitwardenPublicApi:
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
-        hashed_collection_name = self.__hash_externalID(collection_name)
+        hashed_collection_name = self.__hash_external_id(collection_name)
+
 
         response = session.put(
             f"{API_URL}/collections/{collection_id}",
