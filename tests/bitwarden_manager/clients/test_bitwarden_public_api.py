@@ -323,7 +323,7 @@ def test_get_collection_groups_failure() -> None:
             status=400,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.com/public/collections/{collection_id}/groups",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={
                 "externalId": "Team Name One",
                 "object": "collection",
@@ -610,7 +610,7 @@ def test_failed_to_update_collection_group() -> None:
 
         with pytest.raises(
             Exception,
-            match="Failed to associate collection to group-ids",
+            match="Failed to update the collection groups",
         ):
             client.update_collection_groups(
                 collection_name=collection_name,

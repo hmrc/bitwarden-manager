@@ -250,7 +250,7 @@ class BitwardenPublicApi:
             except HTTPError as error:
                 raise Exception("Failed to associate collection to group-ids", response.content, error) from error
         except HTTPError as error:
-            raise Exception("Failed to get collection", response.content, error) from error
+            raise Exception("Failed to get collections", response.content, error) from error
 
     def list_existing_collections(self, teams: List[str]) -> Dict[str, str]:
         collections: Dict[str, str] = {}
