@@ -598,10 +598,7 @@ def test_failed_to_update_collection_group() -> None:
             method="PUT",
             url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={
-                "externalId": "Team Name One",
-                "object": "collection",
-                "id": collection_id,
-                "groups": [],
+                "error": "Failed to update the collection groups",
             },
         )
 
