@@ -22,6 +22,10 @@ class BitwardenPublicApi:
     def __hash_external_id(self, string: str) -> str:
         return hashlib.sha256(string.encode()).hexdigest()
 
+    def __hash_collection_external_id(self, external_id):
+        hashed_id = hashlib.sha256(external_id.encode()).hexdigest()
+        return hashed_id
+
     def __get_user_groups(self, user_id: str) -> List[str]:
         response = session.get(f"{API_URL}/members/{user_id}/group-ids")
         try:
@@ -225,22 +229,28 @@ class BitwardenPublicApi:
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
-        hashed_collection_name = self.__hash_external_id(collection_name)
-
-
-        response = session.put(
-            f"{API_URL}/collections/{collection_id}",
-            json={
-                "externalId": hashed_collection_name,
-                "groups": group_json,
-            },
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
-        self.__logger.info(f"Group assigned to collection: {collection_name}")
+        response = session.get(f"{API_URL}/collections/{collection_id}")
         try:
             response.raise_for_status()
+            external_id: str = response.json().get("externalId", "")
+
+            hashed_external_id = self.__hash_external_id(external_id)
+
+            response = session.put(
+                f"{API_URL}/collections/{collection_id}",
+                json={
+                    "externalId": hashed_external_id,
+                    "groups": group_json,
+                },
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            self.__logger.info(f"Group assigned to collection: {collection_name}")
+            try:
+                response.raise_for_status()
+            except HTTPError as error:
+                raise Exception("Failed to associate collection to group-ids", response.content, error) from error
         except HTTPError as error:
-            raise Exception("Failed to associate collection to group-ids", response.content, error) from error
+            raise Exception("Failed to get collection", response.content, error) from error
 
     def list_existing_collections(self, teams: List[str]) -> Dict[str, str]:
         collections: Dict[str, str] = {}
