@@ -323,7 +323,7 @@ def test_get_collection_groups_failure() -> None:
             status=400,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}/groups",
             json={
                 "externalId": "Team Name One",
                 "object": "collection",
