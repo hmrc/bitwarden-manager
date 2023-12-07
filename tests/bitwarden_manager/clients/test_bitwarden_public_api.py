@@ -618,6 +618,32 @@ def test_failed_to_update_collection_group() -> None:
                 group_id=group_id,
             )
 
+def test_update_collection_groups_http_error() -> None:
+    collection_name = "Test Collection"
+    collection_id = "XXXXXXXX"
+    group_id = "ZZZZZZZZ"
+
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
+            status=404,
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        with pytest.raises(Exception, match="Failed to update the collection groups") as error:
+            client.update_collection_groups(
+                collection_name=collection_name,
+                collection_id=collection_id,
+                group_id=group_id,
+            )
+
+        assert "Failed to update the collection groups" in str(error.value)
 
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
