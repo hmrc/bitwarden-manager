@@ -247,8 +247,9 @@ class BitwardenPublicApi:
             put_response.raise_for_status()
 
         except HTTPError as error:
-            if "Failed to associate collection to group-ids" in str(error):
-                raise
+            http_error_msg = error.response.json().get('error', '')
+            if "Failed to update the collection groups" in http_error_msg:
+                raise Exception("Failed to update the collection groups") from error
             raise Exception("Failed to get collections", getattr(get_response, 'content', ''), error) from error
 
     def list_existing_collections(self, teams: List[str]) -> Dict[str, str]:
