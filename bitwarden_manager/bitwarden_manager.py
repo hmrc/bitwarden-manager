@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Dict, Any
 
@@ -22,7 +23,17 @@ class BitwardenManager:
             extra_redaction_patterns=[self._get_bitwarden_export_encryption_password()]
         )
 
+    def is_sqs_event(self, event: Dict[str, Any]) -> bool:
+        return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
+
     def run(self, event: Dict[str, Any]) -> None:
+        if self.is_sqs_event(event=event):
+            for record in event["Records"]:
+                self._run(json.loads(record["body"]))
+        else:
+            self._run(event=event)
+
+    def _run(self, event: Dict[str, Any]) -> None:
         event_name = event["event_name"]
         bitwarden_vault_client = self._get_bitwarden_vault_client()
         try:

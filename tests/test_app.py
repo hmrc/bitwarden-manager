@@ -71,6 +71,32 @@ def test_handler_routes_new_user_events(_: Mock) -> None:
 
 
 @mock.patch("boto3.client")
+def test_handler_with_sqs_event(_: Mock) -> None:
+    event = {
+        "Records": [
+            {
+                "body": '{"event_name": "new_user"}',
+                "eventSource": "aws:sqs",
+            },
+            {
+                "body": '{"event_name": "remove_user"}',
+                "eventSource": "aws:sqs",
+            },
+        ]
+    }
+
+    with patch.object(BitwardenVaultClient, "logout"):
+        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+            secrets_manager_mock.return_value = "23497858247589473589734805734853"
+            with patch.object(OnboardUser, "run") as new_user_mock:
+                with patch.object(OffboardUser, "run") as remove_user_mock:
+                    handler(event=event, context={})
+
+    new_user_mock.assert_called_once_with(event=dict(event_name="new_user"))
+    remove_user_mock.assert_called_once_with(event=dict(event_name="remove_user"))
+
+
+@mock.patch("boto3.client")
 def test_handler_routes_export_vault_events(_: Mock) -> None:
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
