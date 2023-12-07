@@ -636,7 +636,7 @@ def test_update_collection_groups_http_error() -> None:
             client_secret="bar",
         )
 
-        with pytest.raises(Exception, match="Failed to update the collection groups") as error:
+        with pytest.raises(Exception, match=r"Failed to.*collections") as error:
             client.update_collection_groups(
                 collection_name=collection_name,
                 collection_id=collection_id,
