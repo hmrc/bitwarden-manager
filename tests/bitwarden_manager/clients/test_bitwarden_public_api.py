@@ -643,7 +643,7 @@ def test_update_collection_groups_http_error() -> None:
                 group_id=group_id,
             )
 
-        assert "Failed to update the collection groups" in str(error.value)
+        assert "Failed to get collections" in str(error.value)
 
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
