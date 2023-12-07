@@ -229,14 +229,13 @@ class BitwardenPublicApi:
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
-        response = session.get(f"{API_URL}/collections/{collection_id}")
+        get_response = session.get(f"{API_URL}/collections/{collection_id}")
         try:
-            response.raise_for_status()
-            external_id: str = response.json().get("externalId", "")
-
+            get_response.raise_for_status()
+            external_id: str = get_response.json().get("externalId", "")
             hashed_external_id = self.__hash_external_id(external_id)
 
-            response = session.put(
+            put_response = session.put(
                 f"{API_URL}/collections/{collection_id}",
                 json={
                     "externalId": hashed_external_id,
@@ -245,12 +244,12 @@ class BitwardenPublicApi:
                 timeout=REQUEST_TIMEOUT_SECONDS,
             )
             self.__logger.info(f"Group assigned to collection: {collection_name}")
-            try:
-                response.raise_for_status()
-            except HTTPError as error:
-                raise Exception("Failed to associate collection to group-ids", response.content, error) from error
+            put_response.raise_for_status()
+
         except HTTPError as error:
-            raise Exception("Failed to get collections", response.content, error) from error
+            if "Failed to associate collection to group-ids" in str(error):
+                raise
+            raise Exception("Failed to get collections", getattr(get_response, 'content', ''), error) from error
 
     def list_existing_collections(self, teams: List[str]) -> Dict[str, str]:
         collections: Dict[str, str] = {}
