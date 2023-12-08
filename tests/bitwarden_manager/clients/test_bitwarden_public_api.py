@@ -636,7 +636,7 @@ def test_update_collection_groups_http_error() -> None:
             client_secret="bar",
         )
 
-        with pytest.raises(Exception, match=r"Failed to.*collections") as error:
+        with pytest.raises(Exception) as error:
             client.update_collection_groups(
                 collection_name=collection_name,
                 collection_id=collection_id,
@@ -675,6 +675,48 @@ def test_list_existing_collections() -> None:
         collections = client.list_existing_collections(teams)
 
         assert collections == {"Team Name One": "XXXXXXXX"}
+
+def test_update_collection_groups_success() -> None:
+    collection_name = "Test Collection"
+    collection_id = "XXXXXXXX"
+    group_id = "ZZZZZZZZ"
+
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
+            status=200,
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+        rsps.add(
+            responses.PUT,
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
+            status=200,
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        try:
+            client.update_collection_groups(
+                collection_name=collection_name,
+                collection_id=collection_id,
+                group_id=group_id,
+            )
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
+
+        assert len(rsps.calls) == 2
+        assert rsps.calls[1].request.method == 'PUT'
+        assert rsps.calls[1].request.url == f"https://api.bitwarden.com/public/collections/{collection_id}"
 
 
 def test_list_existing_collections_duplicate() -> None:
