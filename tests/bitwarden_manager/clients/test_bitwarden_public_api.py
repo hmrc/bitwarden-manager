@@ -749,7 +749,7 @@ def test_update_collection_groups_success() -> None:
             group_id=group_id,
         )
 
-        # # Katie: Please delete! 
+        # # Katie: Please delete!
         # #        Uncomment and run to understand the calls that is being made in `update_collection_groups()`
         # print(f"DEBUG: {rsps.calls}")
         # for i in rsps.calls:
