@@ -54,7 +54,6 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to get collections", response.content, error) from error
         external_id: str = response.json().get("externalId", "")
-        hashed_external_id = self.__hash_collection_external_id(external_id)
         # All collections created by automation have an external id. Manually created
         # collections _may_ have an external id but we assume that in general they don't
         # since you cannot add one through the UI - only through the API

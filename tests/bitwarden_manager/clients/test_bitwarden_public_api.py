@@ -575,9 +575,7 @@ def test_update_manually_created_collection_group() -> None:
 
 
 def test_get_collection_external_id() -> None:
-    collection_name = "Team Name One"
     collection_id = "XXXXXXXX"
-    group_id = "ZZZZZZZZ"
     client = BitwardenPublicApi(
         logger=logging.getLogger(),
         client_id="foo",
@@ -751,10 +749,10 @@ def test_update_collection_groups_success() -> None:
             group_id=group_id,
         )
 
-        # Katie: Please delete!
-        print(f"DEBUG: {rsps.calls}")
-        for i in rsps.calls:
-            print(f"DEBUG: {i}")
+        # # Katie: Please delete! - Uncomment and run to understand the calls that is being made in `update_collection_groups()`
+        # print(f"DEBUG: {rsps.calls}")
+        # for i in rsps.calls:
+        #     print(f"DEBUG: {i}")
 
         assert len(rsps.calls) == 4
         assert rsps.calls[-1].request.method == 'PUT'
