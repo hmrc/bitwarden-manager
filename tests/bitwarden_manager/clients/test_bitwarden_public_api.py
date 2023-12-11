@@ -595,7 +595,7 @@ def test_get_collection_external_id() -> None:
             },
         )
 
-        assert "Team Name One" == client._BitwardenPublicApi__get_collection_external_id(collection_id=collection_id)
+        assert "Team Name One" == client._BitwardenPublicApi__get_collection_external_id(collection_id)  # type: ignore
 
         rsps.add(
             status=500,
@@ -607,7 +607,7 @@ def test_get_collection_external_id() -> None:
         )
 
         with pytest.raises(Exception, match="Failed to get collections"):
-            client._BitwardenPublicApi__get_collection_external_id(collection_id=collection_id)
+            client._BitwardenPublicApi__get_collection_external_id(collection_id)  # type: ignore
 
 
 def test_failed_to_update_collection_group() -> None:

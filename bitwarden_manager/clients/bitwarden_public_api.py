@@ -112,7 +112,9 @@ class BitwardenPublicApi:
             response.raise_for_status()
         except HTTPError as error:
             raise Exception("Failed to get collections", response.content, error) from error
-        return response.json().get("externalId", "")
+
+        external_id: str = response.json().get("externalId", "")
+        return external_id
 
     def invite_user(self, username: str, email: str) -> str:
         self.__fetch_token()
