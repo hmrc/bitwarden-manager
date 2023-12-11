@@ -111,6 +111,14 @@ class BitwardenPublicApi:
         group_ids = {group.get("id", "") for group in response_json.get("groups", "")}
         return group_ids
 
+    def __get_collection_external_id(self, collection_id: str) -> str:
+        response = session.get(f"{API_URL}/collections/{collection_id}")
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to get collections", response.content, error) from error
+        return response.json().get("externalId", "")
+
     def invite_user(self, username: str, email: str) -> str:
         self.__fetch_token()
         response = session.post(
@@ -229,12 +237,10 @@ class BitwardenPublicApi:
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
-        get_response = session.get(f"{API_URL}/collections/{collection_id}")
-        try:
-            get_response.raise_for_status()
-            external_id: str = get_response.json().get("externalId", "")
-            hashed_external_id = self.__hash_external_id(external_id)
+        external_id: str = self.__get_collection_external_id(collection_id)
+        hashed_external_id = self.__hash_external_id(external_id)
 
+        try:
             put_response = session.put(
                 f"{API_URL}/collections/{collection_id}",
                 json={
@@ -245,12 +251,10 @@ class BitwardenPublicApi:
             )
             self.__logger.info(f"Group assigned to collection: {collection_name}")
             put_response.raise_for_status()
-
         except HTTPError as error:
-            http_error_msg = error.response.json().get('error', '')
+            http_error_msg = error.response.json().get("error", "")
             if "Failed to update the collection groups" in http_error_msg:
                 raise Exception("Failed to update the collection groups") from error
-            raise Exception("Failed to get collections", getattr(get_response, 'content', ''), error) from error
 
     def list_existing_collections(self, teams: List[str]) -> Dict[str, str]:
         collections: Dict[str, str] = {}

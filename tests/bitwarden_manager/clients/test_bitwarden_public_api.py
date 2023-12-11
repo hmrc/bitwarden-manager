@@ -574,12 +574,49 @@ def test_update_manually_created_collection_group() -> None:
         )
 
 
+def test_get_collection_external_id() -> None:
+    collection_name = "Team Name One"
+    collection_id = "XXXXXXXX"
+    group_id = "ZZZZZZZZ"
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+
+        assert "Team Name One" == client._BitwardenPublicApi__get_collection_external_id(collection_id=collection_id)
+
+        rsps.add(
+            status=500,
+            method="GET",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            json={
+                "error": "Failed to get collections",
+            },
+        )
+
+        with pytest.raises(Exception, match="Failed to get collections"):
+            client._BitwardenPublicApi__get_collection_external_id(collection_id=collection_id)
+
+
 def test_failed_to_update_collection_group() -> None:
     collection_name = "Team Name One"
     collection_id = "XXXXXXXX"
     group_id = "ZZZZZZZZ"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -618,6 +655,7 @@ def test_failed_to_update_collection_group() -> None:
                 group_id=group_id,
             )
 
+
 def test_update_collection_groups_http_error() -> None:
     collection_name = "Test Collection"
     collection_id = "XXXXXXXX"
@@ -644,6 +682,7 @@ def test_update_collection_groups_http_error() -> None:
             )
 
         assert "Failed to get collections" in str(error.value)
+
 
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
@@ -675,6 +714,7 @@ def test_list_existing_collections() -> None:
         collections = client.list_existing_collections(teams)
 
         assert collections == {"Team Name One": "XXXXXXXX"}
+
 
 # def test_update_collection_groups_success() -> None:
 #     collection_name = "Test Collection"
