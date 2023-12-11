@@ -22,10 +22,6 @@ class BitwardenPublicApi:
     def __hash_external_id(self, string: str) -> str:
         return hashlib.sha256(string.encode()).hexdigest()
 
-    def __hash_collection_external_id(self, external_id):
-        hashed_id = hashlib.sha256(external_id.encode()).hexdigest()
-        return hashed_id
-
     def __get_user_groups(self, user_id: str) -> List[str]:
         response = session.get(f"{API_URL}/members/{user_id}/group-ids")
         try:
