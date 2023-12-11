@@ -716,47 +716,49 @@ def test_list_existing_collections() -> None:
         assert collections == {"Team Name One": "XXXXXXXX"}
 
 
-# def test_update_collection_groups_success() -> None:
-#     collection_name = "Test Collection"
-#     collection_id = "XXXXXXXX"
-#     group_id = "ZZZZZZZZ"
+def test_update_collection_groups_success() -> None:
+    collection_name = "Test Collection"
+    collection_id = "XXXXXXXX"
+    group_id = "ZZZZZZZZ"
 
-#     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-#         rsps.add(
-#             responses.GET,
-#             f"https://api.bitwarden.com/public/collections/{collection_id}",
-#             status=200,
-#             json={
-#                 "externalId": "Team Name One",
-#                 "object": "collection",
-#                 "id": collection_id,
-#                 "groups": [],
-#             },
-#         )
-#         rsps.add(
-#             responses.PUT,
-#             f"https://api.bitwarden.com/public/collections/{collection_id}",
-#             status=200,
-#         )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
+            status=200,
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+        rsps.add(
+            responses.PUT,
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
+            status=200,
+        )
 
-#         client = BitwardenPublicApi(
-#             logger=logging.getLogger(),
-#             client_id="foo",
-#             client_secret="bar",
-#         )
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
 
-#         try:
-#             client.update_collection_groups(
-#                 collection_name=collection_name,
-#                 collection_id=collection_id,
-#                 group_id=group_id,
-#             )
-#         except Exception as e:
-#             pytest.fail(f"Unexpected exception: {e}")
+        client.update_collection_groups(
+            collection_name=collection_name,
+            collection_id=collection_id,
+            group_id=group_id,
+        )
 
-#         assert len(rsps.calls) == 2
-#         assert rsps.calls[1].request.method == 'PUT'
-#         assert rsps.calls[1].request.url == f"https://api.bitwarden.com/public/collections/{collection_id}"
+        # Katie: Please delete!
+        print(f"DEBUG: {rsps.calls}")
+        for i in rsps.calls:
+            print(f"DEBUG: {i}")
+
+        assert len(rsps.calls) == 4
+        assert rsps.calls[-1].request.method == 'PUT'
+        assert rsps.calls[-1].request.url == f"https://api.bitwarden.com/public/collections/{collection_id}"
 
 
 def test_list_existing_collections_duplicate() -> None:
