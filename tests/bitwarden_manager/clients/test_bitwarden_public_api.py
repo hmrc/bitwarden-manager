@@ -756,7 +756,7 @@ def test_update_collection_groups_success() -> None:
         #     print(f"DEBUG: {i}")
 
         assert len(rsps.calls) == 4
-        assert rsps.calls[-1].request.method == 'PUT'
+        assert rsps.calls[-1].request.method == "PUT"
         assert rsps.calls[-1].request.url == f"https://api.bitwarden.com/public/collections/{collection_id}"
 
 
