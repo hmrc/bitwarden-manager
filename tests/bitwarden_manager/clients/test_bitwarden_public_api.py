@@ -653,6 +653,7 @@ def test_failed_to_update_collection_group() -> None:
                 group_id=group_id,
             )
 
+
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
