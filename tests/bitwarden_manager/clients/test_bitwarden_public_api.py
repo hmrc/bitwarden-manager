@@ -4,7 +4,7 @@ import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
 from responses import matchers
-
+import hashlib
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
