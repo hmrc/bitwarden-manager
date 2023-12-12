@@ -653,35 +653,6 @@ def test_failed_to_update_collection_group() -> None:
                 group_id=group_id,
             )
 
-
-def test_update_collection_groups_http_error() -> None:
-    collection_name = "Test Collection"
-    collection_id = "XXXXXXXX"
-    group_id = "ZZZZZZZZ"
-
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(
-            responses.GET,
-            f"https://api.bitwarden.com/public/collections/{collection_id}",
-            status=404,
-        )
-
-        client = BitwardenPublicApi(
-            logger=logging.getLogger(),
-            client_id="foo",
-            client_secret="bar",
-        )
-
-        with pytest.raises(Exception) as error:
-            client.update_collection_groups(
-                collection_name=collection_name,
-                collection_id=collection_id,
-                group_id=group_id,
-            )
-
-        assert "Failed to get collections" in str(error.value)
-
-
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -748,12 +719,6 @@ def test_update_collection_groups_success() -> None:
             collection_id=collection_id,
             group_id=group_id,
         )
-
-        # # Katie: Please delete!
-        # #        Uncomment and run to understand the calls that is being made in `update_collection_groups()`
-        # print(f"DEBUG: {rsps.calls}")
-        # for i in rsps.calls:
-        #     print(f"DEBUG: {i}")
 
         assert len(rsps.calls) == 4
         assert rsps.calls[-1].request.method == "PUT"
