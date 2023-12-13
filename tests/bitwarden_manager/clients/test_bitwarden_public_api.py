@@ -4,6 +4,7 @@ import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
 from responses import matchers
+import hashlib
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
@@ -191,6 +192,9 @@ def test_failed_login() -> None:
 def test_create_group() -> None:
     test_group = "Group Name"
     collection_id = "XXXXXXXX"
+
+    hashed_test_group = hashlib.sha256(test_group.encode()).hexdigest()
+
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -202,7 +206,7 @@ def test_create_group() -> None:
                     {
                         "name": test_group,
                         "accessAll": False,
-                        "externalId": test_group,
+                        "externalId": hashed_test_group,
                         "collections": [{"id": f"{collection_id}", "readOnly": False}],
                     }
                 )
@@ -570,12 +574,47 @@ def test_update_manually_created_collection_group() -> None:
         )
 
 
+def test_get_collection_external_id() -> None:
+    collection_id = "XXXXXXXX"
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+
+        assert "Team Name One" == client._BitwardenPublicApi__get_collection_external_id(collection_id)  # type: ignore
+
+        rsps.add(
+            status=500,
+            method="GET",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
+            json={
+                "error": "Failed to get collections",
+            },
+        )
+
+        with pytest.raises(Exception, match="Failed to get collections"):
+            client._BitwardenPublicApi__get_collection_external_id(collection_id)  # type: ignore
+
+
 def test_failed_to_update_collection_group() -> None:
     collection_name = "Team Name One"
     collection_id = "XXXXXXXX"
     group_id = "ZZZZZZZZ"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -594,10 +633,7 @@ def test_failed_to_update_collection_group() -> None:
             method="PUT",
             url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={
-                "externalId": "Team Name One",
-                "object": "collection",
-                "id": collection_id,
-                "groups": [],
+                "error": "Failed to update the collection groups",
             },
         )
 
@@ -609,7 +645,7 @@ def test_failed_to_update_collection_group() -> None:
 
         with pytest.raises(
             Exception,
-            match="Failed to associate collection to group-ids",
+            match="Failed to update the collection groups",
         ):
             client.update_collection_groups(
                 collection_name=collection_name,
@@ -648,6 +684,46 @@ def test_list_existing_collections() -> None:
         collections = client.list_existing_collections(teams)
 
         assert collections == {"Team Name One": "XXXXXXXX"}
+
+
+def test_update_collection_groups_success() -> None:
+    collection_name = "Test Collection"
+    collection_id = "XXXXXXXX"
+    group_id = "ZZZZZZZZ"
+
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
+            status=200,
+            json={
+                "externalId": "Team Name One",
+                "object": "collection",
+                "id": collection_id,
+                "groups": [],
+            },
+        )
+        rsps.add(
+            responses.PUT,
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
+            status=200,
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        client.update_collection_groups(
+            collection_name=collection_name,
+            collection_id=collection_id,
+            group_id=group_id,
+        )
+
+        assert len(rsps.calls) == 4
+        assert rsps.calls[-1].request.method == "PUT"
+        assert rsps.calls[-1].request.url == f"https://api.bitwarden.com/public/collections/{collection_id}"
 
 
 def test_list_existing_collections_duplicate() -> None:
@@ -822,6 +898,7 @@ def test_failed_to_list_groups() -> None:
 
 
 def test_collate_user_group_ids() -> None:
+    hashed_team_name_one = hashlib.sha256("Team Name One".encode()).hexdigest()
     teams = ["Team Name One", "Team Name Two"]
     groups = {"Team Name Two": "WWWWWWWW"}
     collections = {"Team Name One": "ZZZZZZZZ", "Team Name Two": "XXXXXXXX"}
@@ -858,7 +935,7 @@ def test_collate_user_group_ids() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "externalId": "Team Name One",
+                        "externalId": hashed_team_name_one,
                         "groups": [{"id": "YYYYYYYY", "readOnly": False}],
                     }
                 )
@@ -866,6 +943,7 @@ def test_collate_user_group_ids() -> None:
             status=200,
             content_type="application/json",
         )
+
         rsps.add(
             responses.POST,
             "https://api.bitwarden.com/public/groups",
@@ -877,7 +955,7 @@ def test_collate_user_group_ids() -> None:
                     {
                         "name": "Team Name One",
                         "accessAll": False,
-                        "externalId": "Team Name One",
+                        "externalId": hashed_team_name_one,
                         "collections": [{"id": "ZZZZZZZZ", "readOnly": False}],
                     }
                 )
