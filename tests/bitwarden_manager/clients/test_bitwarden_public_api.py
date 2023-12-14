@@ -654,10 +654,14 @@ def test_failed_to_update_collection_group() -> None:
             )
 
 
+def _hash_external_id(string: str) -> str:
+    return hashlib.sha256(string.encode()).hexdigest()
+
+
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
+    team_name_one_external_id = _hash_external_id("Team Name One")
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -666,7 +670,7 @@ def test_list_existing_collections() -> None:
             json={
                 "data": [
                     {
-                        "externalId": "Team Name One",
+                        "externalId": team_name_one_external_id,
                         "object": "collection",
                         "id": "XXXXXXXX",
                         "groups": [{"id": "YYYYYYYY", "readOnly": True}],
@@ -683,7 +687,7 @@ def test_list_existing_collections() -> None:
 
         collections = client.list_existing_collections(teams)
 
-        assert collections == {"Team Name One": "XXXXXXXX"}
+        assert collections == {"Team Name One": {"id": "XXXXXXXX", "externalId": team_name_one_external_id}}
 
 
 def test_update_collection_groups_success() -> None:
@@ -728,8 +732,9 @@ def test_update_collection_groups_success() -> None:
 
 def test_list_existing_collections_duplicate() -> None:
     teams = ["Team Name One"]
+    team_name_one_external_id = _hash_external_id("Team Name One")
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
+        # rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -738,13 +743,13 @@ def test_list_existing_collections_duplicate() -> None:
             json={
                 "data": [
                     {
-                        "externalId": "Team Name One",
+                        "externalId": team_name_one_external_id,
                         "object": "collection",
                         "id": "XXXXXXXX",
                         "groups": [{"id": "YYYYYYYY", "readOnly": True}],
                     },
                     {
-                        "externalId": "Team Name One",
+                        "externalId": team_name_one_external_id,
                         "object": "collection",
                         "id": "XXXXXXXX",
                         "groups": [{"id": "YYYYYYYY", "readOnly": True}],
@@ -761,7 +766,7 @@ def test_list_existing_collections_duplicate() -> None:
 
         collections = client.list_existing_collections(teams)
 
-        assert collections == {"Team Name One": "duplicate"}
+        assert collections == {"Team Name One": {"id": "duplicate", "externalId": team_name_one_external_id}}
 
 
 def test_no_matching_collections() -> None:
@@ -901,7 +906,10 @@ def test_collate_user_group_ids() -> None:
     hashed_team_name_one = hashlib.sha256("Team Name One".encode()).hexdigest()
     teams = ["Team Name One", "Team Name Two"]
     groups = {"Team Name Two": "WWWWWWWW"}
-    collections = {"Team Name One": "ZZZZZZZZ", "Team Name Two": "XXXXXXXX"}
+    collections = {
+        "Team Name One": {"id": "ZZZZZZZZ", "externalID": ""},
+        "Team Name Two": {"id": "XXXXXXXX", "externalID": ""},
+    }
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -978,7 +986,7 @@ def test_collate_user_group_ids() -> None:
 def test_collate_user_group_ids_duplicates() -> None:
     teams = ["Team Name One"]
     groups = {"Team Name One": "duplicate"}
-    collections = {"Team Name One": "ZZZZZZZZ"}
+    collections = {"Team Name One": {"id": "ZZZZZZZZ", "externalID": ""}}
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
 

@@ -143,7 +143,7 @@ def test_failed_logout(failing_authentication_client: BitwardenVaultClient) -> N
 
 def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
     teams = ["Team Name"]
-    existing_collections = {"Non Matching Collection": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    existing_collections = {"Non Matching Collection": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}}
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
     assert f"Created collection: {teams[0]}" in caplog.text
@@ -151,7 +151,7 @@ def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixtu
 
 def test_create_collection_fails(failing_client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
     teams = ["Team Name"]
-    existing_collections = {"Non Matching Collection": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    existing_collections = {"Non Matching Collection": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}}
     with pytest.raises(BitwardenVaultClientError, match="create', 'org-collection'"):
         failing_client.create_collection(teams, existing_collections)
 
@@ -160,7 +160,7 @@ def test_create_collection_unlocked(client: BitwardenVaultClient, caplog: LogCap
     client._unlock()
     client.login()
     teams = ["Team Name None"]
-    existing_collections = {"Team Name One": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    existing_collections = {"Non Matching Collection": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}}
     client.create_collection(teams, existing_collections)
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
@@ -169,7 +169,9 @@ def test_create_collection_unlocked(client: BitwardenVaultClient, caplog: LogCap
 
 def test_no_missing_collections(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
     teams = ["Existing Collection Name"]
-    existing_collections = {"Existing Collection Name": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY"}
+    existing_collections = {
+        "Existing Collection Name": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}
+    }
     with caplog.at_level(logging.INFO):
         client.create_collection(teams, existing_collections)
     assert "No missing collections found" in caplog.text
