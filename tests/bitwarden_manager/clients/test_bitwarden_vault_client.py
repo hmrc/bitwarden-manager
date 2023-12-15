@@ -141,40 +141,26 @@ def test_failed_logout(failing_authentication_client: BitwardenVaultClient) -> N
         failing_authentication_client.logout()
 
 
-def test_create_collection(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
-    teams = ["Team Name"]
-    existing_collections = {"Non Matching Collection": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}}
+def test_create_collections(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    missing_collection_names = ["Team Name"]
     with caplog.at_level(logging.INFO):
-        client.create_collection(teams, existing_collections)
-    assert f"Created collection: {teams[0]}" in caplog.text
+        client.create_collections(missing_collection_names)
+    assert f"Created collection: {missing_collection_names[0]}" in caplog.text
 
 
-def test_create_collection_fails(failing_client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
-    teams = ["Team Name"]
-    existing_collections = {"Non Matching Collection": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}}
+def test_create_collections_fails(failing_client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    missing_collection_names = ["Team Name"]
     with pytest.raises(BitwardenVaultClientError, match="create', 'org-collection'"):
-        failing_client.create_collection(teams, existing_collections)
+        failing_client.create_collections(missing_collection_names)
 
 
-def test_create_collection_unlocked(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+def test_create_collections_unlocked(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
     client._unlock()
     client.login()
-    teams = ["Team Name None"]
-    existing_collections = {"Non Matching Collection": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}}
-    client.create_collection(teams, existing_collections)
+    missing_collection_names = ["Team Name"]
     with caplog.at_level(logging.INFO):
-        client.create_collection(teams, existing_collections)
-    assert f"Created collection: {teams[0]}" in caplog.text
-
-
-def test_no_missing_collections(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
-    teams = ["Existing Collection Name"]
-    existing_collections = {
-        "Existing Collection Name": {"id": "YYYYYYYY-YYYY-YYYY-YYYY-YYYYYYYYYYYY", "externalID": ""}
-    }
-    with caplog.at_level(logging.INFO):
-        client.create_collection(teams, existing_collections)
-    assert "No missing collections found" in caplog.text
+        client.create_collections(missing_collection_names)
+    assert f"Created collection: {missing_collection_names[0]}" in caplog.text
 
 
 def test_list_org_users(client: BitwardenVaultClient) -> None:

@@ -130,13 +130,8 @@ class BitwardenVaultClient:
 
         return file_path
 
-    def create_collection(self, teams: List[str], existing_collections: Dict[str, Dict[str, str]]) -> None:
-        missing_collection = [team for team in teams if not existing_collections.get(team)]
-        if not missing_collection:
-            self.__logger.info("No missing collections found")
-            return
-
-        for collection in missing_collection:
+    def create_collections(self, missing_collection_names: List[str]) -> None:
+        for collection in missing_collection_names:
             collection_object = {
                 "organizationId": self.organisation_id,
                 "name": collection,

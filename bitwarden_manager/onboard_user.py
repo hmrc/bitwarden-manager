@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
@@ -48,7 +48,9 @@ class OnboardUser:
         )
         existing_groups = self.bitwarden_api.list_existing_groups(user_team_membership)
         existing_collections = self.bitwarden_api.list_existing_collections(user_team_membership)
-        self.bitwarden_vault_client.create_collection(user_team_membership, existing_collections)
+        self.bitwarden_vault_client.create_collections(
+            self._missing_collection_names(user_team_membership, existing_collections)
+        )
         collections = self.bitwarden_api.list_existing_collections(user_team_membership)
         group_ids = self.bitwarden_api.collate_user_group_ids(
             teams=user_team_membership,
@@ -59,3 +61,7 @@ class OnboardUser:
             user_id=user_id,
             group_ids=group_ids,
         )
+
+    @staticmethod
+    def _missing_collection_names(teams: List[str], existing_collections: Dict[str, Dict[str, str]]) -> List[str]:
+        return [team for team in teams if not existing_collections.get(team)]
