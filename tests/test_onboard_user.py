@@ -29,7 +29,7 @@ def test_onboard_user_invites_user_to_org() -> None:
 
 
 def test_onboard_user_rejects_bad_events() -> None:
-    event = {"somthing?": 1}
+    event = {"something?": 1}
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_user_management = MagicMock(spec=UserManagementApi)
     mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
@@ -58,3 +58,10 @@ def test_onboard_user_rejects_bad_emails() -> None:
         ).run(event)
 
     assert not mock_client_bitwarden.invite_user.called
+
+
+def test_onboard_user_missing_collection_names() -> None:
+    teams = ["Team Name One", "Team Name Two"]
+    existing_collections = {"Team Name One": {"id": "ZZZZZZZZ", "externalID": ""}}
+    expected = ["Team Name Two"]
+    assert expected == OnboardUser._missing_collection_names(teams, existing_collections)

@@ -1,6 +1,6 @@
+import base64
 from logging import Logger
 from typing import Dict, List, Any, Optional
-import hashlib
 
 from requests import HTTPError, Session
 
@@ -19,8 +19,9 @@ class BitwardenPublicApi:
         self.__client_secret = client_secret
         self.__client_id = client_id
 
-    def __hash_external_id(self, string: str) -> str:
-        return hashlib.sha256(string.encode()).hexdigest()
+    @staticmethod
+    def external_id_base64_encoded(id: str) -> str:
+        return base64.b64encode(id.encode()).decode("utf-8")
 
     def __get_user_groups(self, user_id: str) -> List[str]:
         response = session.get(f"{API_URL}/members/{user_id}/group-ids")
@@ -184,8 +185,6 @@ class BitwardenPublicApi:
             self.__logger.info(f"Group name invalid: {group_name}")
             return ""
 
-        hashed_group_name = self.__hash_external_id(group_name)
-
         json_id = []
         if collection_id:
             json_id.append({"id": collection_id, "readOnly": False})
@@ -196,7 +195,7 @@ class BitwardenPublicApi:
                 "name": group_name,
                 "accessAll": False,
                 "collections": json_id,
-                "externalId": hashed_group_name,
+                "externalId": self.external_id_base64_encoded(group_name),
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
@@ -235,13 +234,12 @@ class BitwardenPublicApi:
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
         external_id: str = self.__get_collection_external_id(collection_id)
-        hashed_external_id = self.__hash_external_id(external_id)
 
         try:
             put_response = session.put(
                 f"{API_URL}/collections/{collection_id}",
                 json={
-                    "externalId": hashed_external_id,
+                    "externalId": self.external_id_base64_encoded(external_id),
                     "groups": group_json,
                 },
                 timeout=REQUEST_TIMEOUT_SECONDS,
@@ -253,28 +251,35 @@ class BitwardenPublicApi:
             if "Failed to update the collection groups" in http_error_msg:
                 raise Exception("Failed to update the collection groups") from error
 
-    def list_existing_collections(self, teams: List[str]) -> Dict[str, str]:
-        collections: Dict[str, str] = {}
+    def list_existing_collections(self, teams: List[str]) -> Dict[str, Dict[str, str]]:
+        collections: Dict[str, Dict[str, str]] = {}
         response = session.get(f"{API_URL}/collections")
         try:
             response.raise_for_status()
             response_json: Dict[str, Any] = response.json()
             for collection_object in response_json.get("data", {}):
-                if collection_object.get("externalId", "") in teams:
-                    if not collections.get(collection_object.get("externalId")):
-                        collections[collection_object.get("externalId")] = collection_object.get("id")
-                    else:
-                        collections[collection_object.get("externalId")] = "duplicate"
+                for team in teams:
+                    external_id_base64_encoded = self.external_id_base64_encoded(team)
+                    if collection_object.get("externalId", "") == external_id_base64_encoded:
+                        if not collections.get(team):
+                            collections[team] = {
+                                "id": collection_object.get("id"),
+                                "externalId": external_id_base64_encoded,
+                            }
+                        else:
+                            collections[team] = {"id": "duplicate", "externalId": external_id_base64_encoded}
             return collections
         except HTTPError as error:
             raise Exception("Failed to list collections", response.content, error) from error
 
     def collate_user_group_ids(
-        self, teams: List[str], groups: Dict[str, str], collections: Dict[str, str]
+        self, teams: List[str], groups: Dict[str, str], collections: Dict[str, Dict[str, str]]
     ) -> List[str]:
         groups_ids = []
         for team in teams:
-            collection_id = collections.get(team, "")
+            collection = collections.get(team, {})
+            if collection:
+                collection_id = collection.get("id", "")
             group_id = groups.get(team, "")
             if "duplicate" not in (group_id, collection_id):
                 if not group_id:

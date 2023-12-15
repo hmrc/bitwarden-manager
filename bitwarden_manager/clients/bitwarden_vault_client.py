@@ -3,7 +3,9 @@ import subprocess  # nosec B404
 import os
 import base64
 from logging import Logger
-from typing import Optional
+from typing import Dict, List, Optional
+
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
 
 class BitwardenVaultClientError(Exception):
@@ -128,17 +130,12 @@ class BitwardenVaultClient:
 
         return file_path
 
-    def create_collection(self, teams: list[str], existing_collections: dict[str, str]) -> None:
-        missing_collection = [team for team in teams if not existing_collections.get(team)]
-        if not missing_collection:
-            self.__logger.info("No missing collections found")
-            return
-
-        for collection in missing_collection:
+    def create_collections(self, missing_collection_names: List[str]) -> None:
+        for collection in missing_collection_names:
             collection_object = {
                 "organizationId": self.organisation_id,
                 "name": collection,
-                "externalId": collection,
+                "externalId": BitwardenPublicApi.external_id_base64_encoded(collection),
             }
             json_collection = json.dumps(collection_object).encode("utf-8")
             json_encoded = base64.b64encode(json_collection)
@@ -163,7 +160,7 @@ class BitwardenVaultClient:
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 raise BitwardenVaultClientError(e)
 
-    def list_unconfirmed_users(self) -> list[dict[str, str]]:
+    def list_unconfirmed_users(self) -> List[Dict[str, str]]:
         unconfirmed_users = []
         tmp_env = os.environ.copy()
         tmp_env["BW_SESSION"] = self.session_token()

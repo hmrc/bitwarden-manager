@@ -1,10 +1,10 @@
+import base64
 import logging
 
 import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
 from responses import matchers
-import hashlib
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
@@ -193,10 +193,7 @@ def test_create_group() -> None:
     test_group = "Group Name"
     collection_id = "XXXXXXXX"
 
-    hashed_test_group = hashlib.sha256(test_group.encode()).hexdigest()
-
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
             "https://api.bitwarden.com/public/groups",
@@ -206,7 +203,7 @@ def test_create_group() -> None:
                     {
                         "name": test_group,
                         "accessAll": False,
-                        "externalId": hashed_test_group,
+                        "externalId": _external_id_base64_encoded(test_group),
                         "collections": [{"id": f"{collection_id}", "readOnly": False}],
                     }
                 )
@@ -654,10 +651,14 @@ def test_failed_to_update_collection_group() -> None:
             )
 
 
+def _external_id_base64_encoded(id: str) -> str:
+    return base64.b64encode(id.encode()).decode("utf-8")
+
+
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
+    team_name_one_external_id = _external_id_base64_encoded("Team Name One")
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -666,7 +667,7 @@ def test_list_existing_collections() -> None:
             json={
                 "data": [
                     {
-                        "externalId": "Team Name One",
+                        "externalId": team_name_one_external_id,
                         "object": "collection",
                         "id": "XXXXXXXX",
                         "groups": [{"id": "YYYYYYYY", "readOnly": True}],
@@ -683,7 +684,7 @@ def test_list_existing_collections() -> None:
 
         collections = client.list_existing_collections(teams)
 
-        assert collections == {"Team Name One": "XXXXXXXX"}
+        assert collections == {"Team Name One": {"id": "XXXXXXXX", "externalId": team_name_one_external_id}}
 
 
 def test_update_collection_groups_success() -> None:
@@ -728,8 +729,8 @@ def test_update_collection_groups_success() -> None:
 
 def test_list_existing_collections_duplicate() -> None:
     teams = ["Team Name One"]
+    team_name_one_external_id = _external_id_base64_encoded("Team Name One")
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -738,13 +739,13 @@ def test_list_existing_collections_duplicate() -> None:
             json={
                 "data": [
                     {
-                        "externalId": "Team Name One",
+                        "externalId": team_name_one_external_id,
                         "object": "collection",
                         "id": "XXXXXXXX",
                         "groups": [{"id": "YYYYYYYY", "readOnly": True}],
                     },
                     {
-                        "externalId": "Team Name One",
+                        "externalId": team_name_one_external_id,
                         "object": "collection",
                         "id": "XXXXXXXX",
                         "groups": [{"id": "YYYYYYYY", "readOnly": True}],
@@ -761,7 +762,7 @@ def test_list_existing_collections_duplicate() -> None:
 
         collections = client.list_existing_collections(teams)
 
-        assert collections == {"Team Name One": "duplicate"}
+        assert collections == {"Team Name One": {"id": "duplicate", "externalId": team_name_one_external_id}}
 
 
 def test_no_matching_collections() -> None:
@@ -898,10 +899,13 @@ def test_failed_to_list_groups() -> None:
 
 
 def test_collate_user_group_ids() -> None:
-    hashed_team_name_one = hashlib.sha256("Team Name One".encode()).hexdigest()
+    team_one_external_id = _external_id_base64_encoded("Team Name One")
     teams = ["Team Name One", "Team Name Two"]
     groups = {"Team Name Two": "WWWWWWWW"}
-    collections = {"Team Name One": "ZZZZZZZZ", "Team Name Two": "XXXXXXXX"}
+    collections = {
+        "Team Name One": {"id": "ZZZZZZZZ", "externalID": ""},
+        "Team Name Two": {"id": "XXXXXXXX", "externalID": ""},
+    }
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -935,7 +939,7 @@ def test_collate_user_group_ids() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "externalId": hashed_team_name_one,
+                        "externalId": team_one_external_id,
                         "groups": [{"id": "YYYYYYYY", "readOnly": False}],
                     }
                 )
@@ -955,7 +959,7 @@ def test_collate_user_group_ids() -> None:
                     {
                         "name": "Team Name One",
                         "accessAll": False,
-                        "externalId": hashed_team_name_one,
+                        "externalId": team_one_external_id,
                         "collections": [{"id": "ZZZZZZZZ", "readOnly": False}],
                     }
                 )
@@ -978,7 +982,7 @@ def test_collate_user_group_ids() -> None:
 def test_collate_user_group_ids_duplicates() -> None:
     teams = ["Team Name One"]
     groups = {"Team Name One": "duplicate"}
-    collections = {"Team Name One": "ZZZZZZZZ"}
+    collections = {"Team Name One": {"id": "ZZZZZZZZ", "externalID": ""}}
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
 
