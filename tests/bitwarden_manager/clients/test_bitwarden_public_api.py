@@ -1,3 +1,4 @@
+import base64
 import logging
 
 import pytest
@@ -193,8 +194,6 @@ def test_create_group() -> None:
     test_group = "Group Name"
     collection_id = "XXXXXXXX"
 
-    hashed_test_group = hashlib.sha256(test_group.encode()).hexdigest()
-
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -206,7 +205,7 @@ def test_create_group() -> None:
                     {
                         "name": test_group,
                         "accessAll": False,
-                        "externalId": hashed_test_group,
+                        "externalId": _external_id_base64_encoded(test_group),
                         "collections": [{"id": f"{collection_id}", "readOnly": False}],
                     }
                 )
@@ -653,14 +652,13 @@ def test_failed_to_update_collection_group() -> None:
                 group_id=group_id,
             )
 
-
-def _hash_external_id(string: str) -> str:
-    return hashlib.sha256(string.encode()).hexdigest()
+def _external_id_base64_encoded(id: str) -> str:
+        return base64.b64encode(id.encode())
 
 
 def test_list_existing_collections() -> None:
     teams = ["Team Name One"]
-    team_name_one_external_id = _hash_external_id("Team Name One")
+    team_name_one_external_id = _external_id_base64_encoded("Team Name One")
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             status=200,
@@ -732,9 +730,8 @@ def test_update_collection_groups_success() -> None:
 
 def test_list_existing_collections_duplicate() -> None:
     teams = ["Team Name One"]
-    team_name_one_external_id = _hash_external_id("Team Name One")
+    team_name_one_external_id = _external_id_base64_encoded("Team Name One")
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        # rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -903,7 +900,7 @@ def test_failed_to_list_groups() -> None:
 
 
 def test_collate_user_group_ids() -> None:
-    hashed_team_name_one = hashlib.sha256("Team Name One".encode()).hexdigest()
+    team_one_external_id = _external_id_base64_encoded("Team Name One")
     teams = ["Team Name One", "Team Name Two"]
     groups = {"Team Name Two": "WWWWWWWW"}
     collections = {
@@ -943,7 +940,7 @@ def test_collate_user_group_ids() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "externalId": hashed_team_name_one,
+                        "externalId": team_one_external_id,
                         "groups": [{"id": "YYYYYYYY", "readOnly": False}],
                     }
                 )
@@ -963,7 +960,7 @@ def test_collate_user_group_ids() -> None:
                     {
                         "name": "Team Name One",
                         "accessAll": False,
-                        "externalId": hashed_team_name_one,
+                        "externalId": team_one_external_id,
                         "collections": [{"id": "ZZZZZZZZ", "readOnly": False}],
                     }
                 )

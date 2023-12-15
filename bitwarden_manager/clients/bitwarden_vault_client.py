@@ -135,7 +135,7 @@ class BitwardenVaultClient:
             collection_object = {
                 "organizationId": self.organisation_id,
                 "name": collection,
-                "externalId": BitwardenPublicApi.hash_external_id(collection),
+                "externalId": BitwardenPublicApi.external_id_base64_encoded(collection),
             }
             json_collection = json.dumps(collection_object).encode("utf-8")
             json_encoded = base64.b64encode(json_collection)

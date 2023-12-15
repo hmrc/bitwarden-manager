@@ -1,6 +1,6 @@
+import base64
 from logging import Logger
 from typing import Dict, List, Any, Optional
-import hashlib
 
 from requests import HTTPError, Session
 
@@ -20,8 +20,8 @@ class BitwardenPublicApi:
         self.__client_id = client_id
 
     @staticmethod
-    def hash_external_id(string: str) -> str:
-        return hashlib.sha256(string.encode()).hexdigest()
+    def external_id_base64_encoded(id: str) -> str:
+        return base64.b64encode(id.encode())
 
     def __get_user_groups(self, user_id: str) -> List[str]:
         response = session.get(f"{API_URL}/members/{user_id}/group-ids")
@@ -185,8 +185,6 @@ class BitwardenPublicApi:
             self.__logger.info(f"Group name invalid: {group_name}")
             return ""
 
-        hashed_group_name = self.hash_external_id(group_name)
-
         json_id = []
         if collection_id:
             json_id.append({"id": collection_id, "readOnly": False})
@@ -197,7 +195,7 @@ class BitwardenPublicApi:
                 "name": group_name,
                 "accessAll": False,
                 "collections": json_id,
-                "externalId": hashed_group_name,
+                "externalId": self.external_id_base64_encoded(group_name),
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
@@ -236,13 +234,12 @@ class BitwardenPublicApi:
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
         external_id: str = self.__get_collection_external_id(collection_id)
-        hashed_external_id = self.hash_external_id(external_id)
 
         try:
             put_response = session.put(
                 f"{API_URL}/collections/{collection_id}",
                 json={
-                    "externalId": hashed_external_id,
+                    "externalId": self.external_id_base64_encoded(external_id),
                     "groups": group_json,
                 },
                 timeout=REQUEST_TIMEOUT_SECONDS,
@@ -262,12 +259,12 @@ class BitwardenPublicApi:
             response_json: Dict[str, Any] = response.json()
             for collection_object in response_json.get("data", {}):
                 for team in teams:
-                    hashed_external_id = self.hash_external_id(team)
-                    if collection_object.get("externalId", "") == hashed_external_id:
+                    external_id_base64_encoded = self.external_id_base64_encoded(team)
+                    if collection_object.get("externalId", "") == external_id_base64_encoded:
                         if not collections.get(team):
-                            collections[team] = {"id": collection_object.get("id"), "externalId": hashed_external_id}
+                            collections[team] = {"id": collection_object.get("id"), "externalId": external_id_base64_encoded}
                         else:
-                            collections[team] = {"id": "duplicate", "externalId": hashed_external_id}
+                            collections[team] = {"id": "duplicate", "externalId": external_id_base64_encoded}
             return collections
         except HTTPError as error:
             raise Exception("Failed to list collections", response.content, error) from error
