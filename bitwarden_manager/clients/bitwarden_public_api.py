@@ -21,7 +21,7 @@ class BitwardenPublicApi:
 
     @staticmethod
     def external_id_base64_encoded(id: str) -> str:
-        return base64.b64encode(id.encode())
+        return base64.b64encode(id.encode()).decode("utf-8")
 
     def __get_user_groups(self, user_id: str) -> List[str]:
         response = session.get(f"{API_URL}/members/{user_id}/group-ids")
@@ -262,7 +262,10 @@ class BitwardenPublicApi:
                     external_id_base64_encoded = self.external_id_base64_encoded(team)
                     if collection_object.get("externalId", "") == external_id_base64_encoded:
                         if not collections.get(team):
-                            collections[team] = {"id": collection_object.get("id"), "externalId": external_id_base64_encoded}
+                            collections[team] = {
+                                "id": collection_object.get("id"),
+                                "externalId": external_id_base64_encoded,
+                            }
                         else:
                             collections[team] = {"id": "duplicate", "externalId": external_id_base64_encoded}
             return collections

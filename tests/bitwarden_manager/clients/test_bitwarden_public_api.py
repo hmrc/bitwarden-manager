@@ -5,7 +5,6 @@ import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
 from responses import matchers
-import hashlib
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
@@ -195,7 +194,6 @@ def test_create_group() -> None:
     collection_id = "XXXXXXXX"
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
             "https://api.bitwarden.com/public/groups",
@@ -652,8 +650,9 @@ def test_failed_to_update_collection_group() -> None:
                 group_id=group_id,
             )
 
+
 def _external_id_base64_encoded(id: str) -> str:
-        return base64.b64encode(id.encode())
+    return base64.b64encode(id.encode()).decode("utf-8")
 
 
 def test_list_existing_collections() -> None:
