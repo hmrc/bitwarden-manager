@@ -233,13 +233,11 @@ class BitwardenPublicApi:
         group_ids.add(group_id)
         group_json = [{"id": group_id, "readOnly": False} for group_id in group_ids]
 
-        external_id: str = self.__get_collection_external_id(collection_id)
-
         try:
             put_response = session.put(
                 f"{API_URL}/collections/{collection_id}",
                 json={
-                    "externalId": self.external_id_base64_encoded(external_id),
+                    "externalId": self.__get_collection_external_id(collection_id),
                     "groups": group_json,
                 },
                 timeout=REQUEST_TIMEOUT_SECONDS,
@@ -257,7 +255,7 @@ class BitwardenPublicApi:
         try:
             response.raise_for_status()
             response_json: Dict[str, Any] = response.json()
-            for collection_object in response_json.get("data", {}):
+            for collection_object in response_json.get("data", []):
                 for team in teams:
                     external_id_base64_encoded = self.external_id_base64_encoded(team)
                     if collection_object.get("externalId", "") == external_id_base64_encoded:

@@ -907,14 +907,13 @@ def test_collate_user_group_ids() -> None:
         "Team Name Two": {"id": "XXXXXXXX", "externalID": ""},
     }
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
             method="GET",
             url="https://api.bitwarden.com/public/collections/ZZZZZZZZ",
             json={
-                "externalId": "Team Name One",
+                "externalId": team_one_external_id,
                 "object": "collection",
                 "id": "ZZZZZZZZ",
                 "groups": [],
@@ -983,9 +982,7 @@ def test_collate_user_group_ids_duplicates() -> None:
     teams = ["Team Name One"]
     groups = {"Team Name One": "duplicate"}
     collections = {"Team Name One": {"id": "ZZZZZZZZ", "externalID": ""}}
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
-
+    with responses.RequestsMock(assert_all_requests_are_fired=True):
         client = BitwardenPublicApi(
             logger=logging.getLogger(),
             client_id="foo",
