@@ -982,7 +982,7 @@ def test_collate_user_group_ids_duplicates() -> None:
     teams = ["Team Name One"]
     groups = {"Team Name One": "duplicate"}
     collections = {"Team Name One": {"id": "ZZZZZZZZ", "externalID": ""}}
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+    with responses.RequestsMock(assert_all_requests_are_fired=True):
         client = BitwardenPublicApi(
             logger=logging.getLogger(),
             client_id="foo",
