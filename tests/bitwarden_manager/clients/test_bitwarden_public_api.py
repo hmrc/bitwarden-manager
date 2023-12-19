@@ -1136,3 +1136,53 @@ def test_remove_user_with_failure(caplog: LogCaptureFixture) -> None:
             client.remove_user(
                 username=username,
             )
+
+def test_update_collection_external_id_to_encoded_team_name() -> None:
+    team_one_name = "Team One"
+    team_one_id = "id-team-one"
+    team_one_external_id_encoded = _external_id_base64_encoded(team_one_name)
+    collection_object = {
+        "id": team_one_id,
+        'externalId': team_one_name
+    }
+    teams = [team_one_name]
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.GET,
+            url=f"https://api.bitwarden.com/public/collections/{team_one_id}",
+            json={
+                "externalId": team_one_name,
+                "object": "collection",
+                "id": team_one_id,
+                "groups": [],
+            },
+        )
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.com/public/collections/{team_one_id}",
+            body="",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "externalId": team_one_external_id_encoded,
+                        "groups": [],
+                    }
+                )
+            ],
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        external_id = client.update_collection_external_id_to_encoded_team_name(collection_object, teams)
+
+        assert team_one_external_id_encoded == external_id
+

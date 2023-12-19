@@ -270,6 +270,39 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to list collections", response.content, error) from error
 
+    def update_all_collection_external_ids(self, team: List[str]) -> List[str]:
+        # get all collections
+        # for each collection_object
+        #    update_collection_external_id_to_encoded_team_name()
+        pass
+
+    def update_collection_external_id_to_encoded_team_name(self, collection_object: Dict[str, Any], teams: List[str]) -> str:
+        # get collection
+        # for each team in teams
+        # check if collection has externalId == team
+        #    if True, encode(team) and update collection & break from loop
+        #    else: do nothing
+        for team in teams:
+            if collection_object.get("externalId") == team:
+                try:
+                    put_response = session.put(
+                        f"{API_URL}/collections/{collection_object.get('id')}",
+                        json={
+                            "externalId": self.external_id_base64_encoded(team),
+                            "groups": collection_object.get("groups"),
+                        },
+                        timeout=REQUEST_TIMEOUT_SECONDS,
+                    )
+                    put_response.raise_for_status()
+                    self.__logger.info(f"Updated external id of collection: {team}")
+                except HTTPError as error:
+                    http_error_msg = error.response.json().get("error", "")
+                    if "Failed to update the collection external id" in http_error_msg:
+                        raise Exception("Failed to update the collection external id") from error
+
+
+        pass
+
     def collate_user_group_ids(
         self, teams: List[str], groups: Dict[str, str], collections: Dict[str, Dict[str, str]]
     ) -> List[str]:
