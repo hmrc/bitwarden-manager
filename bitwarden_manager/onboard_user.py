@@ -41,19 +41,18 @@ class OnboardUser:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
-        user_team_membership = self.user_management_api.get_user_teams(username=event["username"])
+        teams = self.user_management_api.get_user_teams(username=event["username"])
+        self.bitwarden_api.update_all_team_collection_external_ids(teams)
         user_id = self.bitwarden_api.invite_user(
             username=event["username"],
             email=event["email"],
         )
-        existing_groups = self.bitwarden_api.list_existing_groups(user_team_membership)
-        existing_collections = self.bitwarden_api.list_existing_collections(user_team_membership)
-        self.bitwarden_vault_client.create_collections(
-            self._missing_collection_names(user_team_membership, existing_collections)
-        )
-        collections = self.bitwarden_api.list_existing_collections(user_team_membership)
+        existing_groups = self.bitwarden_api.list_existing_groups(teams)
+        existing_collections = self.bitwarden_api.list_existing_collections(teams)
+        self.bitwarden_vault_client.create_collections(self._missing_collection_names(teams, existing_collections))
+        collections = self.bitwarden_api.list_existing_collections(teams)
         group_ids = self.bitwarden_api.collate_user_group_ids(
-            teams=user_team_membership,
+            teams=teams,
             groups=existing_groups,
             collections=collections,
         )
