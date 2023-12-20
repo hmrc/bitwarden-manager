@@ -1187,7 +1187,6 @@ def test_update_all_team_collection_external_ids() -> None:
     team_two_id = _collection_id(team_two_name)
     team_two_external_id_encoded = _external_id_base64_encoded(team_two_name)
 
-    collection_object = {"id": team_one_id, "externalId": team_one_name, "groups": []}
     teams = [team_one_name, team_two_name]
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
@@ -1195,7 +1194,7 @@ def test_update_all_team_collection_external_ids() -> None:
             status=200,
             content_type="application/json",
             method=responses.GET,
-            url=f"https://api.bitwarden.com/public/collections",
+            url="https://api.bitwarden.com/public/collections",
             json={
                 "data": [
                     _collection_object_with_external_id_not_encoded(team_one_name),

@@ -268,10 +268,9 @@ class BitwardenPublicApi:
             if "Failed to update the collection groups" in http_error_msg:
                 raise Exception("Failed to update the collection groups") from error
 
-    def list_existing_collections(self, teams: List[str]) -> Dict[str, Dict[str, str]]:
-        collections: Dict[str, Dict[str, str]] = {}
+    def list_existing_collections(self, teams: List[str]) -> Dict[str, Dict[str, Any]]:
+        collections: Dict[str, Dict[str, Any]] = {}
         for collection_object in self.__list_collections():
-            print("DEBUG", self.__list_collections())
             for team in teams:
                 external_id_base64_encoded = self.external_id_base64_encoded(team)
                 if collection_object.get("externalId", "") == external_id_base64_encoded:
@@ -285,7 +284,7 @@ class BitwardenPublicApi:
         return collections
 
     def collate_user_group_ids(
-        self, teams: List[str], groups: Dict[str, str], collections: Dict[str, Dict[str, str]]
+        self, teams: List[str], groups: Dict[str, str], collections: Dict[str, Dict[str, Any]]
     ) -> List[str]:
         groups_ids = []
         for team in teams:
@@ -312,5 +311,7 @@ class BitwardenPublicApi:
     ) -> None:
         for team in teams:
             if collection_object.get("externalId") == team:
-                self.__update_collection_external_id(collection_object.get("id"), self.external_id_base64_encoded(team))
+                self.__update_collection_external_id(
+                    collection_object.get("id", ""), self.external_id_base64_encoded(team)
+                )
                 self.__logger.info(f"Updated external id of collection: {team}")
