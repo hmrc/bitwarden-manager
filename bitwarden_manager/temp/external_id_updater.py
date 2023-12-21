@@ -9,6 +9,7 @@
 # update any collection with a match
 
 import base64
+import binascii
 import logging
 import os
 from typing import Any, Dict, List
@@ -69,7 +70,7 @@ class CollectionUpdater:
         self.__logger = self.config.get_logger()
 
     def get_teams(self) -> List[str]:
-        bearer = self.user_management_api.__fetch_token()
+        bearer = self.user_management_api._UserManagementApi__fetch_token()
         response = get(
             f"{UMP_API_URL}/organisations/teams",
             headers={
@@ -90,27 +91,31 @@ class CollectionUpdater:
     def base64_encode_teams(self, teams: List[str]) -> List[str]:
         return [base64.b64encode(team) for team in teams]
 
+    def base64_safe_decode(self, text: str) -> str:
+        try:
+            return base64.b64decode(text).decode("utf-8")
+        except (UnicodeDecodeError, binascii.Error):
+            return ""
+
+
     def collections_with_unencoded_exernal_id(
-        self, collections: List[Dict[str, Any]], teams_base64_encoded: List[str]
+        self, collections: List[Dict[str, Any]], teams: List[str]
     ) -> List[Dict[str, Any]]:
         return [
             collection
             for collection in collections
-            if self.bitwarden_api.external_id_base64_encoded(collection.get("external_id", "")) in teams_base64_encoded
+            if not self.base64_safe_decode(collection.get("externalId", "")) in teams
         ]
 
     def run(self) -> None:
-        collections = self.bitwarden_api.__list_collections()
+        collections = self.bitwarden_api._BitwardenPublicApi__list_collections()
         teams = self.get_teams()
-        if not teams:
-            return
-        teams_base64_encoded = self.base64_encode_teams(teams)
 
-        for collection in self.collections_with_unencoded_exernal_id(collections, teams_base64_encoded):
+        for collection in self.collections_with_unencoded_exernal_id(collections, teams):
             collection_id = collection.get("id", "")
-            self.bitwarden_api.__update_collection_external_id(
+            self.bitwarden_api._BitwardenPublicApi__update_collection_external_id(
                 collection_id=collection_id,
-                external_id=collection.get("externalId", ""),
+                external_id=self.bitwarden_api.external_id_base64_encoded(collection.get("externalId", "")),
             )
             self.__logger.info(f"Updated external id of collection: {collection_id}")
 

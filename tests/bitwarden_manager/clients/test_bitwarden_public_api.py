@@ -1105,7 +1105,7 @@ def test_update_collection_external_id_to_encoded_team_name() -> None:
             content_type="application/json",
             method=responses.GET,
             url=f"https://api.bitwarden.com/public/collections/{team_one_id}",
-            json=_collection_object_with_external_id_not_encoded(team_one_name),
+            json=_collection_object_with_unencoded_external_id(team_one_name),
         )
         rsps.add(
             status=200,
@@ -1149,7 +1149,7 @@ def test_update_collection_external_id_to_encoded_team_name_failure() -> None:
             content_type="application/json",
             method=responses.GET,
             url=f"https://api.bitwarden.com/public/collections/{team_one_id}",
-            json=_collection_object_with_external_id_not_encoded(team_one_name),
+            json=_collection_object_with_unencoded_external_id(team_one_name),
         )
 
         rsps.add(
@@ -1197,8 +1197,8 @@ def test_update_all_team_collection_external_ids() -> None:
             url="https://api.bitwarden.com/public/collections",
             json={
                 "data": [
-                    _collection_object_with_external_id_not_encoded(team_one_name),
-                    _collection_object_with_external_id_not_encoded(team_two_name),
+                    _collection_object_with_unencoded_external_id(team_one_name),
+                    _collection_object_with_unencoded_external_id(team_two_name),
                 ]
             },
         )
@@ -1207,14 +1207,14 @@ def test_update_all_team_collection_external_ids() -> None:
             content_type="application/json",
             method=responses.GET,
             url=f"https://api.bitwarden.com/public/collections/{team_one_id}",
-            json=_collection_object_with_external_id_not_encoded(team_one_name),
+            json=_collection_object_with_unencoded_external_id(team_one_name),
         )
         rsps.add(
             status=200,
             content_type="application/json",
             method=responses.GET,
             url=f"https://api.bitwarden.com/public/collections/{team_two_id}",
-            json=_collection_object_with_external_id_not_encoded(team_two_name),
+            json=_collection_object_with_unencoded_external_id(team_two_name),
         )
         rsps.add(
             status=200,
@@ -1280,7 +1280,7 @@ def _collection_object_with_base64_encoded_external_id(name: str, groups: List[D
     }
 
 
-def _collection_object_with_external_id_not_encoded(name: str, groups: List[Dict[str, Any]] = []) -> Dict[str, Any]:
+def _collection_object_with_unencoded_external_id(name: str, groups: List[Dict[str, Any]] = []) -> Dict[str, Any]:
     return {
         "externalId": name,
         "object": "collection",
