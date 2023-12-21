@@ -8,7 +8,10 @@ import responses
 from responses import matchers
 
 from bitwarden_manager.temp.external_id_updater import CollectionUpdater, Config, GroupUpdater
-from tests.bitwarden_manager.clients.test_bitwarden_public_api import _collection_object_with_base64_encoded_external_id, _collection_object_with_unencoded_external_id
+from tests.bitwarden_manager.clients.test_bitwarden_public_api import (
+    _collection_object_with_base64_encoded_external_id,
+    _collection_object_with_unencoded_external_id,
+)
 from tests.bitwarden_manager.clients.test_user_management_api import MOCKED_LOGIN
 
 
@@ -40,16 +43,27 @@ def test_get_teams() -> None:
             url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
             json={
                 "teams": [
-                    { 'team': 'team-one', 'slack': 'https://myorg.slack.com/messages/team-one' },
-                    { 'team': 'team-two', 'slack': 'https://myorg.slack.com/messages/team-two' },
-                    { 'team': 'team-three', 'slack': 'https://myorg.slack.com/messages/team-three'},
-                    { 'team': 'team-four'},
-                    { 'team': 'team-five'},
+                    {"team": "team-one", "slack": "https://myorg.slack.com/messages/team-one"},
+                    {"team": "team-two", "slack": "https://myorg.slack.com/messages/team-two"},
+                    {"team": "team-three", "slack": "https://myorg.slack.com/messages/team-three"},
+                    {"team": "team-four"},
+                    {"team": "team-five"},
                 ]
             },
         )
 
         assert ["team-one", "team-two", "team-three"] == CollectionUpdater().get_teams()
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.GET,
+            url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
+            json={"error": "error"},
+        )
+
+        with pytest.raises(Exception):
+            CollectionUpdater().get_teams()
 
 
 def test_collections_with_unencoded_external_id() -> None:
@@ -66,10 +80,10 @@ def test_collections_with_unencoded_external_id() -> None:
         _collection_object_with_unencoded_external_id("team-five"),
     ] == CollectionUpdater().collections_with_unencoded_exernal_id(collections, teams)
 
+
 def test_base64_safe_decode() -> None:
     assert "team-one" == CollectionUpdater().base64_safe_decode("dGVhbS1vbmU=")
     assert "" == CollectionUpdater().base64_safe_decode("un-base64-encoded-text")
-    assert "" == CollectionUpdater().base64_safe_decode(b"not-a-string")
 
 
 def test_collection_updater_run() -> None:
@@ -82,11 +96,11 @@ def test_collection_updater_run() -> None:
             url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
             json={
                 "teams": [
-                    { 'team': 'team-one', 'slack': 'https://myorg.slack.com/messages/team-one' },
-                    { 'team': 'team-two', 'slack': 'https://myorg.slack.com/messages/team-two' },
-                    { 'team': 'team-three', 'slack': 'https://myorg.slack.com/messages/team-three'},
-                    { 'team': 'team-four'},
-                    { 'team': 'team-five'},
+                    {"team": "team-one", "slack": "https://myorg.slack.com/messages/team-one"},
+                    {"team": "team-two", "slack": "https://myorg.slack.com/messages/team-two"},
+                    {"team": "team-three", "slack": "https://myorg.slack.com/messages/team-three"},
+                    {"team": "team-four"},
+                    {"team": "team-five"},
                 ]
             },
         )
@@ -108,31 +122,27 @@ def test_collection_updater_run() -> None:
             status=200,
             content_type="application/json",
             method=responses.GET,
-            url=f"https://api.bitwarden.com/public/collections/id-team-four",
+            url="https://api.bitwarden.com/public/collections/id-team-four",
             json=_collection_object_with_unencoded_external_id("id-team-four"),
         )
         rsps.add(
             status=200,
             content_type="application/json",
             method=responses.PUT,
-            url=f"https://api.bitwarden.com/public/collections/id-team-four",
+            url="https://api.bitwarden.com/public/collections/id-team-four",
             body="",
             match=[
-                matchers.json_params_matcher(
-                    { "externalId": _external_id_base64_encoded("team-four"), "groups": [] }
-                )
+                matchers.json_params_matcher({"externalId": _external_id_base64_encoded("team-four"), "groups": []})
             ],
         )
         rsps.add(
             status=200,
             content_type="application/json",
             method=responses.PUT,
-            url=f"https://api.bitwarden.com/public/collections/id-team-four",
+            url="https://api.bitwarden.com/public/collections/id-team-four",
             body="",
             match=[
-                matchers.json_params_matcher(
-                    { "externalId": _external_id_base64_encoded("team-four"), "groups": [] }
-                )
+                matchers.json_params_matcher({"externalId": _external_id_base64_encoded("team-four"), "groups": []})
             ],
         )
 
@@ -155,26 +165,26 @@ def test_get_groups() -> None:
                     _group_object_with_base64_encoded_external_id("team-two"),
                     _group_object_with_base64_encoded_external_id("team-three"),
                 ]
-            }
+            },
         )
         groups = GroupUpdater().get_groups()
         assert [
-                    _group_object_with_base64_encoded_external_id("team-one"),
-                    _group_object_with_base64_encoded_external_id("team-two"),
-                    _group_object_with_base64_encoded_external_id("team-three"),
+            _group_object_with_base64_encoded_external_id("team-one"),
+            _group_object_with_base64_encoded_external_id("team-two"),
+            _group_object_with_base64_encoded_external_id("team-three"),
         ] == groups
-
 
         rsps.add(
             status=400,
             content_type="application/json",
             method=responses.GET,
             url="https://api.bitwarden.com/public/groups",
-            json={ "error": "error" }
+            json={"error": "error"},
         )
 
         with pytest.raises(Exception):
             GroupUpdater().get_groups()
+
 
 def test_update_group_external_id() -> None:
     group_name = "team-one"
@@ -198,7 +208,6 @@ def test_update_group_external_id() -> None:
         GroupUpdater().update_group_external_id(group=_group_object_with_unencoded_external_id(group_name))
         assert rsps.calls[0].response.status_code == 200
 
-
         rsps.add(
             status=400,
             content_type="application/json",
@@ -219,6 +228,7 @@ def test_update_group_external_id() -> None:
         with pytest.raises(Exception):
             GroupUpdater().update_group_external_id(group=_group_object_with_unencoded_external_id(group_name))
 
+
 def test_GroupUpdater_run() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         rsps.add(
@@ -233,7 +243,7 @@ def test_GroupUpdater_run() -> None:
                     _group_object_with_base64_encoded_external_id("team-three"),
                     _group_object_with_unencoded_external_id("team-four"),
                 ]
-            }
+            },
         )
         rsps.add(
             status=200,
@@ -251,38 +261,48 @@ def test_GroupUpdater_run() -> None:
                 )
             ],
         )
-        GroupUpdater().update_group_external_id(group=_group_object_with_unencoded_external_id("team-four"))
+        GroupUpdater().run()
         assert rsps.calls[-1].response.status_code == 200
-        assert json.loads(rsps.calls[-1].response.request.body) == {"name": "team-four", "accessAll": True, "externalId": "dGVhbS1mb3Vy", "collections": []}
+        assert json.loads(rsps.calls[-1].response.request.body) == {
+            "name": "team-four",
+            "accessAll": True,
+            "externalId": "dGVhbS1mb3Vy",
+            "collections": [],
+        }
+
+
+def test_has_base64_encoded_external_id() -> None:
+    assert (
+        GroupUpdater().has_base64_encoded_external_id(_group_object_with_base64_encoded_external_id("team-one")) is True
+    )
+    assert GroupUpdater().has_base64_encoded_external_id(_group_object_with_unencoded_external_id("team-one")) is False
 
 
 # Helper functions
 
+
 def _external_id_base64_encoded(id: str) -> str:
     return base64.b64encode(id.encode()).decode("utf-8")
+
 
 def _id(name: str) -> str:
     return f"id-{name.replace(' ', '-').lower()}"
 
+
 def _group_object_with_base64_encoded_external_id(name: str) -> Dict[str, Any]:
     return {
-      "name": name,
-      "accessAll": True,
-      "externalId": _external_id_base64_encoded(name),
-      "object": "group",
-      "id": _id(name),
-      "collections": []
+        "name": name,
+        "accessAll": True,
+        "externalId": _external_id_base64_encoded(name),
+        "object": "group",
+        "id": _id(name),
+        "collections": [],
     }
 
+
 def _group_object_with_unencoded_external_id(name: str) -> Dict[str, Any]:
-    return {
-      "name": name,
-      "accessAll": True,
-      "externalId": name,
-      "object": "group",
-      "id": _id(name),
-      "collections": []
-    }
+    return {"name": name, "accessAll": True, "externalId": name, "object": "group", "id": _id(name), "collections": []}
+
 
 @pytest.fixture(autouse=True)
 def _setup_environment(monkeypatch: Any) -> None:

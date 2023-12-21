@@ -28,11 +28,12 @@ class Config:
         self.__logger = self.get_logger()
 
     def get_env_var(self, name: str) -> str:
-        var = os.getenv(name)
-        if not var:
+        value = os.getenv(name)
+        if not value:
             raise Exception(f"Missing env var: {name}")
+        return value
 
-    def get_logger(self) -> str:
+    def get_logger(self) -> logging.Logger:
         return logging.getLogger()
 
     def get_ldap_username(self) -> str:
@@ -70,7 +71,7 @@ class CollectionUpdater:
         self.__logger = self.config.get_logger()
 
     def get_teams(self) -> List[str]:
-        bearer = self.user_management_api._UserManagementApi__fetch_token()
+        bearer = self.user_management_api._UserManagementApi__fetch_token()  # type: ignore
         response = get(
             f"{UMP_API_URL}/organisations/teams",
             headers={
@@ -88,15 +89,11 @@ class CollectionUpdater:
         response_json: Dict[str, Any] = response.json()
         return [t.get("team") for t in response_json.get("teams", []) if t.get("slack")]
 
-    def base64_encode_teams(self, teams: List[str]) -> List[str]:
-        return [base64.b64encode(team) for team in teams]
-
     def base64_safe_decode(self, text: str) -> str:
         try:
             return base64.b64decode(text).decode("utf-8")
         except (UnicodeDecodeError, binascii.Error):
             return ""
-
 
     def collections_with_unencoded_exernal_id(
         self, collections: List[Dict[str, Any]], teams: List[str]
@@ -108,12 +105,12 @@ class CollectionUpdater:
         ]
 
     def run(self) -> None:
-        collections = self.bitwarden_api._BitwardenPublicApi__list_collections()
+        collections = self.bitwarden_api._BitwardenPublicApi__list_collections()  # type: ignore
         teams = self.get_teams()
 
         for collection in self.collections_with_unencoded_exernal_id(collections, teams):
             collection_id = collection.get("id", "")
-            self.bitwarden_api._BitwardenPublicApi__update_collection_external_id(
+            self.bitwarden_api._BitwardenPublicApi__update_collection_external_id(  # type: ignore
                 collection_id=collection_id,
                 external_id=self.bitwarden_api.external_id_base64_encoded(collection.get("externalId", "")),
             )
@@ -135,10 +132,11 @@ class GroupUpdater:
             response.raise_for_status()
         except HTTPError as error:
             raise Exception("Failed to get groups", response.content, error) from error
-        return response.json().get("data", [])
+        response_json: List[Dict[str, Any]] = response.json().get("data", [])
+        return response_json
 
     def has_base64_encoded_external_id(self, group: Dict[str, Any]) -> bool:
-        return group.get("externalId") == self.bitwarden_api.external_id_base64_encoded(group.get("name"))
+        return group.get("externalId") == self.bitwarden_api.external_id_base64_encoded(group.get("name", ""))
 
     def update_group_external_id(self, group: Dict[str, Any]) -> None:
         group_id = group.get("id")
@@ -148,7 +146,7 @@ class GroupUpdater:
             json={
                 "name": group_name,
                 "accessAll": group.get("accessAll"),
-                "externalId": self.bitwarden_api.external_id_base64_encoded(group.get("externalId")),
+                "externalId": self.bitwarden_api.external_id_base64_encoded(group.get("externalId", "")),
                 "collections": group.get("collections"),
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
