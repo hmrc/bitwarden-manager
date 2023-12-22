@@ -6,10 +6,9 @@ import binascii
 import logging
 import os
 from typing import Any, Dict, List
-from requests import HTTPError, Session, get
+from requests import HTTPError,  get
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, session
 from bitwarden_manager.clients.user_management_api import REQUEST_TIMEOUT_SECONDS, UserManagementApi
-from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 UMP_API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
 BITWARDEN_API_URL = "https://api.bitwarden.com/public"
