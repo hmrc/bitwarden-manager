@@ -372,6 +372,7 @@ def _setup_environment(monkeypatch: Any) -> None:
     for key, value in env_vars.items():
         monkeypatch.setenv(key, value)
 
+
 UMP_MOCKED_LOGIN = responses.Response(
     method="POST",
     url="https://user-management-auth-production.tools.tax.service.gov.uk/v1/login",
