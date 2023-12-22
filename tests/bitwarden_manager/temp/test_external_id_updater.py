@@ -143,7 +143,8 @@ def test_base64_safe_decode() -> None:
 
 def test_collection_updater_run() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
-        rsps.add(MOCKED_LOGIN)
+        rsps.add(UMP_MOCKED_LOGIN)
+        rsps.add(BITWARDEN_MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -370,3 +371,24 @@ def _setup_environment(monkeypatch: Any) -> None:
 
     for key, value in env_vars.items():
         monkeypatch.setenv(key, value)
+
+UMP_MOCKED_LOGIN = responses.Response(
+    method="POST",
+    url="https://user-management-auth-production.tools.tax.service.gov.uk/v1/login",
+    status=200,
+    json={
+        "Token": "TEST_BEARER_TOKEN",
+        "uid": "user.name",
+    },
+)
+
+BITWARDEN_MOCKED_LOGIN = responses.Response(
+    method="POST",
+    url="https://identity.bitwarden.com/connect/token",
+    status=200,
+    json={
+        "access_token": "TEST_BEARER_TOKEN",
+        "expires_in": 3600,
+        "token_type": "Bearer",
+    },
+)

@@ -1,13 +1,6 @@
 # To be removed once external id of all existing collections has been updated.
 # Note: only team collections are in scope
 
-# get all collections
-# get all teams for ump
-# base64 encode each team in ump teams
-# base64 encode external id
-# check each collection external id against list of encoded ump teams
-# update any collection with a match
-
 import base64
 import binascii
 import logging
@@ -121,6 +114,7 @@ class CollectionUpdater:
         ]
 
     def run(self) -> None:
+        self.bitwarden_api._BitwardenPublicApi__fetch_token()
         collections = self.bitwarden_api._BitwardenPublicApi__list_collections()  # type: ignore
         teams = self.get_teams()
 
@@ -139,9 +133,6 @@ class GroupUpdater:
         self.bitwarden_api = self.config.get_bitwarden_public_api()
         self.__logger = self.config.get_logger()
 
-    # get all groups
-    # encode group name and check if it matches external id
-    # update any that does not match
     def get_groups(self) -> List[Dict[str, Any]]:
         response = session.get(f"{BITWARDEN_API_URL}/groups")
         try:
