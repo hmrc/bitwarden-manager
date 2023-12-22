@@ -52,7 +52,7 @@ def test_get_teams() -> None:
             },
         )
 
-        assert ["team-one", "team-two", "team-three"] == CollectionUpdater().get_teams()
+        assert ["team-one", "team-two", "team-three", "team-four", "team-five"] == CollectionUpdater().get_teams()
 
         rsps.add(
             status=400,
@@ -72,6 +72,7 @@ def test_update_collection_external_id() -> None:
     external_id_encoded = _external_id_base64_encoded(team_one_name)
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(BITWARDEN_MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -98,8 +99,8 @@ def test_update_collection_external_id() -> None:
         CollectionUpdater().update_collection_external_id(id, external_id_encoded)
 
         rsps.assert_call_count(f"https://api.bitwarden.com/public/collections/{id}", 2) is True
-        assert rsps.calls[1].response.status_code == 200
-        assert json.loads(rsps.calls[1].request.body) == {"externalId": external_id_encoded, "groups": []}
+        assert rsps.calls[2].response.status_code == 200
+        assert json.loads(rsps.calls[2].request.body) == {"externalId": external_id_encoded, "groups": []}
 
         rsps.add(
             status=400,
@@ -133,7 +134,7 @@ def test_collections_with_unencoded_external_id() -> None:
     assert [
         _collection_object_with_unencoded_external_id("team-four"),
         _collection_object_with_unencoded_external_id("team-five"),
-    ] == CollectionUpdater().collections_with_unencoded_exernal_id(collections, teams)
+    ] == CollectionUpdater().collections_with_unencoded_external_id(collections, teams)
 
 
 def test_base64_safe_decode() -> None:
@@ -287,6 +288,7 @@ def test_update_group_external_id() -> None:
 
 def test_GroupUpdater_run() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(BITWARDEN_MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
