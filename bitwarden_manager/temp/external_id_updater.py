@@ -21,11 +21,11 @@ def get_logger() -> logging.Logger:
     logger.addHandler(logging.StreamHandler())
     return logger
 
+
 logger = get_logger()
 
 
 class Config:
-
     def get_env_var(self, name: str) -> str:
         value = os.getenv(name)
         if not value:
@@ -85,7 +85,7 @@ class CollectionUpdater:
         return [t.get("team") for t in response_json.get("teams", [])]
 
     def update_collection_external_id(self, collection_id: str, external_id: str) -> None:
-        self.bitwarden_api._BitwardenPublicApi__fetch_token()
+        self.bitwarden_api._BitwardenPublicApi__fetch_token()  # type: ignore
         response = session.put(
             f"{BITWARDEN_API_URL}/collections/{collection_id}",
             json={
@@ -135,8 +135,12 @@ class CollectionUpdater:
     def setup(self) -> None:  # pragma: no cover
         # For testing only
         logger.info("Setting up collections with unencoded external id for testing")
-        self.update_collection_external_id(collection_id="3a092620-ecdf-46ed-ab1a-b0dc00de9d7e", external_id="AWS Account Authorisers")
-        self.update_collection_external_id(collection_id="b2b0a7dc-dac8-4077-9b12-b0dd00c865dd", external_id="MDTP Apprentices")
+        self.update_collection_external_id(
+            collection_id="3a092620-ecdf-46ed-ab1a-b0dc00de9d7e", external_id="AWS Account Authorisers"
+        )
+        self.update_collection_external_id(
+            collection_id="b2b0a7dc-dac8-4077-9b12-b0dd00c865dd", external_id="MDTP Apprentices"
+        )
 
 
 class GroupUpdater:
@@ -158,7 +162,7 @@ class GroupUpdater:
 
     def update_group_external_id(self, group: Dict[str, Any], external_id: str = "") -> None:
         group_id = group.get("id")
-        group_name = group.get("name")
+        group_name = group.get("name", "")
         group_external_id = external_id
         if len(group_external_id) == 0:
             group_external_id = self.bitwarden_api.external_id_base64_encoded(group_name)
