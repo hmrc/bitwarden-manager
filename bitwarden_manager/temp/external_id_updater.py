@@ -6,7 +6,7 @@ import binascii
 import logging
 import os
 from typing import Any, Dict, List
-from requests import HTTPError,  get
+from requests import HTTPError, get
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, session
 from bitwarden_manager.clients.user_management_api import REQUEST_TIMEOUT_SECONDS, UserManagementApi
 
