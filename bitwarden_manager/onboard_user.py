@@ -42,7 +42,6 @@ class OnboardUser:
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
         teams = self.user_management_api.get_user_teams(username=event["username"])
-        self.bitwarden_api.update_all_team_collection_external_ids(teams)
         user_id = self.bitwarden_api.invite_user(
             username=event["username"],
             email=event["email"],

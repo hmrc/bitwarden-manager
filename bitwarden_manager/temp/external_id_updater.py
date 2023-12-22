@@ -89,6 +89,22 @@ class CollectionUpdater:
         response_json: Dict[str, Any] = response.json()
         return [t.get("team") for t in response_json.get("teams", []) if t.get("slack")]
 
+    def update_collection_external_id(self, collection_id: str, external_id: str) -> None:
+        response = session.put(
+            f"{BITWARDEN_API_URL}/collections/{collection_id}",
+            json={
+                "externalId": external_id,
+                "groups": self.bitwarden_api._BitwardenPublicApi__get_collection(collection_id).get(  # type: ignore
+                    "groups", []
+                ),
+            },
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception(f"Failed to update external id of collection: {collection_id}") from error
+
     def base64_safe_decode(self, text: str) -> str:
         try:
             return base64.b64decode(text).decode("utf-8")
@@ -110,7 +126,7 @@ class CollectionUpdater:
 
         for collection in self.collections_with_unencoded_exernal_id(collections, teams):
             collection_id = collection.get("id", "")
-            self.bitwarden_api._BitwardenPublicApi__update_collection_external_id(  # type: ignore
+            self.update_collection_external_id(
                 collection_id=collection_id,
                 external_id=self.bitwarden_api.external_id_base64_encoded(collection.get("externalId", "")),
             )

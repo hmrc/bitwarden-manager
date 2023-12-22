@@ -66,6 +66,61 @@ def test_get_teams() -> None:
             CollectionUpdater().get_teams()
 
 
+def test_update_collection_external_id() -> None:
+    team_one_name = "Team One"
+    id = "id-team-one"
+    external_id_encoded = _external_id_base64_encoded(team_one_name)
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.GET,
+            url=f"https://api.bitwarden.com/public/collections/{id}",
+            json=_collection_object_with_unencoded_external_id(team_one_name),
+        )
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.com/public/collections/{id}",
+            body="",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "externalId": external_id_encoded,
+                        "groups": [],
+                    }
+                )
+            ],
+        )
+
+        CollectionUpdater().update_collection_external_id(id, external_id_encoded)
+
+        rsps.assert_call_count(f"https://api.bitwarden.com/public/collections/{id}", 2) is True
+        assert rsps.calls[1].response.status_code == 200
+        assert json.loads(rsps.calls[1].request.body) == {"externalId": external_id_encoded, "groups": []}
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.com/public/collections/{id}",
+            body="",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "externalId": external_id_encoded,
+                        "groups": [],
+                    }
+                )
+            ],
+        )
+
+        with pytest.raises(Exception, match=f"Failed to update external id of collection: {id}"):
+            CollectionUpdater().update_collection_external_id(id, external_id_encoded)
+
+
 def test_collections_with_unencoded_external_id() -> None:
     collections = [
         _collection_object_with_base64_encoded_external_id("team-one"),

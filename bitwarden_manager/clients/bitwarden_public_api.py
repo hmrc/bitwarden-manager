@@ -113,20 +113,6 @@ class BitwardenPublicApi:
     def __get_collection_external_id(self, collection_id: str) -> str:
         return self.__get_collection(collection_id).get("externalId", "")
 
-    def __update_collection_external_id(self, collection_id: str, external_id: str) -> None:
-        response = session.put(
-            f"{API_URL}/collections/{collection_id}",
-            json={
-                "externalId": external_id,
-                "groups": self.__get_collection(collection_id).get("groups", []),
-            },
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
-        try:
-            response.raise_for_status()
-        except HTTPError as error:
-            raise Exception(f"Failed to update external id of collection: {collection_id}") from error
-
     def __list_collections(self) -> List[Dict[str, Any]]:
         response = session.get(f"{API_URL}/collections")
         try:
@@ -301,17 +287,3 @@ class BitwardenPublicApi:
             else:
                 raise Exception(f"There are duplicate groups or collections for {team}")
         return groups_ids
-
-    def update_all_team_collection_external_ids(self, teams: List[str]) -> None:
-        for collection_object in self.__list_collections():
-            self.update_collection_external_id_to_encoded_team_name(collection_object, teams)
-
-    def update_collection_external_id_to_encoded_team_name(
-        self, collection_object: Dict[str, Any], teams: List[str]
-    ) -> None:
-        for team in teams:
-            if collection_object.get("externalId") == team:
-                self.__update_collection_external_id(
-                    collection_object.get("id", ""), self.external_id_base64_encoded(team)
-                )
-                self.__logger.info(f"Updated external id of collection: {team}")
