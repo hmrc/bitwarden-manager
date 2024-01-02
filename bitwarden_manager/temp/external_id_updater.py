@@ -14,6 +14,7 @@ UMP_API_URL = "https://user-management-backend-production.tools.tax.service.gov.
 BITWARDEN_API_URL = "https://api.bitwarden.com/public"
 REQUEST_TIMEOUT_SECONDS = 10
 
+
 def get_logger() -> logging.Logger:
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
