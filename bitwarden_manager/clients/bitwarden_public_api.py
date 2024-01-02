@@ -97,25 +97,30 @@ class BitwardenPublicApi:
         session.headers.update({"Authorization": f"Bearer {access_token}"})
         return access_token
 
-    def __get_collection_groups(self, collection_id: str) -> set[str]:
+    def __get_collection(self, collection_id: str) -> Dict[str, Any]:
         response = session.get(f"{API_URL}/collections/{collection_id}")
         try:
             response.raise_for_status()
         except HTTPError as error:
-            raise Exception("Failed to get collections", response.content, error) from error
-        response_json: Dict[str, Any] = response.json()
-        group_ids = {group.get("id", "") for group in response_json.get("groups", "")}
+            raise Exception("Failed to get collection", response.content, error) from error
+        response_json: Dict[str, str] = response.json()
+        return response_json
+
+    def __get_collection_groups(self, collection_id: str) -> set[str]:
+        group_ids = {group.get("id", "") for group in self.__get_collection(collection_id).get("groups", "")}
         return group_ids
 
     def __get_collection_external_id(self, collection_id: str) -> str:
-        response = session.get(f"{API_URL}/collections/{collection_id}")
+        return self.__get_collection(collection_id).get("externalId", "")
+
+    def __list_collections(self) -> List[Dict[str, Any]]:
+        response = session.get(f"{API_URL}/collections")
         try:
             response.raise_for_status()
+            response_json: Dict[str, Any] = response.json()
+            return response_json.get("data", [])
         except HTTPError as error:
-            raise Exception("Failed to get collections", response.content, error) from error
-
-        external_id: str = response.json().get("externalId", "")
-        return external_id
+            raise Exception("Failed to list collections", response.content, error) from error
 
     def invite_user(self, username: str, email: str) -> str:
         self.__fetch_token()
@@ -249,29 +254,23 @@ class BitwardenPublicApi:
             if "Failed to update the collection groups" in http_error_msg:
                 raise Exception("Failed to update the collection groups") from error
 
-    def list_existing_collections(self, teams: List[str]) -> Dict[str, Dict[str, str]]:
-        collections: Dict[str, Dict[str, str]] = {}
-        response = session.get(f"{API_URL}/collections")
-        try:
-            response.raise_for_status()
-            response_json: Dict[str, Any] = response.json()
-            for collection_object in response_json.get("data", []):
-                for team in teams:
-                    external_id_base64_encoded = self.external_id_base64_encoded(team)
-                    if collection_object.get("externalId", "") == external_id_base64_encoded:
-                        if not collections.get(team):
-                            collections[team] = {
-                                "id": collection_object.get("id"),
-                                "externalId": external_id_base64_encoded,
-                            }
-                        else:
-                            collections[team] = {"id": "duplicate", "externalId": external_id_base64_encoded}
-            return collections
-        except HTTPError as error:
-            raise Exception("Failed to list collections", response.content, error) from error
+    def list_existing_collections(self, teams: List[str]) -> Dict[str, Dict[str, Any]]:
+        collections: Dict[str, Dict[str, Any]] = {}
+        for collection_object in self.__list_collections():
+            for team in teams:
+                external_id_base64_encoded = self.external_id_base64_encoded(team)
+                if collection_object.get("externalId", "") == external_id_base64_encoded:
+                    if not collections.get(team):
+                        collections[team] = {
+                            "id": collection_object.get("id"),
+                            "externalId": external_id_base64_encoded,
+                        }
+                    else:
+                        collections[team] = {"id": "duplicate", "externalId": external_id_base64_encoded}
+        return collections
 
     def collate_user_group_ids(
-        self, teams: List[str], groups: Dict[str, str], collections: Dict[str, Dict[str, str]]
+        self, teams: List[str], groups: Dict[str, str], collections: Dict[str, Dict[str, Any]]
     ) -> List[str]:
         groups_ids = []
         for team in teams:
