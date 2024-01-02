@@ -7,7 +7,7 @@ import pytest
 import responses
 from responses import matchers
 
-from bitwarden_manager.temp.external_id_updater import CollectionUpdater, Config, GroupUpdater
+from bitwarden_manager.temp.external_id_updater import CollectionUpdater, Config, GroupUpdater, UmpApi
 from tests.bitwarden_manager.clients.test_bitwarden_public_api import (
     _collection_object_with_base64_encoded_external_id,
     _collection_object_with_unencoded_external_id,
@@ -52,7 +52,7 @@ def test_get_teams() -> None:
             },
         )
 
-        assert ["team-one", "team-two", "team-three", "team-four", "team-five"] == CollectionUpdater().get_teams()
+        assert ["team-one", "team-two", "team-three", "team-four", "team-five"] == UmpApi().get_teams()
 
         rsps.add(
             status=400,
@@ -63,7 +63,7 @@ def test_get_teams() -> None:
         )
 
         with pytest.raises(Exception):
-            CollectionUpdater().get_teams()
+            UmpApi().get_teams()
 
 
 def test_update_collection_external_id() -> None:
@@ -129,12 +129,14 @@ def test_collections_with_unencoded_external_id() -> None:
         _collection_object_with_base64_encoded_external_id("team-three"),
         _collection_object_with_unencoded_external_id("team-four"),
         _collection_object_with_unencoded_external_id("team-five"),
+        _collection_object_with_unencoded_external_id("team-manually-created-one"),
+        _collection_object_with_unencoded_external_id("team-manually-created-two"),
     ]
     teams = ["team-one", "team-two", "team-three", "team-four", "team-five"]
     assert [
         _collection_object_with_unencoded_external_id("team-four"),
         _collection_object_with_unencoded_external_id("team-five"),
-    ] == CollectionUpdater().collections_with_unencoded_external_id(collections, teams)
+    ] == CollectionUpdater().ump_team_named_collections_with_unencoded_external_id(collections, teams)
 
 
 def test_base64_safe_decode() -> None:
@@ -288,7 +290,22 @@ def test_update_group_external_id() -> None:
 
 def test_GroupUpdater_run() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(UMP_MOCKED_LOGIN)
         rsps.add(BITWARDEN_MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.GET,
+            url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
+            json={
+                "teams": [
+                    {"team": "team-one", "slack": "https://myorg.slack.com/messages/team-one"},
+                    {"team": "team-two", "slack": "https://myorg.slack.com/messages/team-two"},
+                    {"team": "team-three", "slack": "https://myorg.slack.com/messages/team-three"},
+                    {"team": "team-four"},
+                ]
+            },
+        )
         rsps.add(
             status=200,
             content_type="application/json",
@@ -300,6 +317,7 @@ def test_GroupUpdater_run() -> None:
                     _group_object_with_base64_encoded_external_id("team-two"),
                     _group_object_with_base64_encoded_external_id("team-three"),
                     _group_object_with_unencoded_external_id("team-four"),
+                    _group_object_with_unencoded_external_id("team-non-ump-one"),
                 ]
             },
         )
