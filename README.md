@@ -27,7 +27,9 @@ Subsequently, a group & collection is associated per corresponding team to the n
 The user is granted `edit` privileges on the group/collection they're assigned to.
 More information regarding access control can be found here [Bitwarden Access Control](https://bitwarden.com/help/user-types-access-control/#permissions)
 
-`team_admin` is optional. Omitting or setting it to `false` will invite the user as a `Regular User` while setting it to `true` will invite them as a `Manager`. See https://bitwarden.com/help/user-types-access-control/ for more information on role permissions in Bitwarden.
+`team_admin` is optional. Omitting or setting it to `false` will invite the user as a `Regular User` while setting it 
+to `true` will invite them as a `Manager`. See https://bitwarden.com/help/user-types-access-control/ for more 
+information on role permissions in Bitwarden.
 
 ### Remove user
 
