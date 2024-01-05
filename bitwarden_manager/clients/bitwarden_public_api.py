@@ -1,10 +1,21 @@
 import base64
+from enum import IntEnum
 from logging import Logger
 from typing import Dict, List, Any, Optional
 
 from requests import HTTPError, Session
 
-REGULAR_USER = 2
+
+# Bitwarden server enum definition:
+# https://github.com/bitwarden/server/blob/main/src/Core/AdminConsole/Enums/OrganizationUserType.cs
+class UserType(IntEnum):
+    OWNER = 0
+    ADMIN = 1
+    REGULAR_USER = 2
+    MANAGER = 3
+    CUSTOM = 4
+
+
 REQUEST_TIMEOUT_SECONDS = 30
 
 LOGIN_URL = "https://identity.bitwarden.com/connect/token"
@@ -122,12 +133,12 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to list collections", response.content, error) from error
 
-    def invite_user(self, username: str, email: str) -> str:
+    def invite_user(self, username: str, email: str, type: UserType = UserType.REGULAR_USER) -> str:
         self.__fetch_token()
         response = session.post(
             f"{API_URL}/members",
             json={
-                "type": REGULAR_USER,
+                "type": type,
                 "accessAll": False,
                 "resetPasswordEnrolled": True,
                 "externalId": username,

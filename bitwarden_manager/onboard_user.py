@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 
-from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, UserType
 
 from jsonschema import validate
 
@@ -23,6 +23,10 @@ onboard_user_event_schema = {
             "pattern": "^(.+)@(.+)$",
             "description": "The users full work email address",
         },
+        "team_admin": {
+            "type": "boolean",
+            "description": "Users that are Team Administrators in UMP should have the 'Manager' role in Bitwarden",
+        },
     },
     "required": ["event_name", "username", "email"],
 }
@@ -42,9 +46,11 @@ class OnboardUser:
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
         teams = self.user_management_api.get_user_teams(username=event["username"])
+        type = UserType.MANAGER if event.get("team_admin") else UserType.REGULAR_USER
         user_id = self.bitwarden_api.invite_user(
             username=event["username"],
             email=event["email"],
+            type=type,
         )
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
         existing_collections = self.bitwarden_api.list_existing_collections(teams)
