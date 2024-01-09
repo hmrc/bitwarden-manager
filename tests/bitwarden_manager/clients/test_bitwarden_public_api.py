@@ -979,7 +979,6 @@ def test_fetch_user_id_by_email() -> None:
         user_id = client._BitwardenPublicApi__fetch_user_id(  # type: ignore
             email="test.user01@example.com",
         )
-
         assert user_id == "11111111"
 
 

@@ -28,6 +28,20 @@
         "accessAll": false,
         "externalId": "test.user02",
         "resetPasswordEnrolled": false
+      },
+      {
+        "object": "member",
+        "id": "33333333",
+        "userId": null,
+        "name": "test user03",
+        "email": "test.user03@example.com",
+        "twoFactorEnabled": true,
+        "status": 2,
+        "collections": null,
+        "type": 1,
+        "accessAll": false,
+        "externalId": "",
+        "resetPasswordEnrolled": false
       }
     ],
     "continuationToken": null
