@@ -280,6 +280,8 @@ def test_update_member_role() -> None:
             },
         )
         BitwardenApi().update_member_role(member_to_update)
+        put_calls = [c for c in rsps.calls if c.request.method == "PUT"]
+        assert len(put_calls) == 1
 
         rsps.add(
             status=400,
