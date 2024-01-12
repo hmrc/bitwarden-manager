@@ -302,7 +302,7 @@ def test_member_role_updater_run() -> None:
             status=200,
             content_type="application/json",
             method=responses.GET,
-            url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
+            url=base_url,
             json={
                 "teams": [
                     {"team": "team-one", "slack": "https://myorg.slack.com/messages/team-one"},
@@ -388,59 +388,6 @@ def test_member_role_updater_run() -> None:
                         "username": "john.watson",
                     },
                 ]
-            },
-        )
-        rsps.add(
-            status=200,
-            content_type="application/json",
-            method=responses.GET,
-            url="https://api.bitwarden.com/public/members",
-            json={
-                "object": "list",
-                "data": [
-                    {
-                        "type": 2,
-                        "accessAll": True,
-                        "externalId": "sherlock.holmes",
-                        "resetPasswordEnrolled": True,
-                        "object": "member",
-                        "id": "539a36c5-e0d2-4cf9-979e-51ecf5cf6593",
-                        "userId": "48b47ee1-493e-4c67-aef7-014996c40eca",
-                        "name": "Sherlock Holmes",
-                        "email": "sherlock.holmes@example.com",
-                        "twoFactorEnabled": True,
-                        "status": 0,
-                        "collections": [{"id": "bfbc8338-e329-4dc0-b0c9-317c2ebf1a09", "readOnly": True}],
-                    },
-                    {
-                        "type": 1,
-                        "accessAll": True,
-                        "externalId": "external_id_123456",
-                        "resetPasswordEnrolled": True,
-                        "object": "member",
-                        "id": "639a36c5-e0d2-4cf9-979e-51ecf5cf6593",
-                        "userId": "58b47ee1-493e-4c67-aef7-014996c40eca",
-                        "name": "Hercule Poirot",
-                        "email": "hercule.poirot@example.com",
-                        "twoFactorEnabled": True,
-                        "status": 0,
-                        "collections": [{"id": "bfbc8338-e329-4dc0-b0c9-317c2ebf1a09", "readOnly": True}],
-                    },
-                    {
-                        "type": 2,
-                        "accessAll": True,
-                        "externalId": "external_id_123456",
-                        "resetPasswordEnrolled": True,
-                        "object": "member",
-                        "id": "739a36c5-e0d2-4cf9-979e-51ecf5cf6593",
-                        "userId": "68b47ee1-493e-4c67-aef7-014996c40eca",
-                        "name": "Arthur Hastings",
-                        "email": "arthur.hastings@example.com",
-                        "twoFactorEnabled": True,
-                        "status": 0,
-                        "collections": [{"id": "bfbc8338-e329-4dc0-b0c9-317c2ebf1a09", "readOnly": True}],
-                    },
-                ],
             },
         )
         rsps.add(
