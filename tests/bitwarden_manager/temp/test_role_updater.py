@@ -2,7 +2,10 @@ import re
 from typing import Any
 import pytest
 import responses
+from unittest import mock
+from unittest.mock import Mock
 
+from bitwarden_manager.bitwarden_manager import BitwardenManager
 from bitwarden_manager.clients.bitwarden_public_api import UserType
 from bitwarden_manager.temp.role_updater import UmpApi, Config, BitwardenApi, MemberRoleUpdater
 from tests.bitwarden_manager.clients.test_user_management_api import MOCKED_LOGIN
@@ -463,6 +466,24 @@ def test_member_role_updater_run() -> None:
 
         put_calls = [c for c in rsps.calls if c.request.method == "PUT"]
         assert len(put_calls) == 1
+
+
+@mock.patch("bitwarden_manager.bitwarden_manager.MemberRoleUpdater")
+@mock.patch("bitwarden_manager.redacting_formatter.RedactingFormatter")
+@mock.patch("boto3.client")
+def test_update_user_roles_event_routing(
+    mock_secretsmanager: Mock, mock_log_redacting_formatter: Mock, mock_role_updater: Mock
+) -> None:
+    event = {
+        "event_name": "backfill_user_roles",
+    }
+
+    get_secret_value = Mock(return_value={"SecretString": "secret"})
+    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+    mock_role_updater.return_value.run.return_value = None
+    mock_log_redacting_formatter.validate_patterns.return_value = None
+    BitwardenManager().run(event=event)
+    mock_role_updater.return_value.run.assert_called()
 
 
 @pytest.fixture(autouse=True)
