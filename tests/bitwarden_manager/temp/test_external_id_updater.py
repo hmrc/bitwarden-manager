@@ -7,7 +7,7 @@ import pytest
 import responses
 from responses import matchers
 
-from bitwarden_manager.temp.external_id_updater import CollectionUpdater, Config, GroupUpdater, UmpApi
+from bitwarden_manager.temp.external_id_updater import CollectionUpdater, Config, GroupUpdater, UmpApi, MemberUpdater
 from tests.bitwarden_manager.clients.test_bitwarden_public_api import (
     _collection_object_with_base64_encoded_external_id,
     _collection_object_with_unencoded_external_id,
@@ -286,6 +286,145 @@ def test_update_group_external_id() -> None:
 
         with pytest.raises(Exception):
             GroupUpdater().update_group_external_id(group=_group_object_with_unencoded_external_id(group_name))
+
+
+def test_get_members() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(BITWARDEN_MOCKED_LOGIN)
+        rsps.add(
+            method=responses.GET,
+            url="https://api.bitwarden.com/public/members",
+            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            status=200,
+            content_type="application/json",
+        )
+        members = MemberUpdater().get_members()
+
+        expected = ["test.user01@example.com", "test.user02@example.com", "test.user03@example.com"]
+
+        assert expected == [member["email"] for member in members]
+        assert rsps.calls[-1].response.status_code == 200
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.GET,
+            url="https://api.bitwarden.com/public/members",
+            json={"error": "error"},
+        )
+        with pytest.raises(Exception):
+            MemberUpdater().get_members()
+
+
+def test_update_user_external_id() -> None:
+    details = {
+        "object": "member",
+        "id": "11111111",
+        "userId": None,
+        "name": "test user01",
+        "email": "test.user01@example.com",
+        "twoFactorEnabled": False,
+        "status": 2,
+        "collections": None,
+        "type": 1,
+        "accessAll": False,
+        "externalId": "",
+        "resetPasswordEnrolled": False,
+    }
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.PUT,
+            url="https://api.bitwarden.com/public/members/11111111",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "type": details["type"],
+                        "accessAll": details["accessAll"],
+                        "resetPasswordEnrolled": details["resetPasswordEnrolled"],
+                        "externalId": "test.user01",
+                        "email": details["email"],
+                        "collections": details["collections"],
+                    }
+                )
+            ],
+        )
+
+        MemberUpdater().update_member_external_id(details)
+        assert rsps.calls[0].response.status_code == 200
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.PUT,
+            url="https://api.bitwarden.com/public/members/11111111",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "type": details["type"],
+                        "accessAll": details["accessAll"],
+                        "resetPasswordEnrolled": details["resetPasswordEnrolled"],
+                        "externalId": "test.user01",
+                        "email": details["email"],
+                        "collections": details["collections"],
+                    }
+                )
+            ],
+        )
+
+        with pytest.raises(Exception):
+            MemberUpdater().update_member_external_id(details)
+
+
+def test_MemberUpdater_run() -> None:
+    details = {
+        "object": "member",
+        "id": "33333333",
+        "userId": None,
+        "name": "test user03",
+        "email": "test.user03@example.com",
+        "twoFactorEnabled": False,
+        "status": 2,
+        "collections": None,
+        "type": 1,
+        "accessAll": False,
+        "externalId": "",
+        "resetPasswordEnrolled": False,
+    }
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(BITWARDEN_MOCKED_LOGIN)
+        rsps.add(
+            method=responses.GET,
+            url="https://api.bitwarden.com/public/members",
+            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            status=200,
+            content_type="application/json",
+        )
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.PUT,
+            url="https://api.bitwarden.com/public/members/33333333",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "type": details["type"],
+                        "accessAll": details["accessAll"],
+                        "resetPasswordEnrolled": details["resetPasswordEnrolled"],
+                        "externalId": "test.user03",
+                        "email": details["email"],
+                        "collections": details["collections"],
+                    }
+                )
+            ],
+        )
+        MemberUpdater().run()
+        assert rsps.calls[-1].response.status_code == 200
+        put_calls = [c for c in rsps.calls if c.request.method == "PUT"]
+        assert len(put_calls) == 1
+        assert rsps.calls[-1].request.method == "PUT"
 
 
 def test_GroupUpdater_run() -> None:

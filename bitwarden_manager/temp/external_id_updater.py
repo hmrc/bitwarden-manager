@@ -6,6 +6,7 @@ import binascii
 import logging
 import os
 from typing import Any, Dict, List
+
 from requests import HTTPError, get
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, session
 from bitwarden_manager.clients.user_management_api import UserManagementApi
@@ -226,3 +227,49 @@ class GroupUpdater:
             for g in self.get_groups():
                 if n == g.get("name"):
                     self.update_group_external_id(group=g, external_id=n)
+
+
+class MemberUpdater:
+    def __init__(self) -> None:
+        self.config = Config()
+        self.bitwarden_api = self.config.get_bitwarden_public_api()
+
+    def get_members(self) -> List[Dict[Any, Any]]:
+        response = session.get(f"{BITWARDEN_API_URL}/members")
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to retrieve users", response.content, error) from error
+        response_json: Dict[str, Any] = response.json()
+        return response_json["data"]  # type: ignore
+
+    def update_member_external_id(self, details: Dict[str, Any]) -> None:
+        member_id = details["id"]
+        member_email = details["email"]
+        external_id = details["email"].split("@")[0]
+
+        response = session.put(
+            f"{BITWARDEN_API_URL}/members/{member_id}",
+            json={
+                "type": details["type"],
+                "accessAll": details["accessAll"],
+                "resetPasswordEnrolled": details["resetPasswordEnrolled"],
+                "externalId": external_id,
+                "email": details["email"],
+                "collections": details["collections"],
+            },
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception(f"Failed to update user {member_email}", response.content, error) from error
+
+        logger.info(f"User {member_email} has been updated with the following: {details['email']} {external_id}")
+
+    def run(self) -> None:
+        self.bitwarden_api._BitwardenPublicApi__fetch_token()  # type: ignore
+        user_data = self.get_members()
+        for member in user_data:
+            if not member["externalId"]:
+                self.update_member_external_id(member)
