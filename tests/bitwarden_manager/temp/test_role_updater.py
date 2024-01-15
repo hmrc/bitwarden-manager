@@ -1,35 +1,26 @@
-import re
-from typing import Any
 import pytest
 import responses
+import logging
 from unittest import mock
 from unittest.mock import Mock
 
 from bitwarden_manager.bitwarden_manager import BitwardenManager
 from bitwarden_manager.clients.bitwarden_public_api import UserType
-from bitwarden_manager.temp.role_updater import UmpApi, Config, BitwardenApi, MemberRoleUpdater
+from bitwarden_manager.clients.user_management_api import UserManagementApi
+from bitwarden_manager.temp.role_updater import UmpApi, BitwardenApi, MemberRoleUpdater
 from tests.bitwarden_manager.clients.test_user_management_api import MOCKED_LOGIN
 
 
-@pytest.mark.parametrize(
-    "env_var_key,config_function",
-    [
-        ("LDAP_USERNAME", Config().get_ldap_username),
-        ("LDAP_PASSWORD", Config().get_ldap_password),
-        ("BITWARDEN_CLIENT_ID", Config().get_bitwarden_client_id),
-        ("BITWARDEN_CLIENT_SECRET", Config().get_bitwarden_client_secret),
-    ],
-)
-def test_missing_env_vars(env_var_key: str, config_function: Any, monkeypatch: Any) -> None:
-    monkeypatch.delenv(env_var_key, raising=False)
-
-    with pytest.raises(Exception) as mce:
-        config_function()
-
-    assert re.search(env_var_key, str(mce)) is not None
+@pytest.fixture
+def ump() -> UserManagementApi:
+    return UserManagementApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
 
 
-def test_get_teams() -> None:
+def test_get_teams(ump: UserManagementApi) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -48,7 +39,7 @@ def test_get_teams() -> None:
             },
         )
 
-        assert ["team-one", "team-two", "team-three", "team-four", "team-five"] == UmpApi().get_teams()
+        assert ["team-one", "team-two", "team-three", "team-four", "team-five"] == UmpApi(ump).get_teams()
 
         rsps.add(
             status=400,
@@ -59,10 +50,10 @@ def test_get_teams() -> None:
         )
 
         with pytest.raises(Exception):
-            UmpApi().get_teams()
+            UmpApi(ump).get_teams()
 
 
-def test_get_team_admin_users() -> None:
+def test_get_team_admin_users(ump: UserManagementApi) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         base_url = "https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams"
         rsps.add(MOCKED_LOGIN)
@@ -148,7 +139,7 @@ def test_get_team_admin_users() -> None:
             },
         )
 
-        assert ["hercule.poirot", "sherlock.holmes"] == UmpApi().get_team_admin_users(["team-one", "team-two"])
+        assert ["hercule.poirot", "sherlock.holmes"] == UmpApi(ump).get_team_admin_users(["team-one", "team-two"])
 
         rsps.add(
             status=400,
@@ -159,7 +150,7 @@ def test_get_team_admin_users() -> None:
         )
 
         with pytest.raises(Exception):
-            UmpApi().get_team_admin_users(["team-one", "team-two"])
+            UmpApi(ump).get_team_admin_users(["team-one", "team-two"])
 
 
 def test_get_bitwarden_members() -> None:
@@ -298,7 +289,7 @@ def test_update_member_role() -> None:
             BitwardenApi().update_member_role(member_to_update)
 
 
-def test_member_role_updater_run() -> None:
+def test_member_role_updater_run(ump: UserManagementApi) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         base_url = "https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams"
         rsps.add(UMP_MOCKED_LOGIN)
@@ -462,7 +453,7 @@ def test_member_role_updater_run() -> None:
             },
         )
 
-        MemberRoleUpdater().run()
+        MemberRoleUpdater(ump).run()
 
         put_calls = [c for c in rsps.calls if c.request.method == "PUT"]
         assert len(put_calls) == 1
@@ -484,19 +475,6 @@ def test_update_user_roles_event_routing(
     mock_log_redacting_formatter.validate_patterns.return_value = None
     BitwardenManager().run(event=event)
     mock_role_updater.return_value.run.assert_called()
-
-
-@pytest.fixture(autouse=True)
-def _setup_environment(monkeypatch: Any) -> None:
-    env_vars = {
-        "BITWARDEN_CLIENT_ID": "the-bitwarden-client-id",
-        "BITWARDEN_CLIENT_SECRET": "the-bitwarden-client-secret",
-        "LDAP_USERNAME": "the-ldap-username",
-        "LDAP_PASSWORD": "the-ldap-password",
-    }
-
-    for key, value in env_vars.items():
-        monkeypatch.setenv(key, value)
 
 
 UMP_MOCKED_LOGIN = responses.Response(
