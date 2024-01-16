@@ -111,10 +111,16 @@ class MemberRoleUpdater:
         self.bw = BitwardenApi(bitwarden_public_api)
 
     def run(self) -> None:
+        logger.info("Running role updater")
         teams = self.ump.get_teams()
-        self.bw.bitwarden_public_api._BitwardenPublicApi__fetch_token()  # type: ignore
+        logger.info("Fetched UMP teams")
         team_admin_users = self.ump.get_team_admin_users(teams)
+        logger.info("Fetched UMP team admin users")
+        self.bw.bitwarden_public_api._BitwardenPublicApi__fetch_token()  # type: ignore
+        logger.info("Fetched Bitwarden API Token")
         members_to_update = self.bw.get_members_to_update(team_admin_users)
+        logger.info("Fetched Bitwarden users to update")
         for m in members_to_update:
+            logger.info(f"Updating: {m.get('name')}")
             self.bw.update_member_role(m)
             logger.info(f"Updated role of member: {m.get('name')}")
