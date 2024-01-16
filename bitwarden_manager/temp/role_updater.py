@@ -37,7 +37,6 @@ class UmpApi:
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
-        logger.info(response.json())
         try:
             response.raise_for_status()
         except HTTPError as e:
@@ -48,8 +47,10 @@ class UmpApi:
     def get_team_admin_users(self, teams: List[str]) -> List[str]:
         bearer = self.user_management_api._UserManagementApi__fetch_token()  # type: ignore
         team_admins = []
+        logger.info(teams)
 
         for team_name in teams:
+            logger.info(team)
             response = get(
                 f"{UMP_API_URL}/organisations/teams/{team_name}/members",
                 headers={
@@ -60,6 +61,7 @@ class UmpApi:
                 },
                 timeout=REQUEST_TIMEOUT_SECONDS,
             )
+            logger.info(response.json())
             try:
                 response.raise_for_status()
             except HTTPError as e:
