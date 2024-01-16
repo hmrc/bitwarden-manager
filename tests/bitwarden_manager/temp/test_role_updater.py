@@ -5,7 +5,7 @@ from unittest import mock
 from unittest.mock import Mock
 
 from bitwarden_manager.bitwarden_manager import BitwardenManager
-from bitwarden_manager.clients.bitwarden_public_api import UserType
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, UserType
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.temp.role_updater import UmpApi, BitwardenApi, MemberRoleUpdater
 from tests.bitwarden_manager.clients.test_user_management_api import MOCKED_LOGIN
@@ -14,6 +14,15 @@ from tests.bitwarden_manager.clients.test_user_management_api import MOCKED_LOGI
 @pytest.fixture
 def ump() -> UserManagementApi:
     return UserManagementApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+
+
+@pytest.fixture
+def bitwarden_public_client() -> BitwardenPublicApi:
+    return BitwardenPublicApi(
         logger=logging.getLogger(),
         client_id="foo",
         client_secret="bar",
@@ -153,7 +162,7 @@ def test_get_team_admin_users(ump: UserManagementApi) -> None:
             UmpApi(ump).get_team_admin_users(["team-one", "team-two"])
 
 
-def test_get_bitwarden_members() -> None:
+def test_get_bitwarden_members(bitwarden_public_client: BitwardenPublicApi) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         rsps.add(BITWARDEN_MOCKED_LOGIN)
         rsps.add(
@@ -228,7 +237,7 @@ def test_get_bitwarden_members() -> None:
             }
         ]
 
-        assert expected == BitwardenApi().get_members_to_update(team_admin_users)
+        assert expected == BitwardenApi(bitwarden_public_client).get_members_to_update(team_admin_users)
 
         rsps.add(
             status=400,
@@ -239,10 +248,10 @@ def test_get_bitwarden_members() -> None:
         )
 
         with pytest.raises(Exception):
-            BitwardenApi().get_members_to_update(team_admin_users)
+            BitwardenApi(bitwarden_public_client).get_members_to_update(team_admin_users)
 
 
-def test_update_member_role() -> None:
+def test_update_member_role(bitwarden_public_client: BitwardenPublicApi) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         member_to_update = {
             "type": 2,
@@ -273,7 +282,7 @@ def test_update_member_role() -> None:
                 "collections": [{"id": "bfbc8338-e329-4dc0-b0c9-317c2ebf1a09", "readOnly": True}],
             },
         )
-        BitwardenApi().update_member_role(member_to_update)
+        BitwardenApi(bitwarden_public_client).update_member_role(member_to_update)
         put_calls = [c for c in rsps.calls if c.request.method == "PUT"]
         assert len(put_calls) == 1
 
@@ -286,10 +295,10 @@ def test_update_member_role() -> None:
         )
 
         with pytest.raises(Exception):
-            BitwardenApi().update_member_role(member_to_update)
+            BitwardenApi(bitwarden_public_client).update_member_role(member_to_update)
 
 
-def test_member_role_updater_run(ump: UserManagementApi) -> None:
+def test_member_role_updater_run(ump: UserManagementApi, bitwarden_public_client: BitwardenPublicApi) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         base_url = "https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams"
         rsps.add(UMP_MOCKED_LOGIN)
@@ -453,7 +462,7 @@ def test_member_role_updater_run(ump: UserManagementApi) -> None:
             },
         )
 
-        MemberRoleUpdater(ump).run()
+        MemberRoleUpdater(ump, bitwarden_public_client).run()
 
         put_calls = [c for c in rsps.calls if c.request.method == "PUT"]
         assert len(put_calls) == 1

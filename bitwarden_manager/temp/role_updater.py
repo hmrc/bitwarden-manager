@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, List
 from requests import HTTPError, get
-from bitwarden_manager.clients.bitwarden_public_api import session, UserType
+from bitwarden_manager.clients.bitwarden_public_api import session, UserType, BitwardenPublicApi
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 
 UMP_API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
@@ -71,6 +71,9 @@ class UmpApi:
 
 
 class BitwardenApi:
+    def __init__(self, bitwarden_public_api: BitwardenPublicApi) -> None:
+        self.bitwarden_public_api = bitwarden_public_api
+
     def get_members_to_update(self, team_admin_users: List[str]) -> List[Dict[str, Any]]:
         members = []
         response = session.get(f"{BITWARDEN_API_URL}/members", timeout=REQUEST_TIMEOUT_SECONDS)
@@ -103,12 +106,13 @@ class BitwardenApi:
 
 
 class MemberRoleUpdater:
-    def __init__(self, user_management_api: UserManagementApi):
+    def __init__(self, user_management_api: UserManagementApi, bitwarden_public_api: BitwardenPublicApi):
         self.ump = UmpApi(user_management_api)
-        self.bw = BitwardenApi()
+        self.bw = BitwardenApi(bitwarden_public_api)
 
     def run(self) -> None:
         teams = self.ump.get_teams()
+        self.bw.bitwarden_public_api._BitwardenPublicApi__fetch_token()  # type: ignore
         team_admin_users = self.ump.get_team_admin_users(teams)
         members_to_update = self.bw.get_members_to_update(team_admin_users)
         for m in members_to_update:
