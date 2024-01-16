@@ -37,6 +37,7 @@ class UmpApi:
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
+        logger.info(response)
         try:
             response.raise_for_status()
         except HTTPError as e:
