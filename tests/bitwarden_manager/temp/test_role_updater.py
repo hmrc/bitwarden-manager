@@ -103,7 +103,8 @@ def test_get_team_admin_users(ump: UserManagementApi) -> None:
                         "role": "user",
                         "username": "arthur.hastings",
                     },
-                ]
+                ],
+                "team": "team-one",
             },
         )
 
@@ -144,7 +145,8 @@ def test_get_team_admin_users(ump: UserManagementApi) -> None:
                         "role": "user",
                         "username": "john.watson",
                     },
-                ]
+                ],
+                "team": "team-two",
             },
         )
 
