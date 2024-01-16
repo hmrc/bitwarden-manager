@@ -8,7 +8,7 @@ from bitwarden_manager.clients.user_management_api import UserManagementApi
 
 UMP_API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
 BITWARDEN_API_URL = "https://api.bitwarden.com/public"
-REQUEST_TIMEOUT_SECONDS = 10
+REQUEST_TIMEOUT_SECONDS = 20
 
 
 def get_logger() -> logging.Logger:
@@ -46,7 +46,7 @@ class UmpApi:
 
     def get_team_admin_users(self, teams: List[str]) -> List[str]:
         bearer = self.user_management_api._UserManagementApi__fetch_token()  # type: ignore
-        team_admins = []
+        team_admins: List[str] = []
 
         for team_name in teams:
             response = get(
@@ -64,11 +64,10 @@ class UmpApi:
             except HTTPError as e:
                 raise Exception("Failed to get team members", response.content, e) from e
             response_json: Dict[str, Any] = response.json()
-            logger.info(response_json)
             for m in response_json.get("members", []):
-                logger.info(m)
                 if m.get("role") == "team_admin":
                     logger.info(m.get("username"))
+                    logger.info(team_admins)
                     team_admins.append(m.get("username"))
         logger.info(team_admins)
         return team_admins
