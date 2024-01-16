@@ -47,10 +47,8 @@ class UmpApi:
     def get_team_admin_users(self, teams: List[str]) -> List[str]:
         bearer = self.user_management_api._UserManagementApi__fetch_token()  # type: ignore
         team_admins = []
-        logger.info(teams)
 
         for team_name in teams:
-            logger.info(team_name)
             response = get(
                 f"{UMP_API_URL}/organisations/teams/{team_name}/members",
                 headers={
@@ -61,15 +59,18 @@ class UmpApi:
                 },
                 timeout=REQUEST_TIMEOUT_SECONDS,
             )
-            logger.info(response.json())
             try:
                 response.raise_for_status()
             except HTTPError as e:
                 raise Exception("Failed to get team members", response.content, e) from e
             response_json: Dict[str, Any] = response.json()
+            logger.info(response_json)
             for m in response_json.get("members", []):
+                logger.info(m)
                 if m.get("role") == "team_admin":
+                    logger.info(m.get("username"))
                     team_admins.append(m.get("username"))
+        logger.info(team_admins)
         return team_admins
 
 
