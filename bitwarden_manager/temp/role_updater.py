@@ -46,7 +46,7 @@ class UmpApi:
 
     def get_team_admin_users(self, teams: List[str]) -> List[str]:
         bearer = self.user_management_api._UserManagementApi__fetch_token()  # type: ignore
-        team_admins = []
+        team_admins: List[str] = []
 
         for team_name in teams:
             response = get(
