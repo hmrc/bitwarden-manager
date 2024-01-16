@@ -50,7 +50,7 @@ class UmpApi:
         logger.info(teams)
 
         for team_name in teams:
-            logger.info(team)
+            logger.info(team_name)
             response = get(
                 f"{UMP_API_URL}/organisations/teams/{team_name}/members",
                 headers={
