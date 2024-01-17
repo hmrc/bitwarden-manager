@@ -8,7 +8,7 @@ from bitwarden_manager.clients.user_management_api import UserManagementApi
 
 UMP_API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
 BITWARDEN_API_URL = "https://api.bitwarden.com/public"
-REQUEST_TIMEOUT_SECONDS = 20
+REQUEST_TIMEOUT_SECONDS = 30
 
 
 def get_logger() -> logging.Logger:
@@ -66,10 +66,7 @@ class UmpApi:
             response_json: Dict[str, Any] = response.json()
             for m in response_json.get("members", []):
                 if m.get("role") == "team_admin":
-                    logger.info(m.get("username"))
-                    logger.info(team_admins)
                     team_admins.append(m.get("username"))
-        logger.info(team_admins)
         return team_admins
 
 
