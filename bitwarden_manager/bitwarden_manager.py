@@ -15,8 +15,6 @@ from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
-from bitwarden_manager.temp.role_updater import MemberRoleUpdater
-
 
 class BitwardenManager:
     def __init__(self) -> None:
