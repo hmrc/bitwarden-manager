@@ -59,12 +59,6 @@ class BitwardenManager:
                 case "remove_user":
                     self.__logger.debug("handling event with OffboardUser")
                     OffboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
-                case "backfill_user_roles":
-                    self.__logger.debug("backfilling user roles")
-                    MemberRoleUpdater(
-                        user_management_api=self._get_user_management_api(),
-                        bitwarden_public_api=self._get_bitwarden_public_api(),
-                    ).run()
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")
         finally:
