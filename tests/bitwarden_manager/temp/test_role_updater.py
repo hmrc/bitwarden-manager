@@ -90,7 +90,7 @@ def test_get_team_admin_users(ump: UserManagementApi) -> None:
                         "givenName": "Hercule",
                         "organisation": "MDTP",
                         "primaryEmail": "hercule.poirot@digital.hmrc.gov.uk",
-                        "role": "team_admin",
+                        "role": "all_team_admin",
                         "username": "hercule.poirot",
                     },
                     {
@@ -132,7 +132,7 @@ def test_get_team_admin_users(ump: UserManagementApi) -> None:
                         "givenName": "Sherlock",
                         "organisation": "MDTP",
                         "primaryEmail": "sherlock.holmes@digital.hmrc.gov.uk",
-                        "role": "team_admin",
+                        "role": "all_team_admin",
                         "username": "sherlock.holmes",
                     },
                     {
@@ -341,7 +341,7 @@ def test_member_role_updater_run(ump: UserManagementApi, bitwarden_public_client
                         "givenName": "Hercule",
                         "organisation": "MDTP",
                         "primaryEmail": "hercule.poirot@digital.hmrc.gov.uk",
-                        "role": "team_admin",
+                        "role": "all_team_admin",
                         "username": "hercule.poirot",
                     },
                     {
@@ -381,7 +381,7 @@ def test_member_role_updater_run(ump: UserManagementApi, bitwarden_public_client
                         "givenName": "Sherlock",
                         "organisation": "MDTP",
                         "primaryEmail": "sherlock.holmes@digital.hmrc.gov.uk",
-                        "role": "team_admin",
+                        "role": "all_team_admin",
                         "username": "sherlock.holmes",
                     },
                     {

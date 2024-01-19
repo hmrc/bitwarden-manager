@@ -23,12 +23,23 @@ onboard_user_event_schema = {
             "pattern": "^(.+)@(.+)$",
             "description": "The users full work email address",
         },
-        "team_admin": {
-            "type": "boolean",
-            "description": "Users that are Team Administrators in UMP should have the 'Manager' role in Bitwarden",
+        "role": {
+            "type": "string",
+            "pattern": "user|team_admin|super_admin|all_team_admin",
+            "description": """Users that are Team Administrators or All-Team Administrators in UMP
+             should have the 'Manager' role in Bitwarden. All other user types or omitting this
+             parameter should result in 'Regular User' type""",
         },
     },
     "required": ["event_name", "username", "email"],
+}
+
+
+user_type_mapping = {
+    "user": UserType.REGULAR_USER,
+    "super_admin": UserType.REGULAR_USER,
+    "team_admin": UserType.MANAGER,
+    "all_team_admin": UserType.MANAGER,
 }
 
 
@@ -46,7 +57,7 @@ class OnboardUser:
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
         teams = self.user_management_api.get_user_teams(username=event["username"])
-        type = UserType.MANAGER if event.get("team_admin") else UserType.REGULAR_USER
+        type = user_type_mapping[event.get("role", "user")]
         user_id = self.bitwarden_api.invite_user(
             username=event["username"],
             email=event["email"],

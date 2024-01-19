@@ -65,7 +65,7 @@ class UmpApi:
                 raise Exception("Failed to get team members", response.content, e) from e
             response_json: Dict[str, Any] = response.json()
             for m in response_json.get("members", []):
-                if m.get("role") == "team_admin":
+                if m.get("role") == "all_team_admin":
                     team_admins.append(m.get("username"))
         return team_admins
 
