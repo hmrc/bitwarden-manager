@@ -17,7 +17,7 @@ If the user already exists within BitWarden then the lambda will log this.
     "event_name": "new_user",
     "username": "test.user01",
     "email": "test.user01@example.com",
-    "team_admin": false
+    "role": "user"
 }
 ```
 
@@ -27,9 +27,9 @@ Subsequently, a group & collection is associated per corresponding team to the n
 The user is granted `edit` privileges on the group/collection they're assigned to.
 More information regarding access control can be found here [Bitwarden Access Control](https://bitwarden.com/help/user-types-access-control/#permissions)
 
-`team_admin` is optional. Omitting or setting it to `false` will invite the user as a `Regular User` while setting it 
-to `true` will invite them as a `Manager`. See https://bitwarden.com/help/user-types-access-control/ for more 
-information on role permissions in Bitwarden.
+`role` is optional. Omitting or setting it to `user` or `super_admin` will invite the user as a `Regular User` while 
+setting it to `team_admin` or `all_team_admin` will invite them as a `Manager`. 
+See https://bitwarden.com/help/user-types-access-control/ for more information on role permissions in Bitwarden.
 
 ### Remove user
 
