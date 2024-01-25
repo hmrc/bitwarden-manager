@@ -8,6 +8,7 @@ from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManage
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.clients.s3_client import S3Client
+from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.offboard_user import OffboardUser
@@ -45,6 +46,7 @@ class BitwardenManager:
                         bitwarden_api=self._get_bitwarden_public_api(),
                         user_management_api=self._get_user_management_api(),
                         bitwarden_vault_client=bitwarden_vault_client,
+                        dynamodb_client=DynamodbClient(),
                     ).run(event=event)
                 case "export_vault":
                     self.__logger.debug("handling event with ExportVault")
