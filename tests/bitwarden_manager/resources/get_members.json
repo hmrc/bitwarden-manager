@@ -36,7 +36,7 @@
         "name": "test user03",
         "email": "test.user03@example.com",
         "twoFactorEnabled": true,
-        "status": 2,
+        "status": 0,
         "collections": null,
         "type": 1,
         "accessAll": false,
