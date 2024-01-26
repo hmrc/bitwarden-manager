@@ -1,7 +1,8 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 import pytest
 from jsonschema.exceptions import ValidationError
+from datetime import datetime
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
@@ -29,11 +30,28 @@ def test_reinvite_users() -> None:
                 "externalId": "test.user02",
                 "resetPasswordEnrolled": False,
             },
+            {
+                "object": "member",
+                "id": "333333",
+                "userId": "",
+                "name": "test user03",
+                "email": "test.user03@example.com",
+                "twoFactorEnabled": True,
+                "status": 0,
+                "collections": [],
+                "type": 1,
+                "accessAll": False,
+                "externalId": "test.user03",
+                "resetPasswordEnrolled": False,
+            },
         ]
     )
 
     mock_client_dynamodb.get_item_from_table = MagicMock(
-        return_value={"username": "test.user02", "invite_date": "2024-01-01"}
+        side_effect=[
+            {"username": "test.user02", "invite_date": "2024-01-01"},
+            {"username": "test.user03", "invite_date": datetime.today().strftime("%Y-%m-%d")},
+        ]
     )
 
     ReinviteUsers(
@@ -42,7 +60,11 @@ def test_reinvite_users() -> None:
     ).run(event)
 
     mock_client_bitwarden.get_pending_users.assert_called
-    mock_client_dynamodb.get_item_from_table.assert_called_with(table_name="bitwarden", key={"username": "test.user02"})
+    dynamodb_calls = [
+        call(table_name="bitwarden", key={"username": "test.user02"}),
+        call(table_name="bitwarden", key={"username": "test.user03"}),
+    ]
+    mock_client_dynamodb.get_item_from_table.assert_has_calls(dynamodb_calls)
     mock_client_bitwarden.reinvite_user.assert_called_with(id="22222222", username="test.user02")
 
 
