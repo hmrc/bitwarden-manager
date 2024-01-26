@@ -181,6 +181,14 @@ class BitwardenPublicApi:
         response_json: Dict[str, str] = response.json()
         return response_json.get("id", "")
 
+    def reinvite_user(self, id: str, username: str) -> None:
+        response = session.post(f"{API_URL}/members/{id}/reinvite", timeout=REQUEST_TIMEOUT_SECONDS)
+        try:
+            response.raise_for_status()
+            self.__logger.info(f"{username} has been reinvited to Bitwarden")
+        except HTTPError as error:
+            raise Exception(f"Failed to reinvite {username}", response.content, error) from error
+
     def remove_user(self, username: str) -> None:
         self.__fetch_token()
         id = self.__fetch_user_id_by_external_id(external_id=username)

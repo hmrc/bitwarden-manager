@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from jsonschema import validate
+from datetime import datetime, timedelta
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
@@ -26,4 +27,11 @@ class ReinviteUsers:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=reinvite_users_event_schema)
-        self.bitwarden_api.get_pending_users()
+        # Bitwarden invites expire after 5 days
+        date = datetime.today() - timedelta(days=5)
+        for user in self.bitwarden_api.get_pending_users():
+            username = user.get("externalId", "")
+            record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": username})
+            invite_date = datetime.strptime(record.get("invite_date", ""), "%Y-%m-%d")
+            if invite_date < date:
+                self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)

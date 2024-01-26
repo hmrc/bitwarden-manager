@@ -1148,6 +1148,43 @@ def test_get_pending_users(caplog: LogCaptureFixture) -> None:
         assert client.get_pending_users()[0].get("name") == "test user03"
 
 
+def test_reinvite_user(caplog: LogCaptureFixture) -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            responses.POST,
+            "https://api.bitwarden.com/public/members/22222222/reinvite",
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        client.reinvite_user(id="22222222", username="test.user02")
+
+
+def test_reinvite_user_failed(caplog: LogCaptureFixture) -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            responses.POST,
+            "https://api.bitwarden.com/public/members/22222222/reinvite",
+            status=500,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with pytest.raises(Exception, match="Failed to reinvite test.user02"):
+            client.reinvite_user(id="22222222", username="test.user02")
+
+
 # Helper functions
 
 
