@@ -58,7 +58,10 @@ class BitwardenManager:
                     ).run(event=event)
                 case "remove_user":
                     self.__logger.debug("handling event with OffboardUser")
-                    OffboardUser(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+                    OffboardUser(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                        dynamodb_client=DynamodbClient(),
+                    ).run(event=event)
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")
         finally:
