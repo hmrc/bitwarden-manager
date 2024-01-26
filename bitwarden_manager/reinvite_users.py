@@ -31,7 +31,10 @@ class ReinviteUsers:
         date = datetime.today() - timedelta(days=5)
         for user in self.bitwarden_api.get_pending_users():
             username = user.get("externalId", "")
-            record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": username})
+            key = {"username": username}
+            record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key=key)
             invite_date = datetime.strptime(record.get("invite_date", ""), "%Y-%m-%d")
             if invite_date < date:
                 self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
+                reinvites = record.get("reinvites", 0) + 1
+                self.dynamodb_client.update_item_in_table(table_name="bitwarden", key=key, reinvites=reinvites)

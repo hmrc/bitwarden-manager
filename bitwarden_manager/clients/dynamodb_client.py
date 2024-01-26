@@ -28,3 +28,15 @@ class DynamodbClient:
             return table.get_item(Key=key)["Item"]
         except (BotoCoreError, ClientError) as e:
             raise Exception("Failed to read from DynamoDB", e) from e
+
+    def update_item_in_table(self, table_name: str, key: Dict[str, Any], reinvites: int) -> None:
+        try:
+            table = self._boto_dynamodb.Table(table_name)
+            table.update_item(
+                Key=key,
+                UpdateExpression="set reinvites=:r",
+                ExpressionAttributeValues={":r": reinvites},
+                ReturnValues="UPDATED_NEW",
+            )
+        except (BotoCoreError, ClientError) as e:
+            raise Exception("Failed to update item in DynamoDB", e) from e

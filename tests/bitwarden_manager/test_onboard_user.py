@@ -193,5 +193,5 @@ def test_onboard_user_writes_invite_date_to_db() -> None:
 
     date = datetime.today().strftime("%Y-%m-%d")
     mock_client_dynamodb.write_item_to_table.assert_called_with(
-        table_name="bitwarden", item={"username": "test.user", "invite_date": date}
+        table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0}
     )
