@@ -14,3 +14,10 @@ class DynamodbClient:
             table.put_item(Item=item)
         except (BotoCoreError, ClientError) as e:
             raise Exception("Failed to write to DynamoDB", e) from e
+
+    def delete_item_from_table(self, table_name: str, key: Dict[str, Any]) -> None:
+        try:
+            table = self._boto_dynamodb.Table(table_name)
+            table.delete_item(Key=key)
+        except (BotoCoreError, ClientError) as e:
+            raise Exception("Failed to delete from DynamoDB", e) from e
