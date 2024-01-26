@@ -1,12 +1,11 @@
 from typing import Dict, Any, List
-
-from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, UserType
-
 from jsonschema import validate
+from datetime import datetime
 
 from bitwarden_manager.clients.user_management_api import UserManagementApi
-
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, UserType
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 
 onboard_user_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -49,10 +48,12 @@ class OnboardUser:
         bitwarden_api: BitwardenPublicApi,
         user_management_api: UserManagementApi,
         bitwarden_vault_client: BitwardenVaultClient,
+        dynamodb_client: DynamodbClient,
     ):
         self.bitwarden_api = bitwarden_api
         self.user_management_api = user_management_api
         self.bitwarden_vault_client = bitwarden_vault_client
+        self.dynamodb_client = dynamodb_client
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
@@ -62,6 +63,10 @@ class OnboardUser:
             username=event["username"],
             email=event["email"],
             type=type,
+        )
+        date = datetime.today().strftime("%Y-%m-%d")
+        self.dynamodb_client.write_item_to_table(
+            table_name="bitwarden", item={"username": event["username"], "invite_date": date}
         )
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
         existing_collections = self.bitwarden_api.list_existing_collections(teams)

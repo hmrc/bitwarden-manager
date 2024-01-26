@@ -7,6 +7,7 @@ from _pytest.logging import LogCaptureFixture
 
 from app import handler
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
+from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
 from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
@@ -47,15 +48,18 @@ def test_bitwarden_client_logout_is_called(_: Mock) -> None:
 @mock.patch("boto3.client")
 def test_bitwarden_client_logout_is_called_even_when_exception_thrown(_: Mock) -> None:
     with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-            secrets_manager_mock.return_value = "23497858247589473589734805734853"
-            event = dict(event_name="new_user")
-            with patch.object(OnboardUser, "run", MagicMock(side_effect=BitwardenVaultClientError())) as new_user_mock:
-                with pytest.raises(BitwardenVaultClientError):
-                    handler(event=event, context={})
+        with patch.object(DynamodbClient, "write_item_to_table"):
+            with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+                secrets_manager_mock.return_value = "23497858247589473589734805734853"
+                event = dict(event_name="new_user")
+                with patch.object(
+                    OnboardUser, "run", MagicMock(side_effect=BitwardenVaultClientError())
+                ) as new_user_mock:
+                    with pytest.raises(BitwardenVaultClientError):
+                        handler(event=event, context={})
 
-    new_user_mock.assert_called_once_with(event=event)
-    bitwarden_logout.assert_called_once()
+        new_user_mock.assert_called_once_with(event=event)
+        bitwarden_logout.assert_called_once()
 
 
 @mock.patch("boto3.client")
