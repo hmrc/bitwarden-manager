@@ -15,6 +15,8 @@ reinvite_users_event_schema = {
     "required": ["event_name"],
 }
 
+MAX_REINVITES = 1
+
 
 class ReinviteUsers:
     def __init__(
@@ -34,7 +36,8 @@ class ReinviteUsers:
             key = {"username": username}
             record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key=key)
             invite_date = datetime.strptime(record.get("invite_date", ""), "%Y-%m-%d")
-            if invite_date < date:
+            reinvites = record.get("reinvites", 0)
+            if invite_date < date and reinvites < MAX_REINVITES:
                 self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
-                reinvites = record.get("reinvites", 0) + 1
+                reinvites += 1
                 self.dynamodb_client.update_item_in_table(table_name="bitwarden", key=key, reinvites=reinvites)
