@@ -16,6 +16,14 @@ class UserType(IntEnum):
     CUSTOM = 4
 
 
+# https://github.com/bitwarden/server/blob/main/src/Core/AdminConsole/Enums/OrganizationUserStatusType.cs
+class UserStatus(IntEnum):
+    INVITED = 0
+    ACCEPTED = 1
+    CONFIRMED = 2
+    REVOKED = -1
+
+
 REQUEST_TIMEOUT_SECONDS = 30
 
 LOGIN_URL = "https://identity.bitwarden.com/connect/token"
@@ -68,13 +76,7 @@ class BitwardenPublicApi:
         return not bool(external_id and external_id.strip())
 
     def __fetch_user_id(self, email: Optional[str] = None, external_id: Optional[str] = None) -> str:
-        response = session.get(f"{API_URL}/members")
-        try:
-            response.raise_for_status()
-        except HTTPError as error:
-            raise Exception("Failed to retrieve users", response.content, error) from error
-        response_json: Dict[str, Any] = response.json()
-        for user in response_json.get("data", ""):
+        for user in self.get_users():
             if external_id and external_id == user.get("externalId", ""):
                 return str(user.get("id", ""))
             if email and email == user.get("email", ""):
@@ -133,6 +135,23 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to list collections", response.content, error) from error
 
+    def get_users(self) -> List[Dict[str, Any]]:
+        response = session.get(f"{API_URL}/members", timeout=REQUEST_TIMEOUT_SECONDS)
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to retrieve users", response.content, error) from error
+        response_json: Dict[str, Any] = response.json()
+        return response_json.get("data", [])
+
+    def get_pending_users(self) -> List[Dict[str, Any]]:
+        self.__fetch_token()
+        pending = []
+        for user in self.get_users():
+            if user.get("status") == UserStatus.INVITED:
+                pending.append(user)
+        return pending
+
     def invite_user(self, username: str, email: str, type: UserType = UserType.REGULAR_USER) -> str:
         self.__fetch_token()
         response = session.post(
@@ -161,6 +180,14 @@ class BitwardenPublicApi:
         self.__logger.info("User has been invited to Bitwarden")
         response_json: Dict[str, str] = response.json()
         return response_json.get("id", "")
+
+    def reinvite_user(self, id: str, username: str) -> None:
+        response = session.post(f"{API_URL}/members/{id}/reinvite", timeout=REQUEST_TIMEOUT_SECONDS)
+        try:
+            response.raise_for_status()
+            self.__logger.info(f"{username} has been reinvited to Bitwarden")
+        except HTTPError as error:
+            raise Exception(f"Failed to reinvite {username}", response.content, error) from error
 
     def remove_user(self, username: str) -> None:
         self.__fetch_token()

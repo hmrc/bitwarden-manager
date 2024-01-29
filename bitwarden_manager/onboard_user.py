@@ -66,7 +66,7 @@ class OnboardUser:
         )
         date = datetime.today().strftime("%Y-%m-%d")
         self.dynamodb_client.write_item_to_table(
-            table_name="bitwarden", item={"username": event["username"], "invite_date": date}
+            table_name="bitwarden", item={"username": event["username"], "invite_date": date, "reinvites": 0}
         )
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
         existing_collections = self.bitwarden_api.list_existing_collections(teams)
