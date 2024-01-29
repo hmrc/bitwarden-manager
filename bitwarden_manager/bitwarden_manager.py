@@ -14,6 +14,7 @@ from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
+from bitwarden_manager.reinvite_users import ReinviteUsers
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 
@@ -59,6 +60,12 @@ class BitwardenManager:
                 case "remove_user":
                     self.__logger.debug("handling event with OffboardUser")
                     OffboardUser(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                        dynamodb_client=DynamodbClient(),
+                    ).run(event=event)
+                case "reinvite_users":
+                    self.__logger.debug("handling reinvite users event with ReinviteUsers")
+                    ReinviteUsers(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         dynamodb_client=DynamodbClient(),
                     ).run(event=event)
