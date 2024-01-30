@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
+from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 
 reinvite_users_event_schema = {
@@ -26,6 +27,7 @@ class ReinviteUsers:
     ):
         self.bitwarden_api = bitwarden_api
         self.dynamodb_client = dynamodb_client
+        self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=reinvite_users_event_schema)
@@ -34,7 +36,9 @@ class ReinviteUsers:
         for user in self.bitwarden_api.get_pending_users():
             username = user.get("externalId", "")
             key = {"username": username}
+            self.__logger.debug(f"Key = {key}")
             record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key=key)
+            self.__logger.debug(f"Record = {record}")
             invite_date = datetime.strptime(record.get("invite_date", ""), "%Y-%m-%d")
             reinvites = record.get("reinvites", 0)
             if invite_date < date and reinvites < MAX_REINVITES:
