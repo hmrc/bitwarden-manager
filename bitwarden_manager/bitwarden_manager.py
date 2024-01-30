@@ -64,7 +64,7 @@ class BitwardenManager:
                         dynamodb_client=DynamodbClient(),
                     ).run(event=event)
                 case "reinvite_users":
-                    self.__logger.debug("handling reinvite users event with ReinviteUsers")
+                    self.__logger.info("handling reinvite users event with ReinviteUsers")
                     ReinviteUsers(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         dynamodb_client=DynamodbClient(),
