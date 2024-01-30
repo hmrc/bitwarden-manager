@@ -36,9 +36,9 @@ class ReinviteUsers:
         for user in self.bitwarden_api.get_pending_users():
             username = user.get("externalId", "")
             key = {"username": username}
-            self.__logger.debug(f"Key = {key}")
+            self.__logger.info(f"Key = {key}")
             record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key=key)
-            self.__logger.debug(f"Record = {record}")
+            self.__logger.info(f"Record = {record}")
             invite_date = datetime.strptime(record.get("invite_date", ""), "%Y-%m-%d")
             reinvites = record.get("reinvites", 0)
             if invite_date < date and reinvites < MAX_REINVITES:
