@@ -25,7 +25,9 @@ class DynamodbClient:
     def get_item_from_table(self, table_name: str, key: Dict[str, Any]) -> Any:
         try:
             table = self._boto_dynamodb.Table(table_name)
-            return table.get_item(Key=key)["Item"]
+            resp = table.get_item(Key=key)
+            item = resp.get("Item", None)
+            return item
         except (BotoCoreError, ClientError) as e:
             raise Exception("Failed to read from DynamoDB", e) from e
 

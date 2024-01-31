@@ -24,6 +24,7 @@ class BitwardenManager:
         self.__logger = get_bitwarden_logger(
             extra_redaction_patterns=[self._get_bitwarden_export_encryption_password()]
         )
+        self.__logger.setLevel("DEBUG")
 
     def is_sqs_event(self, event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
