@@ -28,7 +28,6 @@ class ReinviteUsers:
         self.bitwarden_api = bitwarden_api
         self.dynamodb_client = dynamodb_client
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
-        self.__logger.setLevel("DEBUG")
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=reinvite_users_event_schema)
@@ -37,9 +36,7 @@ class ReinviteUsers:
         for user in self.bitwarden_api.get_pending_users():
             username = user.get("externalId", "")
             key = {"username": username}
-            self.__logger.debug(f"Key = {key}")
             record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key=key)
-            self.__logger.debug(f"Record = {record}")
             if record:
                 inv_date = record.get("invite_date", "")
                 invite_date = datetime.strptime(inv_date, "%Y-%m-%d")
