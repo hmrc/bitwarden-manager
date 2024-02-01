@@ -36,12 +36,14 @@ class ReinviteUsers:
         for user in self.bitwarden_api.get_pending_users():
             username = user.get("externalId", "")
             key = {"username": username}
-            self.__logger.info(f"Key = {key}")
             record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key=key)
-            self.__logger.info(f"Record = {record}")
-            invite_date = datetime.strptime(record.get("invite_date", ""), "%Y-%m-%d")
-            reinvites = record.get("reinvites", 0)
-            if invite_date < date and reinvites < MAX_REINVITES:
-                self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
-                reinvites += 1
-                self.dynamodb_client.update_item_in_table(table_name="bitwarden", key=key, reinvites=reinvites)
+            if record:
+                inv_date = record.get("invite_date", "")
+                invite_date = datetime.strptime(inv_date, "%Y-%m-%d")
+                reinvites = record.get("reinvites", 0)
+                if invite_date < date and reinvites < MAX_REINVITES:
+                    self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
+                    reinvites += 1
+                    self.dynamodb_client.update_item_in_table(table_name="bitwarden", key=key, reinvites=reinvites)
+            else:
+                self.__logger.info(f"No record matches {key} in the DB")
