@@ -66,6 +66,7 @@ def test_get_item_from_table() -> None:
     table.put_item(Item=item)
     key = {"username": "test.user"}
     assert client.get_item_from_table(table_name=table_name, key=key) == item
+    assert client.get_item_from_table(table_name=table_name, key={"username": "missing.user"}) is None
 
 
 @mock_dynamodb  # type: ignore
