@@ -26,8 +26,8 @@ class UserStatus(IntEnum):
 
 REQUEST_TIMEOUT_SECONDS = 30
 
-LOGIN_URL = "https://identity.bitwarden.eu/connect/token"
-API_URL = "https://api.bitwarden.eu/public"
+LOGIN_URL = "https://identity.bitwarden.com/connect/token"
+API_URL = "https://api.bitwarden.com/public"
 
 session = Session()
 
