@@ -783,8 +783,19 @@ def test_list_existing_groups() -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.com/public/groups",
-            body=b'{"object":"list","data":[{"object":"group","id":"YYYYYYYY",'
-            b'"collections":[],"name":"Team Name One","accessAll":false,"externalId":null}]}',
+            json={
+                "object": "list",
+                "data": [
+                    {
+                        "object": "group",
+                        "id": "YYYYYYYY",
+                        "collections": [],
+                        "name": "Team Name One",
+                        "accessAll": False,
+                        "externalId": None,
+                    }
+                ],
+            },
             status=200,
             content_type="application/json",
         )
@@ -807,10 +818,27 @@ def test_list_existing_groups_with_duplicates() -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.com/public/groups",
-            body=b'{"object":"list","data":[{"object":"group","id":"YYYYYYYY",'
-            b'"collections":[],"name":"Team Name One","accessAll":false,"externalId":null},'
-            b'{"object":"group","id":"XXXXXXX","collections":[],'
-            b'"name":"Team Name One","accessAll":false,"externalId":null}]}',
+            json={
+                "object": "list",
+                "data": [
+                    {
+                        "object": "group",
+                        "id": "YYYYYYYY",
+                        "collections": [],
+                        "name": "Team Name One",
+                        "accessAll": False,
+                        "externalId": None,
+                    },
+                    {
+                        "object": "group",
+                        "id": "XXXXXXX",
+                        "collections": [],
+                        "name": "Team Name One",
+                        "accessAll": False,
+                        "externalId": None,
+                    },
+                ],
+            },
             status=200,
             content_type="application/json",
         )
