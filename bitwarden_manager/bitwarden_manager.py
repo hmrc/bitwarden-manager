@@ -16,6 +16,7 @@ from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.reinvite_users import ReinviteUsers
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
+from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
 
 
 class BitwardenManager:
@@ -68,6 +69,13 @@ class BitwardenManager:
                     ReinviteUsers(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         dynamodb_client=DynamodbClient(),
+                    ).run(event=event)
+                case "list_custom_groups":
+                    self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
+                    self.__logger.debug("handling event with ListCustomGroups")
+                    ListCustomGroups(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                        user_management_api=self._get_user_management_api(),
                     ).run(event=event)
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")
