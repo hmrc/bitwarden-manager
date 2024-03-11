@@ -51,18 +51,6 @@ class BitwardenPublicApi:
         response_list: List[str] = response.json()
         return response_list
 
-    def __group_manually_created(self, group_id: str) -> bool:
-        response = session.get(f"{API_URL}/groups/{group_id}")
-        try:
-            response.raise_for_status()
-        except HTTPError as error:
-            raise Exception("Failed to get group", response.content, error) from error
-        external_id: str = response.json().get("externalId", "")
-        # All groups created by automation have an external id. Manually created
-        # groups _may_ have an external id but we assume that in general they don't
-        # since you cannot add one through the UI - only through the API
-        return not bool(external_id and external_id.strip())
-
     def __collection_manually_created(self, collection_id: str) -> bool:
         response = session.get(f"{API_URL}/collections/{collection_id}")
         try:
@@ -249,12 +237,15 @@ class BitwardenPublicApi:
         response_json: Dict[str, Any] = response.json()
         return response_json.get("id", "")
 
-    def associate_user_to_groups(self, user_id: str, group_ids: List[str]) -> None:
+    def user_custom_group_ids(self, existing_user_group_ids: List[str], managed_group_ids: List[str]) -> List[str]:
+        return [id for id in existing_user_group_ids if id not in managed_group_ids]
+
+    def associate_user_to_groups(self, user_id: str, managed_group_ids: List[str]) -> None:
         existing_user_group_ids = self.__get_user_groups(user_id)
-        user_group_ids = existing_user_group_ids[:]
-        for group_id in group_ids:
-            if group_id not in user_group_ids and not self.__group_manually_created(group_id):
-                user_group_ids.append(group_id)
+
+        custom_group_ids = self.user_custom_group_ids(existing_user_group_ids, managed_group_ids)
+        user_group_ids = custom_group_ids + managed_group_ids
+
         if not existing_user_group_ids == user_group_ids:
             response = session.put(
                 f"{API_URL}/members/{user_id}/group-ids",

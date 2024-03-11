@@ -79,7 +79,7 @@ class OnboardUser:
         )
         self.bitwarden_api.associate_user_to_groups(
             user_id=user_id,
-            group_ids=group_ids,
+            managed_group_ids=group_ids,
         )
 
     @staticmethod
