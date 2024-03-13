@@ -322,10 +322,9 @@ def test_get_collection_groups_failure() -> None:
 
 
 def test_get_user_groups_failure() -> None:
-    user_id = "XXXXXXXX"
-    group_ids = ["ZZZZZZZZ"]
+    user_id = "id-test-user01"
+    managed_group_ids = ["id-team-one"]
     with responses.RequestsMock() as rsps:
-        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=400,
             content_type="application/json",
@@ -344,27 +343,80 @@ def test_get_user_groups_failure() -> None:
             Exception,
             match="Failed to get user groups",
         ):
-            client.associate_user_to_groups(user_id=user_id, managed_group_ids=group_ids)
+            client.associate_user_to_groups(user_id=user_id, managed_group_ids=managed_group_ids, custom_group_ids=[])
+
+
+def test_get_groups() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.GET,
+            url="https://api.bitwarden.com/public/groups",
+            json={
+                "object": "list",
+                "data": [
+                    {
+                        "name": "team-one",
+                        "accessAll": False,
+                        "externalId": "team-one",
+                        "object": "group",
+                        "id": "id-team-one",
+                        "collections": [],
+                    },
+                    {
+                        "name": "team-two",
+                        "accessAll": False,
+                        "externalId": "team-two",
+                        "object": "group",
+                        "id": "id-team-two",
+                        "collections": [],
+                    },
+                ],
+                "continuationToken": "string",
+            },
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        assert {"team-one": "id-team-one", "team-two": "id-team-two"} == client.get_groups()
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.GET,
+            url="https://api.bitwarden.com/public/groups",
+            json={"error": "error"},
+        )
+
+        with pytest.raises(Exception, match="Failed to get groups"):
+            client.get_groups()
 
 
 def test_user_custom_group_ids() -> None:
-    managed_group_ids = ["id-managed-team-1", "id-managed-team-2"]
     existing_group_ids = ["id-managed-team-1", "id-custom-grp-1", "id-custom-grp-2"]
+    custom_group_ids = ["id-custom-grp-1", "id-custom-grp-2"]
     client = BitwardenPublicApi(
         logger=logging.getLogger(),
         client_id="foo",
         client_secret="bar",
     )
 
-    assert ["id-custom-grp-1", "id-custom-grp-2"] == client.user_custom_group_ids(
-        existing_user_group_ids=existing_group_ids, managed_group_ids=managed_group_ids
+    assert ["id-custom-grp-1", "id-custom-grp-2"] == client._user_custom_group_ids(
+        existing_user_group_ids=existing_group_ids, custom_group_ids=custom_group_ids
     )
 
 
-def test_associate_user_to_group() -> None:
+def test_associate_user_to_group_no_custom_group() -> None:
     user_id = "id-test-user01"
     existing_group_ids = ["id-team-two"]
     managed_group_ids = ["id-team-one"]
+    custom_group_ids: List[str] = []
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             status=200,
@@ -382,7 +434,7 @@ def test_associate_user_to_group() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "groupIds": existing_group_ids + managed_group_ids,
+                        "groupIds": managed_group_ids + custom_group_ids,
                     }
                 )
             ],
@@ -394,13 +446,16 @@ def test_associate_user_to_group() -> None:
             client_secret="bar",
         )
 
-        client.associate_user_to_groups(user_id=user_id, managed_group_ids=managed_group_ids)
+        client.associate_user_to_groups(
+            user_id=user_id, managed_group_ids=managed_group_ids, custom_group_ids=custom_group_ids
+        )
 
 
 def test_associate_user_to_group_multiple_custom_groups() -> None:
     user_id = "id-test-user01"
     managed_group_ids = ["id-managed-team-1", "id-managed-team-2"]
     existing_group_ids = ["id-managed-team-1", "id-custom-grp-1", "id-custom-grp-2"]
+    custom_group_ids = ["id-custom-grp-1", "id-custom-grp-2", "id-custom-grp-3"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             status=200,
@@ -418,7 +473,7 @@ def test_associate_user_to_group_multiple_custom_groups() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "groupIds": ["id-custom-grp-1", "id-custom-grp-2", "id-managed-team-1", "id-managed-team-2"],
+                        "groupIds": ["id-managed-team-1", "id-managed-team-2", "id-custom-grp-1", "id-custom-grp-2"],
                     }
                 )
             ],
@@ -430,49 +485,16 @@ def test_associate_user_to_group_multiple_custom_groups() -> None:
             client_secret="bar",
         )
 
-        client.associate_user_to_groups(user_id=user_id, managed_group_ids=managed_group_ids)
-
-
-def test_associate_user_to_manually_created_group() -> None:
-    user_id = "id-test-user01"
-    existing_group_ids = ["id-manually-created-team"]
-    managed_group_ids = ["id-team-two"]
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(
-            status=200,
-            content_type="application/json",
-            method="GET",
-            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
-            json=existing_group_ids,
+        client.associate_user_to_groups(
+            user_id=user_id, managed_group_ids=managed_group_ids, custom_group_ids=custom_group_ids
         )
-        rsps.add(
-            status=200,
-            content_type="application/json",
-            method=responses.PUT,
-            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
-            body="",
-            match=[
-                matchers.json_params_matcher(
-                    {
-                        "groupIds": existing_group_ids + managed_group_ids,
-                    }
-                )
-            ],
-        )
-
-        client = BitwardenPublicApi(
-            logger=logging.getLogger(),
-            client_id="foo",
-            client_secret="bar",
-        )
-
-        client.associate_user_to_groups(user_id=user_id, managed_group_ids=managed_group_ids)
 
 
 def test_failed_to_associate_user_to_groups() -> None:
     user_id = "id-test-user01"
     existing_group_ids = ["id-team-one"]
     managed_group_ids = ["id-team-two"]
+    custom_group_ids: List[str] = []
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             status=200,
@@ -490,7 +512,7 @@ def test_failed_to_associate_user_to_groups() -> None:
             match=[
                 matchers.json_params_matcher(
                     {
-                        "groupIds": existing_group_ids + managed_group_ids,
+                        "groupIds": managed_group_ids + custom_group_ids,
                     }
                 )
             ],
@@ -506,15 +528,15 @@ def test_failed_to_associate_user_to_groups() -> None:
             Exception,
             match="Failed to associate user to group-ids",
         ):
-            client.associate_user_to_groups(user_id=user_id, managed_group_ids=managed_group_ids)
+            client.associate_user_to_groups(
+                user_id=user_id, managed_group_ids=managed_group_ids, custom_group_ids=custom_group_ids
+            )
 
 
 def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
     user_id = "id-test-user01"
     existing_group_ids = ["id-team-one"]
-    managed_group_ids = ["id-team-two"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        # rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=400,
             content_type="application/json",
@@ -533,7 +555,7 @@ def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
             Exception,
             match="Failed to get user groups",
         ):
-            client.associate_user_to_groups(user_id=user_id, managed_group_ids=managed_group_ids)
+            client.associate_user_to_groups(user_id=user_id, managed_group_ids=[], custom_group_ids=[])
 
 
 def test_update_manually_created_collection_group() -> None:
