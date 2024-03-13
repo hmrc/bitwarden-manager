@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Dict, Any
+from typing import Dict, Any, List
 from requests import get, post, HTTPError
 
 REQUEST_TIMEOUT_SECONDS = 5
@@ -14,7 +14,7 @@ class UserManagementApi:
         self.__client_secret = client_secret
         self.__client_id = client_id
 
-    def get_user_teams(self, username: str) -> list[str]:
+    def get_user_teams(self, username: str) -> List[str]:
         user_teams = []
         bearer = self.__fetch_token()
         response = get(
@@ -42,6 +42,25 @@ class UserManagementApi:
                 user_teams.append(team.get("team", ""))
         self.__logger.info(f"User teams: {user_teams}")
         return user_teams
+
+    def get_teams(self) -> List[str]:
+        bearer = self.__fetch_token()
+        response = get(
+            f"{API_URL}/organisations/teams",
+            headers={
+                "Token": bearer,
+                "requester": self.__client_id,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        try:
+            response.raise_for_status()
+        except HTTPError as e:
+            raise Exception("Failed to get teams", response.content, e) from e
+        response_json: Dict[str, Any] = response.json()
+        return [t.get("team") for t in response_json.get("teams", [])]
 
     def __fetch_token(self) -> str:
         response = post(

@@ -195,6 +195,15 @@ class BitwardenPublicApi:
 
         self.__logger.info(f"User {username} has been removed from the Bitwarden organisation")
 
+    def get_groups(self) -> Dict[str, str]:
+        response = session.get(f"{API_URL}/groups", timeout=REQUEST_TIMEOUT_SECONDS)
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to get groups") from error
+        response_json: Dict[str, Any] = response.json()
+        return {group.get("name"): group.get("id") for group in response_json.get("data", [])}
+
     def list_existing_groups(self, users_teams: List[str]) -> Dict[str, str]:
         existing_groups: Dict[str, str] = {}
         response = session.get(f"{API_URL}/groups")
@@ -237,14 +246,13 @@ class BitwardenPublicApi:
         response_json: Dict[str, Any] = response.json()
         return response_json.get("id", "")
 
-    def user_custom_group_ids(self, existing_user_group_ids: List[str], managed_group_ids: List[str]) -> List[str]:
-        return [id for id in existing_user_group_ids if id not in managed_group_ids]
+    def _user_custom_group_ids(self, existing_user_group_ids: List[str], custom_group_ids: List[str]) -> List[str]:
+        return [id for id in existing_user_group_ids if id in custom_group_ids]
 
-    def associate_user_to_groups(self, user_id: str, managed_group_ids: List[str]) -> None:
+    def associate_user_to_groups(self, user_id: str, managed_group_ids: List[str], custom_group_ids: List[str]) -> None:
         existing_user_group_ids = self.__get_user_groups(user_id)
 
-        custom_group_ids = self.user_custom_group_ids(existing_user_group_ids, managed_group_ids)
-        user_group_ids = custom_group_ids + managed_group_ids
+        user_group_ids = managed_group_ids + self._user_custom_group_ids(existing_user_group_ids, custom_group_ids)
 
         if not existing_user_group_ids == user_group_ids:
             response = session.put(

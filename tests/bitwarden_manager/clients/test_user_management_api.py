@@ -130,6 +130,45 @@ def test_failed_login() -> None:
             client.get_user_teams(username=test_user)
 
 
+def test_get_teams() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.GET,
+            url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
+            json={
+                "teams": [
+                    {"team": "team-one", "slack": "https://myorg.slack.com/messages/team-one"},
+                    {"team": "team-two", "slack": "https://myorg.slack.com/messages/team-two"},
+                    {"team": "team-three", "slack": "https://myorg.slack.com/messages/team-three"},
+                    {"team": "team-four"},
+                    {"team": "team-five"},
+                ]
+            },
+        )
+
+        client = UserManagementApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        assert ["team-one", "team-two", "team-three", "team-four", "team-five"] == client.get_teams()
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.GET,
+            url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
+            json={"error": "error"},
+        )
+
+        with pytest.raises(Exception):
+            client.get_teams()
+
+
 MOCKED_LOGIN = responses.Response(
     method="POST",
     url="https://user-management-auth-production.tools.tax.service.gov.uk/v1/login",
