@@ -6,7 +6,7 @@ import boto3
 
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
-from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientLoginError
 from bitwarden_manager.clients.s3_client import S3Client
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 from bitwarden_manager.clients.user_management_api import UserManagementApi
@@ -79,6 +79,8 @@ class BitwardenManager:
                     ).run(event=event)
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")
+        except BitwardenVaultClientLoginError as e:
+            self.__logger.warning(f"Failed to complete {event_name} due to Bitwarden CLI login error - {e}")
         finally:
             bitwarden_vault_client.logout()
 

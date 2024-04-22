@@ -12,6 +12,10 @@ class BitwardenVaultClientError(Exception):
     pass
 
 
+class BitwardenVaultClientLoginError(Exception):
+    pass
+
+
 class BitwardenVaultClient:
     __session_token: Optional[str]
 
@@ -49,7 +53,7 @@ class BitwardenVaultClient:
                 text=True,
             )  # nosec B603
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            raise BitwardenVaultClientError(e)
+            raise BitwardenVaultClientLoginError(e)
         return output
 
     def _unlock(self) -> str:
