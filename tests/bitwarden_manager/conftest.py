@@ -66,3 +66,19 @@ def failing_authentication_client() -> BitwardenVaultClient:
         password="very secure pa$$w0rd!",
         cli_timeout=20,
     )
+
+
+@pytest.fixture
+def incorrect_credentials_client() -> BitwardenVaultClient:
+    return BitwardenVaultClient(
+        cli_executable_path=str(
+            pathlib.Path(__file__).parent.joinpath("./clients/stubs/bitwarden_client_incorrect_credentials_stub.py")
+        ),
+        client_id="test_id",
+        client_secret="test_secret",
+        export_enc_password="hmrc2023",
+        logger=logging.getLogger(),
+        organisation_id="abc-123",
+        password="very secure pa$$w0rd!",
+        cli_timeout=20,
+    )

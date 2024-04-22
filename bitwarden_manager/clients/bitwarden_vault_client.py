@@ -16,6 +16,10 @@ class BitwardenVaultClientLoginError(Exception):
     pass
 
 
+class BitwardenVaultClientIncorrectCredentialsError(Exception):
+    pass
+
+
 class BitwardenVaultClient:
     __session_token: Optional[str]
 
@@ -52,8 +56,13 @@ class BitwardenVaultClient:
                 timeout=self.cli_timeout,
                 text=True,
             )  # nosec B603
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        except subprocess.TimeoutExpired as e:
             raise BitwardenVaultClientLoginError(e)
+        except subprocess.CalledProcessError as e:
+            if "client_id or client_secret is incorrect" in e.stdout:
+                raise BitwardenVaultClientIncorrectCredentialsError(e)
+            else:
+                raise BitwardenVaultClientLoginError(e)
         return output
 
     def _unlock(self) -> str:

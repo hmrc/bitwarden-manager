@@ -10,13 +10,14 @@ from _pytest.logging import LogCaptureFixture
 from bitwarden_manager.clients.bitwarden_vault_client import (
     BitwardenVaultClient,
     BitwardenVaultClientError,
+    BitwardenVaultClientIncorrectCredentialsError,
     BitwardenVaultClientLoginError,
 )
 
 
-def test_failed_login(failing_authentication_client: BitwardenVaultClient) -> None:
-    with pytest.raises(BitwardenVaultClientLoginError, match="login"):
-        failing_authentication_client.login()
+def test_failed_login(incorrect_credentials_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientIncorrectCredentialsError, match="login"):
+        incorrect_credentials_client.login()
 
 
 def test_only_logout_if_logged_in(failing_authentication_client: BitwardenVaultClient) -> None:
