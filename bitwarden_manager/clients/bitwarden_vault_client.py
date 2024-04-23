@@ -53,13 +53,12 @@ class BitwardenVaultClient:
                 [self.cli_executable_path, "login", "--apikey"],
                 env=tmp_env,
                 shell=False,
+                stderr=subprocess.PIPE,
                 timeout=self.cli_timeout,
                 text=True,
             )  # nosec B603
-        except subprocess.TimeoutExpired as e:
-            raise BitwardenVaultClientLoginError(e)
-        except subprocess.CalledProcessError as e:
-            if "client_id or client_secret is incorrect" in e.stdout:
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            if e.stderr and "client_id or client_secret is incorrect" in e.stderr:
                 raise BitwardenVaultClientIncorrectCredentialsError(e)
             else:
                 raise BitwardenVaultClientLoginError(e)
@@ -76,10 +75,11 @@ class BitwardenVaultClient:
                     "--passwordenv",
                     "BW_PASSWORD",
                 ],
-                shell=False,
-                env=tmp_env,
-                text=True,
                 encoding="utf-8",
+                env=tmp_env,
+                shell=False,
+                stderr=subprocess.PIPE,
+                text=True,
                 timeout=self.cli_timeout,
             )  # nosec B603
             session_token = output.split()[-1]
@@ -92,9 +92,10 @@ class BitwardenVaultClient:
             try:
                 output = subprocess.check_output(
                     [self.cli_executable_path, "logout"],
-                    shell=False,
-                    text=True,
                     encoding="utf-8",
+                    shell=False,
+                    stderr=subprocess.PIPE,
+                    text=True,
                     timeout=self.cli_timeout,
                 )  # nosec B603
                 self.__session_token = None

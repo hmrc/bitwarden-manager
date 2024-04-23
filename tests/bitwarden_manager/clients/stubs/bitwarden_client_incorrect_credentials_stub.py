@@ -4,8 +4,8 @@ import sys
 if __name__ == "__main__":
     match sys.argv[1]:
         case "login":
-            sys.stdout.write("client_id or client_secret is incorrect. Try again.")
-            sys.stderr.write("")
+            sys.stdout.write("")
+            sys.stderr.write("client_id or client_secret is incorrect. Try again.")
             sys.exit(1)
         case "unlock":
             sys.stdout.write("")

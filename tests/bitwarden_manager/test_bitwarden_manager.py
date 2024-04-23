@@ -92,7 +92,7 @@ def test_confirm_user_passed_allowed_domains(mock_secretsmanager: Mock) -> None:
 
 @mock.patch.dict(os.environ, {"ALLOWED_DOMAINS": "example.com"})
 @mock.patch("boto3.client")
-def test_warning_log_on_failed_bitwarden_vault_client_login(
+def test_warning_is_logged_on_failed_bitwarden_vault_client_login(
     mock_secretsmanager: Mock, failing_authentication_client: BitwardenVaultClient, caplog: LogCaptureFixture
 ) -> None:
     get_secret_value = Mock(return_value={"SecretString": "secret"})
