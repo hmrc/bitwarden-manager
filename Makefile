@@ -6,6 +6,7 @@ SHELL = /bin/bash
 .PHONY: $(MAKECMDGOALS)
 
 PYTHON_VERSION = $(shell head -1 .python-version)
+PYTHON_SRC = *.py bitwarden_manager/ tests/
 
 POETRY_DOCKER = docker run \
 	--interactive \
@@ -37,16 +38,16 @@ flake8: python
 	@$(POETRY_DOCKER) flake8 --max-line-length 120 --exclude=.venv
 
 fmt:
-	@$(POETRY_DOCKER_MOUNT) black --line-length 120 --exclude=.venv .
+	@$(POETRY_DOCKER_MOUNT) black --line-length 120 --exclude=.venv $(PYTHON_SRC)
 
 fmt-check: python
-	@$(POETRY_DOCKER) black --line-length 120 --check .
+	@$(POETRY_DOCKER) black --line-length 120 --check $(PYTHON_SRC)
 
 mypy: python
-	@$(POETRY_DOCKER) mypy --strict .
+	@$(POETRY_DOCKER) mypy --strict $(PYTHON_SRC)
 
 bandit: python
-	@$(POETRY_DOCKER) bandit -c bandit.yaml -r -q .
+	@$(POETRY_DOCKER) bandit -c bandit.yaml -r -q $(PYTHON_SRC)
 
 python-test: python
 	@$(POETRY_DOCKER) pytest \

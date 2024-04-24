@@ -5,7 +5,7 @@ if __name__ == "__main__":
     match sys.argv[1]:
         case "login":
             sys.stdout.write("")
-            sys.stderr.write("Something went wrong. Try again.")
+            sys.stderr.write("client_id or client_secret is incorrect. Try again.")
             sys.exit(1)
         case "unlock":
             sys.stdout.write("")

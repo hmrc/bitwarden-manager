@@ -1,5 +1,4 @@
 import os
-import pathlib
 import logging
 import tempfile
 from unittest import mock
@@ -11,73 +10,14 @@ from _pytest.logging import LogCaptureFixture
 from bitwarden_manager.clients.bitwarden_vault_client import (
     BitwardenVaultClient,
     BitwardenVaultClientError,
+    BitwardenVaultClientIncorrectCredentialsError,
+    BitwardenVaultClientLoginError,
 )
 
 
-@pytest.fixture
-def client() -> BitwardenVaultClient:
-    return BitwardenVaultClient(
-        cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_stub.py")),
-        client_id="test_id",
-        client_secret="test_secret",
-        export_enc_password="hmrc2023",
-        logger=logging.getLogger(),
-        organisation_id="abc-123",
-        password="very secure pa$$w0rd!",
-        cli_timeout=20,
-    )
-
-
-@pytest.fixture
-@mock.patch.dict(os.environ, {"BITWARDEN_CLI_TIMEOUT": "1"})
-def timeout_client() -> BitwardenVaultClient:
-    return BitwardenVaultClient(
-        cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_stub.py")),
-        client_id="test_id",
-        client_secret="test_secret",
-        export_enc_password="hmrc2023",
-        logger=logging.getLogger(),
-        organisation_id="abc-123",
-        password="very secure pa$$w0rd!",
-        cli_timeout=float(os.environ.get("BITWARDEN_CLI_TIMEOUT", "20")),
-    )
-
-
-@pytest.fixture
-def failing_client() -> BitwardenVaultClient:
-    return BitwardenVaultClient(
-        cli_executable_path=str(
-            pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_failing_operations_stub.py")
-        ),
-        client_id="test_id",
-        client_secret="test_secret",
-        export_enc_password="hmrc2023",
-        logger=logging.getLogger(),
-        organisation_id="abc-123",
-        password="very secure pa$$w0rd!",
-        cli_timeout=20,
-    )
-
-
-@pytest.fixture
-def failing_authentication_client() -> BitwardenVaultClient:
-    return BitwardenVaultClient(
-        cli_executable_path=str(
-            pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_failing_authentication_stub.py")
-        ),
-        client_id="test_id",
-        client_secret="test_secret",
-        export_enc_password="hmrc2023",
-        logger=logging.getLogger(),
-        organisation_id="abc-123",
-        password="very secure pa$$w0rd!",
-        cli_timeout=20,
-    )
-
-
-def test_failed_login(failing_authentication_client: BitwardenVaultClient) -> None:
-    with pytest.raises(BitwardenVaultClientError, match="login"):
-        failing_authentication_client.login()
+def test_failed_login(incorrect_credentials_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientIncorrectCredentialsError, match="login"):
+        incorrect_credentials_client.login()
 
 
 def test_only_logout_if_logged_in(failing_authentication_client: BitwardenVaultClient) -> None:
@@ -86,7 +26,7 @@ def test_only_logout_if_logged_in(failing_authentication_client: BitwardenVaultC
 
 @mock.patch.dict(os.environ, {"BITWARDEN_CLI_TIMEOUT": "1"})
 def test_login_timed_out(timeout_client: BitwardenVaultClient) -> None:
-    with pytest.raises(BitwardenVaultClientError, match="timed out after 1.0 seconds"):
+    with pytest.raises(BitwardenVaultClientLoginError, match="timed out after 1.0 seconds"):
         timeout_client.login()
 
 

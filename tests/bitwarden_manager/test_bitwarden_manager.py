@@ -1,6 +1,9 @@
+import logging
 import os
 from unittest import mock
 from unittest.mock import Mock, call, patch
+
+from pytest import LogCaptureFixture
 
 
 from bitwarden_manager.bitwarden_manager import BitwardenManager
@@ -85,6 +88,23 @@ def test_confirm_user_passed_allowed_domains(mock_secretsmanager: Mock) -> None:
         manager.run(event={"event_name": "confirm_user"})
 
     bitwarden_mock.confirm_user.assert_called_once_with(user_id=111)
+
+
+@mock.patch.dict(os.environ, {"ALLOWED_DOMAINS": "example.com"})
+@mock.patch("boto3.client")
+def test_warning_is_logged_on_failed_bitwarden_vault_client_login(
+    mock_secretsmanager: Mock, failing_authentication_client: BitwardenVaultClient, caplog: LogCaptureFixture
+) -> None:
+    get_secret_value = Mock(return_value={"SecretString": "secret"})
+    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+
+    with patch.object(BitwardenManager, "_get_bitwarden_vault_client") as _get_bitwarden_vault_client:
+        _get_bitwarden_vault_client.return_value = failing_authentication_client
+
+        with caplog.at_level(logging.WARN):
+            BitwardenManager().run(event={"event_name": "confirm_user"})
+
+        assert "Failed to complete confirm_user due to Bitwarden CLI login error - " in caplog.text
 
 
 @mock.patch("boto3.client")
