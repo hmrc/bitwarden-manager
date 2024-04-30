@@ -1,0 +1,81 @@
+[
+    {
+      "object": "item",
+      "id": "f51744c9-df2d-4874-a0f9-b15b008d06a1",
+      "type": 1,
+      "name": "login01",
+      "notes": null,
+      "favorite": false,
+      "login": {
+        "fido2Credentials": [],
+        "uris": [],
+        "username": "some@user.com",
+        "password": "foo"
+      },
+      "collectionIds": [
+        "be5cdb75-d676-463d-89b3-b08a00d54b1e"
+      ]
+    },
+    {
+      "object": "item",
+      "id": "19338970-f674-4de7-a79c-b15b008d06a1",
+      "type": 1,
+      "reprompt": 0,
+      "name": "login02",
+      "notes": null,
+      "login": {
+        "fido2Credentials": [],
+        "uris": [],
+        "username": "another@user.com",
+        "password": "bar"
+      },
+      "collectionIds": [
+        "be5cdb75-d676-463d-89b3-b08a00d54b1e"
+      ]
+    },
+    {
+      "object": "item",
+      "id": "552955d8-22e1-440b-a0fc-b15b008d06a1",
+      "type": 1,
+      "reprompt": 0,
+      "name": "login03",
+      "notes": null,
+      "login": {
+        "fido2Credentials": [],
+        "uris": [],
+        "username": "awesome@user.com",
+        "password": "blah"
+      },
+      "collectionIds": [
+        "be5cdb75-d676-463d-89b3-b08a00d54b1e"
+      ]
+    },
+    {
+      "object": "item",
+      "id": "750a2e23-4ad5-4190-9a37-b15b008d06a1",
+      "type": 2,
+      "reprompt": 0,
+      "name": "note01",
+      "notes": "client_id:\norganization.123456789\n\nclient_secret:\nsomeRandomSecret12345\n\nscope:\napi.organization\n\ngrant_type:\nclient_credentials",
+      "secureNote": {
+        "type": 0
+      },
+      "collectionIds": [
+        "be5cdb75-d676-463d-89b3-b08a00d54b1e"
+      ]
+    },
+    {
+      "object": "item",
+      "id": "850a2e23-4ad5-4190-9a37-b15b008d06a5",
+      "type": 2,
+      "reprompt": 0,
+      "name": "note02",
+      "notes": "client_id:\norganization.987654321\n\nclient_secret:\nsomeRandomSecret54321\n\nscope:\napi.organization\n\ngrant_type:\nclient_credentials",
+      "secureNote": {
+        "type": 0
+      },
+      "collectionIds": [
+        "be5cdb75-d676-463d-89b3-b08a00d54b1e"
+      ]
+    }
+  ]

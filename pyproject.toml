@@ -10,7 +10,7 @@ license = "Apache-2.0"
 [[tool.poetry.source]]
 name = "artifactory"
 url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple/"
-priority = "default"
+priority = "primary"
 
 [tool.poetry.dependencies]
 python = "^3.11"
