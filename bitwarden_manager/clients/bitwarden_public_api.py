@@ -112,14 +112,14 @@ class BitwardenPublicApi:
         return group_ids
 
     def __get_collection_external_id(self, collection_id: str) -> str:
-        return self.__get_collection(collection_id).get("externalId", "")
+        return str(self.__get_collection(collection_id).get("externalId", ""))
 
     def __list_collections(self) -> List[Dict[str, Any]]:
         response = session.get(f"{API_URL}/collections")
         try:
             response.raise_for_status()
             response_json: Dict[str, Any] = response.json()
-            return response_json.get("data", [])
+            return list(response_json.get("data", []))
         except HTTPError as error:
             raise Exception("Failed to list collections", response.content, error) from error
 
@@ -130,7 +130,7 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to retrieve users", response.content, error) from error
         response_json: Dict[str, Any] = response.json()
-        return response_json.get("data", [])
+        return list(response_json.get("data", []))
 
     def get_pending_users(self) -> List[Dict[str, Any]]:
         self.__fetch_token()
@@ -244,7 +244,7 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception("Failed to create group", response.content, error) from error
         response_json: Dict[str, Any] = response.json()
-        return response_json.get("id", "")
+        return str(response_json.get("id", ""))
 
     def _user_custom_group_ids(self, existing_user_group_ids: List[str], custom_group_ids: List[str]) -> List[str]:
         return [id for id in existing_user_group_ids if id in custom_group_ids]

@@ -3,7 +3,7 @@ from enum import IntEnum
 import json
 import logging
 import os
-import subprocess
+import subprocess  # nosec B404
 from typing import Any, Dict, List, Optional
 
 from jsonschema import validate
