@@ -16,6 +16,7 @@ from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.reinvite_users import ReinviteUsers
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
+from bitwarden_manager.temp.list_collection_items import ListCollectionItems
 from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
 
 
@@ -76,6 +77,11 @@ class BitwardenManager:
                     ListCustomGroups(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         user_management_api=self._get_user_management_api(),
+                    ).run(event=event)
+                case "list_collection_items":
+                    self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
+                    ListCollectionItems(
+                        bitwarden_vault_client=bitwarden_vault_client,
                     ).run(event=event)
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")
