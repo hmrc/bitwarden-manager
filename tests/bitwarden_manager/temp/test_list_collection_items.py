@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 
 from pytest import LogCaptureFixture, mark
 import pytest
+from bitwarden_manager.bitwarden_manager import BitwardenManager
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
 from bitwarden_manager.temp.list_collection_items import (
     BitwardenCollectionDuplicateFoundError,
@@ -132,3 +133,19 @@ def test_run(mock_get: Mock, mock_list: Mock, mock_print: Mock) -> None:
     mock_list.return_value = []
     event = {"event_name": "list_collection_items", "collection_name": "test-collection"}
     ListCollectionItems(bitwarden_vault_client=Mock()).run(event)
+
+
+@patch("bitwarden_manager.bitwarden_manager.ListCollectionItems")
+@patch("bitwarden_manager.redacting_formatter.RedactingFormatter")
+@patch("boto3.client")
+def test_list_custom_groups_event_routing(
+    mock_secretsmanager: Mock, mock_log_redacting_formatter: Mock, mock_list_custom_groups: Mock
+) -> None:
+    event = {"event_name": "list_collection_items", "collection_name": "test-collection"}
+
+    get_secret_value = Mock(return_value={"SecretString": "secret"})
+    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+    mock_list_custom_groups.return_value.run.return_value = None
+    mock_log_redacting_formatter.validate_patterns.return_value = None
+    BitwardenManager().run(event=event)
+    mock_list_custom_groups.return_value.run.assert_called()
