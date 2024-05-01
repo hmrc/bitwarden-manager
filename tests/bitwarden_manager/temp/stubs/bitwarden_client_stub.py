@@ -10,6 +10,9 @@ TIMEOUT = int(os.environ.get("BITWARDEN_CLI_TIMEOUT", 0))
 if TIMEOUT:
     sleep(TIMEOUT + 1)
 
+with open(pathlib.Path(__file__).parent.joinpath("./list_collections.json")) as f:
+    list_collections_output = json.load(f)
+
 with open(pathlib.Path(__file__).parent.joinpath("./list_collection_items.json")) as f:
     list_collection_items_output = json.load(f)
 
@@ -38,9 +41,19 @@ if __name__ == "__main__":
             return_code = 0
         case "list":
             fail_if_no_session_set()
-            stdout = json.dumps(list_collection_items_output)
-            stderr = ""
-            return_code = 0
+            match sys.argv[2]:
+                case "collections":
+                    stdout = json.dumps(list_collections_output)
+                    stderr = ""
+                    return_code = 0
+                case "items":
+                    stdout = json.dumps(list_collection_items_output)
+                    stderr = ""
+                    return_code = 0
+                case _:
+                    stdout = ""
+                    stderr = f"unknown command {sys.argv}"
+                    return_code = 1
         case _:
             stdout = ""
             stderr = "unknown command"
