@@ -1,0 +1,16 @@
+[
+    {
+      "object": "collection",
+      "id": "id-test-collection-01",
+      "organizationId": "id-test-organization",
+      "name": "test-collection-01",
+      "externalId": "TURUUCBBcHByZW50aWNlcw=="
+    },
+    {
+      "object": "collection",
+      "id": "id-test-collection-02",
+      "organizationId": "id-test-organization",
+      "name": "test-collection-02",
+      "externalId": "UGxhdGZvcm0gU2VjdXJpdHk="
+    }
+  ]

@@ -6,7 +6,13 @@ from unittest.mock import Mock, patch
 from pytest import LogCaptureFixture, mark
 import pytest
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
-from bitwarden_manager.temp.list_collection_items import CollectionItem, CollectionItemType, ListCollectionItems
+from bitwarden_manager.temp.list_collection_items import (
+    BitwardenCollectionDuplicateFoundError,
+    BitwardenCollectionNotFoundError,
+    CollectionItem,
+    CollectionItemType,
+    ListCollectionItems,
+)
 
 
 @pytest.fixture
@@ -70,9 +76,59 @@ def test_list_collection_items(client: BitwardenVaultClient) -> None:
         ListCollectionItems(bitwarden_vault_client=client).list_collection_items(collection_id="collection_id")
 
 
+def test_filter_collection(client: BitwardenVaultClient) -> None:
+    collections = [
+        {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
+        {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
+    ]
+    id = ListCollectionItems(bitwarden_vault_client=client).filter_collection(
+        collections=collections, collection_name="test-collection-01"
+    )["id"]
+    assert "id-test-collection-01" == id
+
+    collections = [
+        {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
+        {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
+        {"object": "collection", "id": "id-another-test-collection-01", "name": "test-collection-01"},
+    ]
+    with pytest.raises(BitwardenCollectionDuplicateFoundError):
+        ListCollectionItems(bitwarden_vault_client=client).filter_collection(
+            collections=collections, collection_name="test-collection-01"
+        )
+
+    collections = [
+        {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
+        {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
+    ]
+    with pytest.raises(BitwardenCollectionNotFoundError):
+        ListCollectionItems(bitwarden_vault_client=client).filter_collection(
+            collections=collections, collection_name="test-collection-X"
+        )
+
+
+@mark.parametrize(
+    "collection_name,expected",
+    [
+        ("test-collection-01", "id-test-collection-01"),
+        ("test-collection-02", "id-test-collection-02"),
+    ],
+)
+def test_get_collection_id(collection_name: str, expected: str, client: BitwardenVaultClient) -> None:
+    assert expected == ListCollectionItems(bitwarden_vault_client=client).get_collection_id(
+        collection_name=collection_name
+    )
+
+    with pytest.raises(BitwardenVaultClientError):
+        client.cli_executable_path = str(
+            pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_stub_failing.py")
+        )
+        ListCollectionItems(bitwarden_vault_client=client).get_collection_id(collection_name=collection_name)
+
+
 @patch("bitwarden_manager.temp.list_collection_items.ListCollectionItems.print_collection_items")
 @patch("bitwarden_manager.temp.list_collection_items.ListCollectionItems.list_collection_items")
-def test_run(mock_list: Mock, mock_print: Mock) -> None:
+@patch("bitwarden_manager.temp.list_collection_items.ListCollectionItems.get_collection_id")
+def test_run(mock_get: Mock, mock_list: Mock, mock_print: Mock) -> None:
     mock_list.return_value = []
-    event = {"event_name": "list_collection_items", "collection_id": "12345"}
+    event = {"event_name": "list_collection_items", "collection_name": "test-collection"}
     ListCollectionItems(bitwarden_vault_client=Mock()).run(event)

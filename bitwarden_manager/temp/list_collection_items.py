@@ -19,12 +19,20 @@ list_collection_items_event_schema = {
             "description": "name of the current event",
             "pattern": "list_collection_items",
         },
-        "collection_id": {"type": "string", "description": "Collection ID"},
+        "collection_name": {"type": "string", "description": "Name of Collection"},
     },
-    "required": ["event_name", "collection_id"],
+    "required": ["event_name", "collection_name"],
 }
 
 CLI_TIMEOUT = 60
+
+
+class BitwardenCollectionNotFoundError(Exception):
+    pass
+
+
+class BitwardenCollectionDuplicateFoundError(Exception):
+    pass
 
 
 @dataclass
@@ -54,6 +62,40 @@ class ListCollectionItems:
             level=logging.INFO,
             format="%(asctime)s %(levelname)s %(message)s",
         )
+
+    def get_collection_id(self, collection_name: str) -> str:
+        tmp_env = os.environ.copy()
+        tmp_env["BW_SESSION"] = self.bitwarden_vault_client.session_token()
+        try:
+            output = subprocess.check_output(
+                [
+                    self.bitwarden_vault_client.cli_executable_path,
+                    "list",
+                    "collections",
+                ],
+                encoding="utf-8",
+                env=tmp_env,
+                shell=False,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=CLI_TIMEOUT,
+            )  # nosec B603
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            raise BitwardenVaultClientError(e)
+
+        data: List[Dict[str, Any]] = json.loads(output)
+        return str(self.filter_collection(data, collection_name=collection_name)["id"])
+
+    def filter_collection(self, collections: List[Dict[str, Any]], collection_name: str) -> Dict[str, Any]:
+        matched = [c for c in collections if c["name"] == collection_name]
+
+        if len(matched) == 0:
+            raise BitwardenCollectionNotFoundError(f"{collection_name} not found!")
+
+        if len(matched) > 1:
+            raise BitwardenCollectionDuplicateFoundError(f"collections with ids {matched} found")
+
+        return matched[0]
 
     def list_collection_items(self, collection_id: str) -> List[CollectionItem]:
         tmp_env = os.environ.copy()
@@ -96,5 +138,7 @@ class ListCollectionItems:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=list_collection_items_event_schema)
-        collection_items = self.list_collection_items(collection_id=event["collection_id"])
+        collection_items = self.list_collection_items(
+            collection_id=self.get_collection_id(collection_name=event["collection_name"])
+        )
         self.print_collection_items(collection_items=collection_items)
