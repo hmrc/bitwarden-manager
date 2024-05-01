@@ -10,7 +10,7 @@ from moto import mock_s3
 from bitwarden_manager.clients.s3_client import S3Client
 
 
-@mock_s3  # type: ignore
+@mock_s3
 def test_write_file_to_s3() -> None:
     client = S3Client()
 
@@ -36,7 +36,7 @@ def create_bucket_in_local_region(s3: s3.Client, bucket_name: str) -> None:
 
 
 # see https://github.com/getmoto/moto/issues/4944
-@mock_s3  # type: ignore
+@mock_s3
 def test_failed_write_file_to_s3() -> None:
     client = S3Client()
 
