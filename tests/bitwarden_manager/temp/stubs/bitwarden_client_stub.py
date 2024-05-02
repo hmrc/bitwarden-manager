@@ -42,7 +42,7 @@ if __name__ == "__main__":
         case "list":
             fail_if_no_session_set()
             match sys.argv[2]:
-                case "collections":
+                case "org-collections":
                     stdout = json.dumps(list_collections_output)
                     stderr = ""
                     return_code = 0
