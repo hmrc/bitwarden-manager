@@ -87,6 +87,7 @@ class ListCollectionItems:
         return str(self.filter_collection(data, collection_name=collection_name)["id"])
 
     def filter_collection(self, collections: List[Dict[str, Any]], collection_name: str) -> Dict[str, Any]:
+        self.logger.info(f"{collections = }")
         matched = [c for c in collections if c["name"] == collection_name]
 
         if len(matched) == 0:

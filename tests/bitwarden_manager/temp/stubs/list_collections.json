@@ -12,5 +12,12 @@
       "organizationId": "id-test-organization",
       "name": "test-collection-02",
       "externalId": "UGxhdGZvcm0gU2VjdXJpdHk="
+    },
+    {
+      "object": "collection",
+      "id": "id-test-collection",
+      "organizationId": "id-test-organization",
+      "name": "test collection",
+      "externalId": "UGxhdGZvcm0gU2VjdXJpdHk="
     }
   ]
