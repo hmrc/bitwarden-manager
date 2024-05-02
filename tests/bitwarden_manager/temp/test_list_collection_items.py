@@ -1,6 +1,6 @@
 import logging
 import pathlib
-from typing import List
+from typing import Any, Dict, List
 from unittest.mock import Mock, patch
 
 from pytest import LogCaptureFixture, mark
@@ -77,33 +77,65 @@ def test_list_collection_items(client: BitwardenVaultClient) -> None:
         ListCollectionItems(bitwarden_vault_client=client).list_collection_items(collection_id="collection_id")
 
 
-def test_filter_collection(client: BitwardenVaultClient) -> None:
-    collections = [
-        {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
-        {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
-    ]
+@mark.parametrize(
+    "collection_name,collections,expected",
+    [
+        (
+            "test-collection-01",
+            [
+                {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
+                {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
+            ],
+            "id-test-collection-01",
+        ),
+        (
+            "Platform Security",
+            [
+                {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
+                {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
+                {"object": "collection", "id": "id-platform-security", "name": "Platform Security"},
+            ],
+            "id-platform-security",
+        ),
+    ],
+)
+def test_filter_collection(
+    collection_name: str, collections: List[Dict[str, Any]], expected: str, client: BitwardenVaultClient
+) -> None:
     id = ListCollectionItems(bitwarden_vault_client=client).filter_collection(
-        collections=collections, collection_name="test-collection-01"
+        collections=collections, collection_name=collection_name
     )["id"]
-    assert "id-test-collection-01" == id
+    assert expected == id
 
-    collections = [
-        {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
-        {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
-        {"object": "collection", "id": "id-another-test-collection-01", "name": "test-collection-01"},
-    ]
-    with pytest.raises(BitwardenCollectionDuplicateFoundError):
-        ListCollectionItems(bitwarden_vault_client=client).filter_collection(
-            collections=collections, collection_name="test-collection-01"
-        )
 
-    collections = [
-        {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
-        {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
-    ]
-    with pytest.raises(BitwardenCollectionNotFoundError):
+@mark.parametrize(
+    "collection_name,collections,error",
+    [
+        (
+            "test-collection-01",
+            [
+                {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
+                {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
+                {"object": "collection", "id": "id-another-test-collection-01", "name": "test-collection-01"},
+            ],
+            BitwardenCollectionDuplicateFoundError,
+        ),
+        (
+            "missing-collection",
+            [
+                {"object": "collection", "id": "id-test-collection-01", "name": "test-collection-01"},
+                {"object": "collection", "id": "id-test-collection-02", "name": "test-collection-02"},
+            ],
+            BitwardenCollectionNotFoundError,
+        ),
+    ],
+)
+def test_filter_collection_fails(
+    collection_name: str, collections: List[Dict[str, Any]], error: Any, client: BitwardenVaultClient
+) -> None:
+    with pytest.raises(error):
         ListCollectionItems(bitwarden_vault_client=client).filter_collection(
-            collections=collections, collection_name="test-collection-X"
+            collections=collections, collection_name=collection_name
         )
 
 
@@ -112,6 +144,7 @@ def test_filter_collection(client: BitwardenVaultClient) -> None:
     [
         ("test-collection-01", "id-test-collection-01"),
         ("test-collection-02", "id-test-collection-02"),
+        ("test collection", "id-test-collection"),
     ],
 )
 def test_get_collection_id(collection_name: str, expected: str, client: BitwardenVaultClient) -> None:
