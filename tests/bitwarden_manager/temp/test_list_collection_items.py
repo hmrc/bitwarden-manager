@@ -1,3 +1,4 @@
+import json
 import logging
 import pathlib
 from typing import Any, Dict, List
@@ -31,6 +32,25 @@ def client() -> BitwardenVaultClient:
 
 
 @mark.parametrize(
+    "item,expected",
+    [
+        (
+            CollectionItem(name="login01", item_type=CollectionItemType.LOGIN, username="some@user.com"),
+            {"name": "login01", "type": 1, "username": "some@user.com"},
+        ),
+        (CollectionItem(name="note01", item_type=CollectionItemType.SECURE_NOTE), {"name": "note01", "type": 2}),
+        (
+            CollectionItem(name="login02", item_type=CollectionItemType.LOGIN, username="another@user.com"),
+            {"name": "login02", "type": 1, "username": "another@user.com"},
+        ),
+        (CollectionItem(name="note02", item_type=CollectionItemType.SECURE_NOTE), {"name": "note02", "type": 2}),
+    ],
+)
+def test_collection_item_to_dict(item: CollectionItem, expected: Dict[str, Any]) -> None:
+    assert item.to_dict() == expected
+
+
+@mark.parametrize(
     "input,expected",
     [
         (
@@ -38,21 +58,21 @@ def client() -> BitwardenVaultClient:
                 CollectionItem(name="login01", item_type=CollectionItemType.LOGIN, username="some@user.com"),
                 CollectionItem(name="note01", item_type=CollectionItemType.SECURE_NOTE),
             ],
-            "login01 | 1 | some@user.com\nnote01 | 2",
+            [{"name": "login01", "type": 1, "username": "some@user.com"}, {"name": "note01", "type": 2}],
         ),
         (
             [
                 CollectionItem(name="login02", item_type=CollectionItemType.LOGIN, username="another@user.com"),
                 CollectionItem(name="note02", item_type=CollectionItemType.SECURE_NOTE),
             ],
-            "login02 | 1 | another@user.com\nnote02 | 2",
+            [{"name": "login02", "type": 1, "username": "another@user.com"}, {"name": "note02", "type": 2}],
         ),
     ],
 )
 def test_print_collection_items(input: List[CollectionItem], expected: str, caplog: LogCaptureFixture) -> None:
     with caplog.at_level(logging.INFO):
         ListCollectionItems(bitwarden_vault_client=Mock()).print_collection_items(collection_items=input)
-    assert expected in caplog.text
+    assert f"List of collection items\n{json.dumps(expected)}" in caplog.text
 
 
 def test_list_collection_items(client: BitwardenVaultClient) -> None:
