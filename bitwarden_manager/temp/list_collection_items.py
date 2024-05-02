@@ -41,11 +41,11 @@ class CollectionItem:
     item_type: int
     username: Optional[str] = None
 
-    def __str__(self) -> str:
-        rep = f"{self.name} | {self.item_type}"
+    def to_dict(self) -> Dict[str, Any]:
+        item = {"name": self.name, "type": self.item_type}
         if self.username:
-            rep = f"{self.name} | {self.item_type} | {self.username}"
-        return rep
+            item["username"] = self.username
+        return item
 
 
 class CollectionItemType(IntEnum):
@@ -89,7 +89,6 @@ class ListCollectionItems:
         return str(self.filter_collection(data, collection_name=collection_name)["id"])
 
     def filter_collection(self, collections: List[Dict[str, Any]], collection_name: str) -> Dict[str, Any]:
-        self.logger.info(f"{collections = }")
         matched = [c for c in collections if c["name"] == collection_name]
 
         if len(matched) == 0:
@@ -137,8 +136,8 @@ class ListCollectionItems:
             raise BitwardenVaultClientError(e)
 
     def print_collection_items(self, collection_items: List[CollectionItem]) -> None:
-        items_str = "\n".join(str(i) for i in collection_items)
-        self.logger.info(f"List of collection items\nname | type | username\n{items_str}")
+        items_str = json.dumps([i.to_dict() for i in collection_items])
+        self.logger.info(f"List of collection items\n{items_str}")
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=list_collection_items_event_schema)
