@@ -71,7 +71,9 @@ class ListCollectionItems:
                 [
                     self.bitwarden_vault_client.cli_executable_path,
                     "list",
-                    "collections",
+                    "org-collections",
+                    "--organizationid",
+                    self.bitwarden_vault_client.organisation_id,
                 ],
                 encoding="utf-8",
                 env=tmp_env,
