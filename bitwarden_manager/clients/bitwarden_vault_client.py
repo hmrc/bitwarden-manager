@@ -58,6 +58,7 @@ class BitwardenVaultClient:
                 text=True,
             )  # nosec B603
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            self.__logger.error(f"Login failed due to: {e.stderr!r}")
             if e.stderr and "client_id or client_secret is incorrect" in e.stderr:
                 raise BitwardenVaultClientIncorrectCredentialsError(e)
             else:
