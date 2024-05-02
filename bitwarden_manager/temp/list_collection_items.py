@@ -109,7 +109,7 @@ class ListCollectionItems:
                     self.bitwarden_vault_client.cli_executable_path,
                     "list",
                     "items",
-                    "--collection_id",
+                    "--collectionid",
                     collection_id,
                 ],
                 encoding="utf-8",
@@ -133,6 +133,7 @@ class ListCollectionItems:
                     collection_items.append(CollectionItem(name=item["name"], item_type=int(item["type"])))
             return collection_items
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            self.logger.error(f"Failed to list items due to: {e.stderr!r}")
             raise BitwardenVaultClientError(e)
 
     def print_collection_items(self, collection_items: List[CollectionItem]) -> None:
