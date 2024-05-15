@@ -30,6 +30,7 @@ def test_login_timed_out(timeout_client: BitwardenVaultClient) -> None:
     with pytest.raises(BitwardenVaultClientLoginError, match="timed out after 1.0 seconds"):
         timeout_client.login()
 
+
 def check_cli_server() -> str:
     output = subprocess.check_output(
         ["bw", "config", "server"],
@@ -39,6 +40,7 @@ def check_cli_server() -> str:
         text=True,
     )  # nosec B603
     return output
+
 
 def test_configure_server() -> None:
     client = BitwardenVaultClient(
@@ -54,10 +56,12 @@ def test_configure_server() -> None:
     client.configure_server()
     result = check_cli_server()
     assert result == "https://vault.bitwarden.eu"
-    
-def test_configure_server_fails(client: BitwardenVaultClient) -> None:
+
+
+def test_configure_server_fails(failing_config_client: BitwardenVaultClient) -> None:
     with pytest.raises(BitwardenVaultClientError):
-        client.configure_server()
+        failing_config_client.configure_server()
+
 
 def test_login(client: BitwardenVaultClient) -> None:
     result = client.login()

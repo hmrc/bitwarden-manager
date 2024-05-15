@@ -31,6 +31,10 @@ if __name__ == "__main__":
             stdout = "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
             stderr = ""
             return_code = 0
+        case "config":
+            stdout = "Saved setting `config`."
+            stderr = ""
+            return_code = 0
         case "logout":
             stdout = "You have logged out."
             stderr = ""

@@ -9,6 +9,7 @@ from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
 BW_SERVER_URI = "https://vault.bitwarden.eu"
 
+
 class BitwardenVaultClientError(Exception):
     pass
 
@@ -44,20 +45,18 @@ class BitwardenVaultClient:
         self.organisation_id = organisation_id
         self.cli_executable_path = cli_executable_path
         self.cli_timeout = cli_timeout
-        
+
     def configure_server(self) -> None:
         try:
-            subprocess.run(
+            subprocess.check_call(
                 [self.cli_executable_path, "config", "server", BW_SERVER_URI],
                 shell=False,
                 timeout=self.cli_timeout,
                 text=True,
-                check=True,
-            )
+            )  # nosec B603
         except subprocess.CalledProcessError as e:
-            print(f"{e = }")
             raise BitwardenVaultClientError(f"Configuring server failed: {e}")
-            
+
     def login(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
