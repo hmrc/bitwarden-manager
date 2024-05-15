@@ -48,11 +48,15 @@ class BitwardenVaultClient:
     def configure_server(self) -> None:
         try:
             subprocess.run(
-                [self.cli_executable_path, "config", "server", BW_SERVER_URI]
+                [self.cli_executable_path, "config", "server", BW_SERVER_URI],
+                shell=False,
+                check=True,
+                stderr=subprocess.PIPE,
+                timeout=self.cli_timeout,
             )
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-            self.__logger.error(f"Configuring server failed due to: {e.stderr!r}")
-
+        except subprocess.CalledProcessError as e:
+            raise BitwardenVaultClientError(f"Configuring server failed: {e}")
+            
     def login(self) -> str:
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
