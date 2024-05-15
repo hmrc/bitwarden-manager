@@ -50,11 +50,12 @@ class BitwardenVaultClient:
             subprocess.run(
                 [self.cli_executable_path, "config", "server", BW_SERVER_URI],
                 shell=False,
-                check=True,
-                stderr=subprocess.PIPE,
                 timeout=self.cli_timeout,
+                text=True,
+                check=True,
             )
         except subprocess.CalledProcessError as e:
+            print(f"{e = }")
             raise BitwardenVaultClientError(f"Configuring server failed: {e}")
             
     def login(self) -> str:

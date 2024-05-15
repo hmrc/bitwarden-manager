@@ -68,7 +68,6 @@ def test_export(client: BitwardenVaultClient) -> None:
     with tempfile.NamedTemporaryFile() as tmpfile:
         client.export_vault(file_path=tmpfile.name)
         file_content = tmpfile.readlines()
-
     assert b'{"test": "foo"}' in file_content
 
 
