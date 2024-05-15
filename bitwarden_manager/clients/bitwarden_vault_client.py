@@ -46,9 +46,6 @@ class BitwardenVaultClient:
         self.cli_timeout = cli_timeout
         
     def configure_server(self) -> None:
-        tmp_env = os.environ.copy()
-        tmp_env["BW_CLIENTID"] = self.__client_id
-        tmp_env["BW_CLIENTSECRET"] = self.__client_secret
         try:
             subprocess.run(
                 [self.cli_executable_path, "config", "server", BW_SERVER_URI]
