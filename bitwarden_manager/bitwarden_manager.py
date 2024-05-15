@@ -117,7 +117,7 @@ class BitwardenManager:
             client_secret=self._get_bitwarden_vault_client_secret(),
             password=self._get_bitwarden_vault_password(),
             export_enc_password=self._get_bitwarden_export_encryption_password(),
-            cli_executable_path="./bw",
+            cli_executable_path="bw",
             organisation_id=self._get_organisation_id(),
             cli_timeout=self._get_bitwarden_cli_timeout(),
         )
