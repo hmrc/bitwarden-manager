@@ -7,6 +7,10 @@ if __name__ == "__main__":
             sys.stdout.write("")
             sys.stderr.write("Something went wrong. Try again.")
             sys.exit(1)
+        case "config":  # we want tests to pass this stage to surface other errors
+            sys.stdout.write("Saved setting `config`.")
+            sys.stderr.write("")
+            sys.exit(0)
         case "unlock":
             sys.stdout.write("")
             sys.stderr.write("You are not logged in.")

@@ -1,6 +1,7 @@
 import os
 import logging
 import tempfile
+import subprocess  # nosec B404
 from unittest import mock
 from unittest.mock import patch
 
@@ -30,6 +31,38 @@ def test_login_timed_out(timeout_client: BitwardenVaultClient) -> None:
         timeout_client.login()
 
 
+def check_cli_server() -> str:
+    output = subprocess.check_output(
+        ["bw", "config", "server"],
+        shell=False,
+        stderr=subprocess.PIPE,
+        timeout=20,
+        text=True,
+    )  # nosec B603
+    return output
+
+
+def test_configure_server() -> None:
+    client = BitwardenVaultClient(
+        cli_executable_path="bw",
+        client_id="test_id",
+        client_secret="test_secret",
+        export_enc_password="hmrc2023",
+        logger=logging.getLogger(),
+        organisation_id="abc-123",
+        password="very secure pa$$w0rd!",
+        cli_timeout=20,
+    )
+    client.configure_server()
+    result = check_cli_server()
+    assert result == "https://vault.bitwarden.eu"
+
+
+def test_configure_server_fails(failing_config_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError):
+        failing_config_client.configure_server()
+
+
 def test_login(client: BitwardenVaultClient) -> None:
     result = client.login()
     assert result == "You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock"
@@ -39,7 +72,6 @@ def test_export(client: BitwardenVaultClient) -> None:
     with tempfile.NamedTemporaryFile() as tmpfile:
         client.export_vault(file_path=tmpfile.name)
         file_content = tmpfile.readlines()
-
     assert b'{"test": "foo"}' in file_content
 
 

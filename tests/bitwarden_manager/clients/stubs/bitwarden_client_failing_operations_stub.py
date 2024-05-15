@@ -46,6 +46,10 @@ if __name__ == "__main__":
             sys.stdout.write("You are logged in!\n\nTo unlock your vault, use the `unlock` command. ex:\n$ bw unlock")
             sys.stderr.write("")
             sys.exit(0)
+        case "config":  # we want tests to pass this stage to surface other errors
+            sys.stdout.write("Saved setting `config`.")
+            sys.stderr.write("")
+            sys.exit(0)
         case "unlock":  # we want tests to pass this stage to surface other errors
             sys.stdout.write("You have unlocked")
             sys.stderr.write("")
