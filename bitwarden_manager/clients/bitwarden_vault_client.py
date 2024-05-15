@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
+BW_SERVER_URI = "https://vault.bitwarden.eu"
 
 class BitwardenVaultClientError(Exception):
     pass
@@ -43,6 +44,17 @@ class BitwardenVaultClient:
         self.organisation_id = organisation_id
         self.cli_executable_path = cli_executable_path
         self.cli_timeout = cli_timeout
+        
+    def configure_server(self) -> None:
+        tmp_env = os.environ.copy()
+        tmp_env["BW_CLIENTID"] = self.__client_id
+        tmp_env["BW_CLIENTSECRET"] = self.__client_secret
+        try:
+            subprocess.run(
+                [self.cli_executable_path, "config", "server", BW_SERVER_URI]
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            self.__logger.error(f"Configuring server failed due to: {e.stderr!r}")
 
     def login(self) -> str:
         tmp_env = os.environ.copy()
@@ -112,6 +124,7 @@ class BitwardenVaultClient:
         return self.__session_token  # type: ignore
 
     def authenticate(self) -> None:
+        self.configure_server()
         self.login()
         self.__session_token = self._unlock()
 
