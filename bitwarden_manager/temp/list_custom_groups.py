@@ -21,7 +21,7 @@ onboard_user_event_schema = {
 }
 
 UMP_API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
-BITWARDEN_API_URL = "https://api.bitwarden.eu/public"
+BITWARDEN_API_URL = "https://api.bitwarden.com/public"
 REQUEST_TIMEOUT_SECONDS = 10
 
 
