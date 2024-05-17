@@ -15,6 +15,7 @@ from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.reinvite_users import ReinviteUsers
+from bitwarden_manager.associate_users_to_groups import AssociateUsersToGroups
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 from bitwarden_manager.temp.list_collection_items import ListCollectionItems
 from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
@@ -71,6 +72,9 @@ class BitwardenManager:
                         bitwarden_api=self._get_bitwarden_public_api(),
                         dynamodb_client=DynamodbClient(),
                     ).run(event=event)
+                case "associate_users":
+                    self.__logger.info("handling event to link users and groups with AssociateUsersToGroups")
+                    AssociateUsersToGroups(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
                 case "list_custom_groups":
                     self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
                     self.__logger.debug("handling event with ListCustomGroups")
