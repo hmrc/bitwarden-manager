@@ -55,7 +55,7 @@ def test_configure_server() -> None:
     )
     client.configure_server()
     result = check_cli_server()
-    assert result == "https://vault.bitwarden.com"
+    assert result == "https://vault.bitwarden.eu"
 
 
 def test_configure_server_fails(failing_config_client: BitwardenVaultClient) -> None:
