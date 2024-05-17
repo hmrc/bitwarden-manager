@@ -17,7 +17,7 @@ def test_invite_user() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             match=[
                 matchers.json_params_matcher(
                     {
@@ -56,7 +56,7 @@ def test_failed_invite() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body="",
             status=500,
         )
@@ -76,7 +76,7 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=b'{"data": [ { "type": 0, "accessAll": true, "externalId": "external_id_123456", '
             b'"resetPasswordEnrolled": true, "object": "member", "id": "XXXXXXXX", '
             b'"userId": "YYYYYYYY", "name": "test.user", '
@@ -86,7 +86,7 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
         )
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=b'{"object":"error","message":"This user has already been invited.","errors":null}',
             status=400,
         )
@@ -108,7 +108,7 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=b'{"data": [ { "type": 0, "accessAll": true, "externalId": "external_id_123456", '
             b'"resetPasswordEnrolled": true, "object": "member", "id": "XXXXXXXX", '
             b'"userId": "YYYYYYYY", "name": "test.user", '
@@ -118,7 +118,7 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
         )
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=b'{"object":"error","message":"This user has already been invited.","errors":null}',
             status=400,
         )
@@ -140,14 +140,14 @@ def test_handle_already_invited_http_error(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=b'{"object":"error","message":"The request\'s model state is invalid."}',
             status=400,
             content_type="application/json",
         )
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=b'{"object":"error","message":"This user has already been invited.","errors":null}',
             status=400,
         )
@@ -171,7 +171,7 @@ def test_failed_login() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.POST,
-            "https://identity.bitwarden.eu/connect/token",
+            "https://identity.bitwarden.com/connect/token",
             body="",
             status=500,
             content_type="application/json",
@@ -185,7 +185,7 @@ def test_failed_login() -> None:
 
         with pytest.raises(
             Exception,
-            match="Failed to authenticate with " "https://identity.bitwarden.eu/connect/token, " "creds incorrect?",
+            match="Failed to authenticate with " "https://identity.bitwarden.com/connect/token, " "creds incorrect?",
         ):
             client.invite_user(test_user, test_email)
 
@@ -197,7 +197,7 @@ def test_create_group() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/groups",
+            "https://api.bitwarden.com/public/groups",
             body=b'{"name":"Group Name","accessAll":"false","object":"group","id":"XXXXXXXXX","collections":[]}',
             match=[
                 matchers.json_params_matcher(
@@ -244,7 +244,7 @@ def test_failed_to_create_group() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/groups",
+            "https://api.bitwarden.com/public/groups",
             body="",
             status=400,
             content_type="application/json",
@@ -271,7 +271,7 @@ def test_get_collections_failure() -> None:
             status=400,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json=_collection_object_with_base64_encoded_external_id(collection_name),
         )
 
@@ -300,7 +300,7 @@ def test_get_collection_groups_failure() -> None:
             status=400,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={},
         )
 
@@ -329,7 +329,7 @@ def test_get_user_groups_failure() -> None:
             status=400,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             json={},
         )
 
@@ -353,7 +353,7 @@ def test_get_groups() -> None:
             status=200,
             content_type="application/json",
             method=responses.GET,
-            url="https://api.bitwarden.eu/public/groups",
+            url="https://api.bitwarden.com/public/groups",
             json={
                 "object": "list",
                 "data": [
@@ -390,7 +390,7 @@ def test_get_groups() -> None:
             status=400,
             content_type="application/json",
             method=responses.GET,
-            url="https://api.bitwarden.eu/public/groups",
+            url="https://api.bitwarden.com/public/groups",
             json={"error": "error"},
         )
 
@@ -422,14 +422,14 @@ def test_associate_user_to_group_no_custom_group() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             json=existing_group_ids,
         )
         rsps.add(
             status=200,
             content_type="application/json",
             method=responses.PUT,
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             body="",
             match=[
                 matchers.json_params_matcher(
@@ -461,14 +461,14 @@ def test_associate_user_to_group_multiple_custom_groups() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             json=existing_group_ids,
         )
         rsps.add(
             status=200,
             content_type="application/json",
             method=responses.PUT,
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             body="",
             match=[
                 matchers.json_params_matcher(
@@ -500,14 +500,14 @@ def test_failed_to_associate_user_to_groups() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             json=existing_group_ids,
         )
         rsps.add(
             status=400,
             content_type="application/json",
             method=responses.PUT,
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             body="",
             match=[
                 matchers.json_params_matcher(
@@ -541,7 +541,7 @@ def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
             status=400,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/members/{user_id}/group-ids",
+            url=f"https://api.bitwarden.com/public/members/{user_id}/group-ids",
             json=existing_group_ids,
         )
 
@@ -567,7 +567,7 @@ def test_update_manually_created_collection_group() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={
                 "externalId": "",
                 "object": "collection",
@@ -601,7 +601,7 @@ def test_get_collection_external_id() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={
                 "externalId": "Team Name One",
                 "object": "collection",
@@ -615,7 +615,7 @@ def test_get_collection_external_id() -> None:
         rsps.add(
             status=500,
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={
                 "error": "Failed to get collections",
             },
@@ -634,14 +634,14 @@ def test_failed_to_update_collection_group() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json=_collection_object_with_base64_encoded_external_id(collection_name),
         )
         rsps.add(
             status=400,
             content_type="application/json",
             method="PUT",
-            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={
                 "error": "Failed to update the collection groups",
             },
@@ -673,7 +673,7 @@ def test_list_existing_collections() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url="https://api.bitwarden.eu/public/collections",
+            url="https://api.bitwarden.com/public/collections",
             json={
                 "data": [
                     _collection_object_with_base64_encoded_external_id(
@@ -701,13 +701,13 @@ def test_update_collection_groups_success() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.GET,
-            f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
             status=200,
             json=_collection_object_with_base64_encoded_external_id(collection_name),
         )
         rsps.add(
             responses.PUT,
-            f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            f"https://api.bitwarden.com/public/collections/{collection_id}",
             status=200,
         )
 
@@ -725,7 +725,7 @@ def test_update_collection_groups_success() -> None:
 
         assert len(rsps.calls) == 4
         assert rsps.calls[-1].request.method == "PUT"
-        assert rsps.calls[-1].request.url == f"https://api.bitwarden.eu/public/collections/{collection_id}"
+        assert rsps.calls[-1].request.url == f"https://api.bitwarden.com/public/collections/{collection_id}"
 
 
 def test_list_existing_collections_duplicate() -> None:
@@ -737,7 +737,7 @@ def test_list_existing_collections_duplicate() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url="https://api.bitwarden.eu/public/collections",
+            url="https://api.bitwarden.com/public/collections",
             json={
                 "data": [
                     _collection_object_with_base64_encoded_external_id(
@@ -769,7 +769,7 @@ def test_no_matching_collections() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url="https://api.bitwarden.eu/public/collections",
+            url="https://api.bitwarden.com/public/collections",
             json={
                 "data": [
                     {
@@ -801,7 +801,7 @@ def test_fail_to_list_collections() -> None:
             status=400,
             content_type="application/json",
             method="GET",
-            url="https://api.bitwarden.eu/public/collections",
+            url="https://api.bitwarden.com/public/collections",
             json={},
         )
 
@@ -824,7 +824,7 @@ def test_list_existing_groups() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/groups",
+            "https://api.bitwarden.com/public/groups",
             json={
                 "object": "list",
                 "data": [
@@ -859,7 +859,7 @@ def test_list_existing_groups_with_duplicates() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/groups",
+            "https://api.bitwarden.com/public/groups",
             json={
                 "object": "list",
                 "data": [
@@ -903,7 +903,7 @@ def test_failed_to_list_groups() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/groups",
+            "https://api.bitwarden.com/public/groups",
             body="",
             status=400,
             content_type="application/json",
@@ -937,21 +937,21 @@ def test_collate_user_group_ids() -> None:
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{_collection_id(team_one_name)}",
+            url=f"https://api.bitwarden.com/public/collections/{_collection_id(team_one_name)}",
             json=_collection_object_with_base64_encoded_external_id(team_one_name),
         )
         rsps.add(
             status=200,
             content_type="application/json",
             method="GET",
-            url=f"https://api.bitwarden.eu/public/collections/{_collection_id(team_two_name)}",
+            url=f"https://api.bitwarden.com/public/collections/{_collection_id(team_two_name)}",
             json=_collection_object_with_base64_encoded_external_id(
                 team_two_name, groups=[{"id": "WWWWWWWW", "readOnly": False}]
             ),
         )
         rsps.add(
             method=responses.PUT,
-            url=f"https://api.bitwarden.eu/public/collections/{_collection_id(team_one_name)}",
+            url=f"https://api.bitwarden.com/public/collections/{_collection_id(team_one_name)}",
             body="",
             match=[
                 matchers.json_params_matcher(
@@ -967,7 +967,7 @@ def test_collate_user_group_ids() -> None:
 
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/groups",
+            "https://api.bitwarden.com/public/groups",
             json={
                 "name": team_one_name,
                 "externalId": team_one_name,
@@ -1021,7 +1021,7 @@ def test_collate_user_group_ids_duplicates() -> None:
 
 MOCKED_LOGIN = responses.Response(
     method="POST",
-    url="https://identity.bitwarden.eu/connect/token",
+    url="https://identity.bitwarden.com/connect/token",
     status=200,
     json={
         "access_token": "TEST_BEARER_TOKEN",
@@ -1035,7 +1035,7 @@ def test_fetch_user_id_by_email() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=open("tests/bitwarden_manager/resources/get_members.json").read(),
             status=200,
             content_type="application/json",
@@ -1056,7 +1056,7 @@ def test_fetch_user_id_by_external_id() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=open("tests/bitwarden_manager/resources/get_members.json").read(),
             status=200,
             content_type="application/json",
@@ -1080,14 +1080,14 @@ def test_remove_user(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=open("tests/bitwarden_manager/resources/get_members.json").read(),
             status=200,
             content_type="application/json",
         )
         rsps.add(
             responses.DELETE,
-            "https://api.bitwarden.eu/public/members/22222222",
+            "https://api.bitwarden.com/public/members/22222222",
             status=200,
             content_type="application/json",
         )
@@ -1102,7 +1102,7 @@ def test_remove_user(caplog: LogCaptureFixture) -> None:
                 username=username,
             )
 
-        rsps.assert_call_count("https://api.bitwarden.eu/public/members/22222222", 1) is True
+        rsps.assert_call_count("https://api.bitwarden.com/public/members/22222222", 1) is True
         assert f"User {username} has been removed from the Bitwarden organisation" in caplog.text
 
 
@@ -1112,7 +1112,7 @@ def test_remove_user_no_longer_in_org(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body='{"data": []}',
             status=200,
             content_type="application/json",
@@ -1137,14 +1137,14 @@ def test_remove_user_with_failure(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=open("tests/bitwarden_manager/resources/get_members.json").read(),
             status=200,
             content_type="application/json",
         )
         rsps.add(
             responses.DELETE,
-            "https://api.bitwarden.eu/public/members/22222222",
+            "https://api.bitwarden.com/public/members/22222222",
             status=500,
             content_type="application/json",
         )
@@ -1165,7 +1165,7 @@ def test_get_users(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=open("tests/bitwarden_manager/resources/get_members.json").read(),
             status=200,
             content_type="application/json",
@@ -1184,7 +1184,7 @@ def test_get_users_failure(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=b'{"object":"error","message":"The request\'s model state is invalid."}',
             status=400,
             content_type="application/json",
@@ -1204,7 +1204,7 @@ def test_get_pending_users(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
-            "https://api.bitwarden.eu/public/members",
+            "https://api.bitwarden.com/public/members",
             body=open("tests/bitwarden_manager/resources/get_members.json").read(),
             status=200,
             content_type="application/json",
@@ -1223,7 +1223,7 @@ def test_reinvite_user(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/members/22222222/reinvite",
+            "https://api.bitwarden.com/public/members/22222222/reinvite",
             status=200,
             content_type="application/json",
         )
@@ -1241,7 +1241,7 @@ def test_reinvite_user_failed(caplog: LogCaptureFixture) -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
-            "https://api.bitwarden.eu/public/members/22222222/reinvite",
+            "https://api.bitwarden.com/public/members/22222222/reinvite",
             status=500,
             content_type="application/json",
         )
