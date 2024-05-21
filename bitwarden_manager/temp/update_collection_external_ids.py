@@ -17,6 +17,18 @@ from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClien
 
 CLI_TIMEOUT = 60
 
+update_collection_external_ids_event_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "event_name": {
+            "type": "string",
+            "description": "name of the current event",
+            "pattern": "update_collection_external_ids"
+        },
+    },
+    "required": ["event_name"],
+}
 
 @dataclass
 class BitwardenCollection:
