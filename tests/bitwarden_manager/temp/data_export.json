@@ -1,0 +1,18 @@
+{
+  "encrypted": false,
+  "collections": [
+    {
+      "id": "id-test-col01",
+      "organizationId": "id-test-org",
+      "name": "test-col01",
+      "externalId": "extId-test-col01"
+    },
+    {
+      "id": "id-test-col02",
+      "organizationId": "id-test-org",
+      "name": "test-col02",
+      "externalId": "extId-test-col02"
+    }
+  ],
+  "items": []
+}
