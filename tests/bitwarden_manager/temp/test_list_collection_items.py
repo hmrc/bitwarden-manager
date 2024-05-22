@@ -191,14 +191,14 @@ def test_run(mock_get: Mock, mock_list: Mock, mock_print: Mock) -> None:
 @patch("bitwarden_manager.bitwarden_manager.ListCollectionItems")
 @patch("bitwarden_manager.redacting_formatter.RedactingFormatter")
 @patch("boto3.client")
-def test_list_custom_groups_event_routing(
-    mock_secretsmanager: Mock, mock_log_redacting_formatter: Mock, mock_list_custom_groups: Mock
+def test_list_collection_items_event_routing(
+    mock_secretsmanager: Mock, mock_log_redacting_formatter: Mock, mock_list_collection_items: Mock
 ) -> None:
     event = {"event_name": "list_collection_items", "collection_name": "test-collection"}
 
     get_secret_value = Mock(return_value={"SecretString": "secret"})
     mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
-    mock_list_custom_groups.return_value.run.return_value = None
+    mock_list_collection_items.return_value.run.return_value = None
     mock_log_redacting_formatter.validate_patterns.return_value = None
     BitwardenManager().run(event=event)
-    mock_list_custom_groups.return_value.run.assert_called()
+    mock_list_collection_items.return_value.run.assert_called()

@@ -18,6 +18,7 @@ from bitwarden_manager.reinvite_users import ReinviteUsers
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 from bitwarden_manager.temp.list_collection_items import ListCollectionItems
 from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
+from bitwarden_manager.temp.update_collection_external_ids import UpdateCollectionExternalIds
 
 
 class BitwardenManager:
@@ -82,6 +83,13 @@ class BitwardenManager:
                     self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
                     ListCollectionItems(
                         bitwarden_vault_client=bitwarden_vault_client,
+                    ).run(event=event)
+                case "update_collection_external_ids":
+                    self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
+                    UpdateCollectionExternalIds(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                        bitwarden_vault_client=bitwarden_vault_client,
+                        s3_client=S3Client(),
                     ).run(event=event)
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")
