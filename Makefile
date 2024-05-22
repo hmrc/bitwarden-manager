@@ -5,6 +5,14 @@ SHELL = /bin/bash
 
 .PHONY: $(MAKECMDGOALS)
 
+OS := $(shell uname -s | tr A-Z a-z)
+
+ifeq ($(OS), darwin)
+OS = macos
+endif
+
+BITWARDEN_CLI_VERSION := 2024.4.1
+
 PYTHON_VERSION = $(shell head -1 .python-version)
 PYTHON_SRC = *.py bitwarden_manager/ tests/
 
@@ -72,3 +80,10 @@ container-release:
 		--file Dockerfile \
 		--build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 		--tag container-release:local .
+
+install-bitwarden-cli:
+	@curl -sL https://github.com/bitwarden/clients/releases/download/cli-v$(BITWARDEN_CLI_VERSION)/bw-macos-$(BITWARDEN_CLI_VERSION).zip -o bw.zip
+	@unzip -o bw.zip -d /usr/local/bin/ && rm -f bw.zip
+
+uninstall-bitwarden-cli:
+	@rm -f /usr/local/bin/bw

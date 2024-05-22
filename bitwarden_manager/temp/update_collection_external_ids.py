@@ -106,7 +106,7 @@ class UpdateCollectionExternalIds:
         return [BitwardenCollection(name=c["name"], id=c["id"]) for c in data]
 
     def update_collection_external_id(self, collection_id: str, external_id: str) -> None:
-        put_response = session.put(
+        response = session.put(
             f"{API_URL}/collections/{collection_id}",
             json={
                 "externalId": external_id,
@@ -115,13 +115,14 @@ class UpdateCollectionExternalIds:
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
         try:
-            put_response.raise_for_status()
+            response.raise_for_status()
         except HTTPError as error:
             raise Exception("Failed to update the collection externalId") from error
 
     def reconcile_collection_external_ids(
         self, from_data_export_collections: List[BitwardenCollection], org_collections: List[BitwardenCollection]
     ) -> None:
+        self.bitwarden_api._BitwardenPublicApi__fetch_token()  # type: ignore
         for c in from_data_export_collections:
             for org_c in org_collections:
                 if c.name == org_c.name:
