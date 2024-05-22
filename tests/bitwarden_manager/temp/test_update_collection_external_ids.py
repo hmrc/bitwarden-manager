@@ -6,9 +6,12 @@ from unittest.mock import Mock, patch
 import pytest
 import responses
 
+from bitwarden_manager.bitwarden_manager import BitwardenManager
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
-from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
 from bitwarden_manager.temp.update_collection_external_ids import BitwardenCollection, UpdateCollectionExternalIds
+from responses import matchers
+
 
 @pytest.fixture
 def client() -> BitwardenVaultClient:
@@ -23,29 +26,22 @@ def client() -> BitwardenVaultClient:
         cli_timeout=20,
     )
 
+
 @patch.dict(os.environ, {"BITWARDEN_BACKUP_BUCKET": "bitwarden-backup-bucket"})
 def test_get_external_ids_from_data_export() -> None:
-    s3client = Mock()
-    with open(pathlib.Path(__file__).parent.joinpath("./data_export.json"), 'r') as f:
-        s3client.read_object.return_value = f.read()
+    s3_client = Mock()
+    with open(pathlib.Path(__file__).parent.joinpath("./data_export.json"), "r") as f:
+        s3_client.read_object.return_value = f.read()
 
     expected = [
         BitwardenCollection(name="test-col01", externalId="extId-test-col01"),
-        BitwardenCollection(name="test-col02", externalId="extId-test-col02")
+        BitwardenCollection(name="test-col02", externalId="extId-test-col02"),
     ]
 
-    got = UpdateCollectionExternalIds(bitwarden_api=Mock(), bitwarden_vault_client=client, s3client=s3client).get_external_ids_from_data_export()
+    got = UpdateCollectionExternalIds(
+        bitwarden_api=Mock(), bitwarden_vault_client=Mock(), s3_client=s3_client
+    ).get_external_ids_from_data_export()
     assert expected == got
-
-def test_read_external_ids_from_json_file() -> None:
-    expected = [
-        BitwardenCollection(name="test-col01", externalId="extId-test-col01"),
-        BitwardenCollection(name="test-col02", externalId="extId-test-col02")
-    ]
-
-    data_export_file = str(pathlib.Path(__file__).parent.joinpath("./data_export.json"))
-
-    assert expected == UpdateCollectionExternalIds(Mock(), Mock(), Mock()).read_external_ids_from_data_export(data_export_file)
 
 
 def test_get_org_collections(client: BitwardenVaultClient) -> None:
@@ -55,7 +51,21 @@ def test_get_org_collections(client: BitwardenVaultClient) -> None:
         BitwardenCollection(id="id-test-collection", name="test collection"),
     ]
 
-    assert expected == UpdateCollectionExternalIds(bitwarden_api=Mock(), bitwarden_vault_client=client, s3client=Mock()).get_org_collections()
+    assert (
+        expected
+        == UpdateCollectionExternalIds(
+            bitwarden_api=Mock(), bitwarden_vault_client=client, s3_client=Mock()
+        ).get_org_collections()
+    )
+
+    with pytest.raises(BitwardenVaultClientError):
+        client.cli_executable_path = str(
+            pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_stub_failing.py")
+        )
+        UpdateCollectionExternalIds(
+            bitwarden_api=Mock(), bitwarden_vault_client=client, s3_client=Mock()
+        ).get_org_collections()
+
 
 def test_update_collection_external_id() -> None:
     collection_id = "id-test-collection-01"
@@ -63,9 +73,10 @@ def test_update_collection_external_id() -> None:
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
-            responses.PUT,
-            f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
             status=200,
+            match=[matchers.json_params_matcher({"externalId": external_id, "groups": []})],
         )
 
         client = BitwardenPublicApi(
@@ -74,7 +85,9 @@ def test_update_collection_external_id() -> None:
             client_secret="bar",
         )
 
-        UpdateCollectionExternalIds(bitwarden_api=client, bitwarden_vault_client=Mock(), s3client=Mock()).update_collection_external_id(
+        UpdateCollectionExternalIds(
+            bitwarden_api=client, bitwarden_vault_client=Mock(), s3_client=Mock()
+        ).update_collection_external_id(
             collection_id=collection_id,
             external_id=external_id,
         )
@@ -83,28 +96,52 @@ def test_update_collection_external_id() -> None:
         assert rsps.calls[-1].request.method == "PUT"
         assert rsps.calls[-1].request.url == f"https://api.bitwarden.eu/public/collections/{collection_id}"
 
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
+            json={"error": "error"},
+        )
+
+        with pytest.raises(Exception):
+            UpdateCollectionExternalIds(
+                bitwarden_api=client, bitwarden_vault_client=Mock(), s3_client=Mock()
+            ).update_collection_external_id(
+                collection_id=collection_id,
+                external_id=external_id,
+            )
+
 
 def test_reconcile_collection_external_ids() -> None:
-    from_export_data_collections = [ 
-        BitwardenCollection(name="test-collection-01", id="data-export-id-test-collection-01", externalId="ext-id-test-collection-01"),
-        BitwardenCollection(name="test-collection-02", id="data-export-id-test-collection-02", externalId="ext-id-test-collection-02"),
+    collection_01 = "test-collection-01"
+    collection_02 = "test-collection-02"
+    from_export_data_collections = [
+        BitwardenCollection(
+            name=collection_01, id=f"data-export-id-{collection_01}", externalId=f"ext-id-{collection_01}"
+        ),
+        BitwardenCollection(
+            name=collection_02, id=f"data-export-id-{collection_02}", externalId=f"ext-id-{collection_02}"
+        ),
     ]
 
-    org_collections = [ 
-        BitwardenCollection( name="test-collection-01", id="id-test-collection-01", externalId=None),
-        BitwardenCollection( name="test-collection-02", id="id-test-collection-02", externalId=None),
+    org_collections = [
+        BitwardenCollection(name=collection_01, id=f"id-{collection_01}", externalId=""),
+        BitwardenCollection(name=collection_02, id=f"id-{collection_02}", externalId=""),
     ]
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
-            responses.PUT,
-            f"https://api.bitwarden.eu/public/collections/id-test-collection-01",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.eu/public/collections/id-{collection_01}",
             status=200,
+            match=[matchers.json_params_matcher({"externalId": f"ext-id-{collection_01}", "groups": []})],
         )
         rsps.add(
-            responses.PUT,
-            f"https://api.bitwarden.eu/public/collections/id-test-collection-02",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.eu/public/collections/id-{collection_02}",
             status=200,
+            match=[matchers.json_params_matcher({"externalId": f"ext-id-{collection_02}", "groups": []})],
         )
 
         client = BitwardenPublicApi(
@@ -113,10 +150,38 @@ def test_reconcile_collection_external_ids() -> None:
             client_secret="bar",
         )
 
-        UpdateCollectionExternalIds(bitwarden_api=client, bitwarden_vault_client=Mock(), s3client=Mock()).reconcile_collection_external_ids(
-            from_data_export_collections=from_export_data_collections,
-            org_collections=org_collections
+        UpdateCollectionExternalIds(
+            bitwarden_api=client, bitwarden_vault_client=Mock(), s3_client=Mock()
+        ).reconcile_collection_external_ids(
+            from_data_export_collections=from_export_data_collections, org_collections=org_collections
         )
 
         assert len(rsps.calls) == 2
         assert rsps.calls[-1].request.method == "PUT"
+
+
+@patch("bitwarden_manager.temp.update_collection_external_ids.UpdateCollectionExternalIds.get_org_collections")
+@patch(
+    "bitwarden_manager.temp.update_collection_external_ids.UpdateCollectionExternalIds.get_external_ids_from_data_export"  # noqa: E501
+)
+def test_run(mock_get_external_ids: Mock, mock_get_org_collections: Mock) -> None:
+    mock_get_external_ids.return_value = []
+    mock_get_org_collections.return_value = []
+    event = {"event_name": "update_collection_external_ids"}
+    UpdateCollectionExternalIds(bitwarden_api=Mock(), bitwarden_vault_client=Mock(), s3_client=Mock()).run(event)
+
+
+@patch("bitwarden_manager.bitwarden_manager.UpdateCollectionExternalIds")
+@patch("bitwarden_manager.redacting_formatter.RedactingFormatter")
+@patch("boto3.client")
+def test_update_collection_external_ids_event_routing(
+    mock_secretsmanager: Mock, mock_log_redacting_formatter: Mock, mock_update_collection_external_ids: Mock
+) -> None:
+    event = {"event_name": "update_collection_external_ids"}
+
+    get_secret_value = Mock(return_value={"SecretString": "secret"})
+    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+    mock_update_collection_external_ids.return_value.run.return_value = None
+    mock_log_redacting_formatter.validate_patterns.return_value = None
+    BitwardenManager().run(event=event)
+    mock_update_collection_external_ids.return_value.run.assert_called()

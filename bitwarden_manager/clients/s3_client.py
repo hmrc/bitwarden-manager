@@ -19,7 +19,7 @@ class S3Client:
             data = self._boto_s3.get_object(Bucket=bucket_name, Key=key)
         except (BotoCoreError, ClientError) as e:
             raise Exception(f"Failed to read s3://{bucket_name}/{key}", e) from e
-        return data["Body"].read().decode("utf-8")
+        return str(data["Body"].read().decode("utf-8"))
 
     def file_from_path(self, filepath: str) -> IO[bytes]:
         return open(filepath, "rb")

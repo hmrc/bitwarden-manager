@@ -89,6 +89,7 @@ class BitwardenManager:
                     UpdateCollectionExternalIds(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         bitwarden_vault_client=bitwarden_vault_client,
+                        s3_client=S3Client(),
                     ).run(event=event)
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")

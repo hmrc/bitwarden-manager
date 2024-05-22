@@ -70,6 +70,7 @@ def test_read_object() -> None:
     content = client.read_object(bucket_name, filename)
     assert content == "Hello Bitwarden"
 
+
 @mock_s3
 def test_read_object_fails() -> None:
     client = S3Client()
