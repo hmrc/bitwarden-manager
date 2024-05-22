@@ -12,6 +12,8 @@ from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClien
 from bitwarden_manager.temp.update_collection_external_ids import BitwardenCollection, UpdateCollectionExternalIds
 from responses import matchers
 
+from tests.bitwarden_manager.clients.test_bitwarden_public_api import MOCKED_LOGIN
+
 
 @pytest.fixture
 def client() -> BitwardenVaultClient:
@@ -131,6 +133,7 @@ def test_reconcile_collection_external_ids() -> None:
     ]
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             method=responses.PUT,
             url=f"https://api.bitwarden.eu/public/collections/id-{collection_01}",
@@ -156,7 +159,7 @@ def test_reconcile_collection_external_ids() -> None:
             from_data_export_collections=from_export_data_collections, org_collections=org_collections
         )
 
-        assert len(rsps.calls) == 2
+        assert len(rsps.calls) == 3
         assert rsps.calls[-1].request.method == "PUT"
 
 
