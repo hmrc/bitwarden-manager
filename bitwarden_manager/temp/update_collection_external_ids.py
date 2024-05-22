@@ -11,11 +11,14 @@ import os
 import subprocess
 from typing import Any, Dict, List, Optional
 
+from jsonschema import validate
 from requests import HTTPError 
 from bitwarden_manager.clients.bitwarden_public_api import API_URL, REQUEST_TIMEOUT_SECONDS, BitwardenPublicApi, session
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
+from bitwarden_manager.clients.s3_client import S3Client
 
 CLI_TIMEOUT = 60
+BITWARDEN_DATA_EXPORT_FILENAME = "bitwarden-data-export-US-org.json"
 
 update_collection_external_ids_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -30,6 +33,28 @@ update_collection_external_ids_event_schema = {
     "required": ["event_name"],
 }
 
+data_export_schema = {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "encrypted": { "type": "boolean", "description": "Whether data export is encrypted" },
+        "collections": {
+            "description": "List of collection objects",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "organizationId":  { "type": "string" },
+                    "name": { "type": "string" },
+                    "externalId": { "type": "string" }
+                }
+            },
+        },
+    },
+    "required": ["encrypted", "collections"],
+}
+
 @dataclass
 class BitwardenCollection:
     name: str
@@ -42,16 +67,30 @@ class UpdateCollectionExternalIds:
     def __init__(
         self,
         bitwarden_api: BitwardenPublicApi,
-        bitwarden_vault_client: BitwardenVaultClient
+        bitwarden_vault_client: BitwardenVaultClient,
+        s3client: S3Client
     ) -> None:
         self.bitwarden_api = bitwarden_api
         self.bitwarden_vault_client = bitwarden_vault_client
+        self.s3client = s3client
         self.logger = logging.getLogger()
 
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s %(levelname)s %(message)s",
         )
+
+    # validate json in data export file
+    # check data export file exists
+    # data export file should be copied to the vault backup bucket
+
+    def get_external_ids_from_data_export(self) -> List[BitwardenCollection]:
+        bucket_name = os.environ["BITWARDEN_BACKUP_BUCKET"]
+        
+        json_data = json.loads(self.s3client.read_object(bucket_name=bucket_name, key=BITWARDEN_DATA_EXPORT_FILENAME))
+        validate(instance=json_data, schema=data_export_schema)
+
+        return [BitwardenCollection(name=c["name"], externalId=c["externalId"]) for c in json_data["collections"]]
 
     def read_external_ids_from_data_export(self, data_export_file: str) -> List[BitwardenCollection]:
         with open(data_export_file, 'r') as f:
@@ -103,7 +142,8 @@ class UpdateCollectionExternalIds:
                 if c.name == org_c.name:
                     self.update_collection_external_id(collection_id=org_c.id, external_id=c.externalId)
 
-    def run(self) -> None:
+    def run(self, event: Dict[str, Any]) -> None:
+        validate(instance=event, schema=update_collection_external_ids_event_schema)
         from_data_export_collections = self.read_external_ids_from_data_export()
 
         org_collections = self.get_org_collections()

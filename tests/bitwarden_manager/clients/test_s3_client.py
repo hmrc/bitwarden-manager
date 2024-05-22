@@ -56,3 +56,28 @@ def test_file_from_path() -> None:
     with pytest.raises(Exception, match="No such file or directory"):
         filepath = "bw_backup_2023.json"
         client.file_from_path(filepath)
+
+
+@mock_s3
+def test_read_object() -> None:
+    client = S3Client()
+
+    filename = "bw_backup_2023.json"
+    bucket_name = "test_bucket"
+    s3 = boto3.client("s3")
+    create_bucket_in_local_region(s3, bucket_name)
+    s3.put_object(Bucket=bucket_name, Key=filename, Body="Hello Bitwarden")
+    content = client.read_object(bucket_name, filename)
+    assert content == "Hello Bitwarden"
+
+@mock_s3
+def test_read_object_fails() -> None:
+    client = S3Client()
+
+    filename = "bw_backup_2023.json"
+    bucket_name = "test_bucket"
+    s3 = boto3.client("s3")
+    create_bucket_in_local_region(s3, bucket_name)
+    # s3.put_object(Bucket=bucket_name, Key=filename, Body="Hello Bitwarden")
+    with pytest.raises(Exception, match=f"Failed to read s3://{bucket_name}/{filename}"):
+        client.read_object(bucket_name, filename)

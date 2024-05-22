@@ -1,6 +1,7 @@
 import logging
+import os
 import pathlib
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 import responses
@@ -22,6 +23,20 @@ def client() -> BitwardenVaultClient:
         cli_timeout=20,
     )
 
+@patch.dict(os.environ, {"BITWARDEN_BACKUP_BUCKET": "bitwarden-backup-bucket"})
+def test_get_external_ids_from_data_export() -> None:
+    s3client = Mock()
+    with open(pathlib.Path(__file__).parent.joinpath("./data_export.json"), 'r') as f:
+        s3client.read_object.return_value = f.read()
+
+    expected = [
+        BitwardenCollection(name="test-col01", externalId="extId-test-col01"),
+        BitwardenCollection(name="test-col02", externalId="extId-test-col02")
+    ]
+
+    got = UpdateCollectionExternalIds(bitwarden_api=Mock(), bitwarden_vault_client=client, s3client=s3client).get_external_ids_from_data_export()
+    assert expected == got
+
 def test_read_external_ids_from_json_file() -> None:
     expected = [
         BitwardenCollection(name="test-col01", externalId="extId-test-col01"),
@@ -30,7 +45,7 @@ def test_read_external_ids_from_json_file() -> None:
 
     data_export_file = str(pathlib.Path(__file__).parent.joinpath("./data_export.json"))
 
-    assert expected == UpdateCollectionExternalIds(Mock(), Mock()).read_external_ids_from_data_export(data_export_file)
+    assert expected == UpdateCollectionExternalIds(Mock(), Mock(), Mock()).read_external_ids_from_data_export(data_export_file)
 
 
 def test_get_org_collections(client: BitwardenVaultClient) -> None:
@@ -40,7 +55,7 @@ def test_get_org_collections(client: BitwardenVaultClient) -> None:
         BitwardenCollection(id="id-test-collection", name="test collection"),
     ]
 
-    assert expected == UpdateCollectionExternalIds(Mock(), bitwarden_vault_client=client).get_org_collections()
+    assert expected == UpdateCollectionExternalIds(bitwarden_api=Mock(), bitwarden_vault_client=client, s3client=Mock()).get_org_collections()
 
 def test_update_collection_external_id() -> None:
     collection_id = "id-test-collection-01"
@@ -59,7 +74,7 @@ def test_update_collection_external_id() -> None:
             client_secret="bar",
         )
 
-        UpdateCollectionExternalIds(bitwarden_api=client, bitwarden_vault_client=Mock()).update_collection_external_id(
+        UpdateCollectionExternalIds(bitwarden_api=client, bitwarden_vault_client=Mock(), s3client=Mock()).update_collection_external_id(
             collection_id=collection_id,
             external_id=external_id,
         )
@@ -98,7 +113,7 @@ def test_reconcile_collection_external_ids() -> None:
             client_secret="bar",
         )
 
-        UpdateCollectionExternalIds(bitwarden_api=client, bitwarden_vault_client=Mock()).reconcile_collection_external_ids(
+        UpdateCollectionExternalIds(bitwarden_api=client, bitwarden_vault_client=Mock(), s3client=Mock()).reconcile_collection_external_ids(
             from_data_export_collections=from_export_data_collections,
             org_collections=org_collections
         )
