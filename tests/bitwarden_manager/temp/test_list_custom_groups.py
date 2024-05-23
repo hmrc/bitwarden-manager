@@ -58,7 +58,7 @@ def test_get_bitwarden_groups() -> None:
             status=200,
             content_type="application/json",
             method=responses.GET,
-            url="https://api.bitwarden.eu/public/groups",
+            url="https://api.bitwarden.us/public/groups",
             json={
                 "object": "list",
                 "data": [
@@ -97,7 +97,7 @@ def test_get_bitwarden_groups() -> None:
             status=400,
             content_type="application/json",
             method=responses.GET,
-            url="https://api.bitwarden.eu/public/groups",
+            url="https://api.bitwarden.us/public/groups",
             json={"error": "error"},
         )
 
@@ -137,7 +137,7 @@ def test_run(caplog: pytest.LogCaptureFixture) -> None:
             status=200,
             content_type="application/json",
             method=responses.GET,
-            url="https://api.bitwarden.eu/public/groups",
+            url="https://api.bitwarden.us/public/groups",
             json={
                 "object": "list",
                 "data": [
