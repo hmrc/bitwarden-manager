@@ -76,7 +76,7 @@ def test_update_collection_external_id() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             method=responses.PUT,
-            url=f"https://api.bitwarden.us/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             status=200,
             match=[matchers.json_params_matcher({"externalId": external_id, "groups": []})],
         )
@@ -96,13 +96,13 @@ def test_update_collection_external_id() -> None:
 
         assert len(rsps.calls) == 1
         assert rsps.calls[-1].request.method == "PUT"
-        assert rsps.calls[-1].request.url == f"https://api.bitwarden.us/public/collections/{collection_id}"
+        assert rsps.calls[-1].request.url == f"https://api.bitwarden.com/public/collections/{collection_id}"
 
         rsps.add(
             status=400,
             content_type="application/json",
             method=responses.PUT,
-            url=f"https://api.bitwarden.us/public/collections/{collection_id}",
+            url=f"https://api.bitwarden.com/public/collections/{collection_id}",
             json={"error": "error"},
         )
 
@@ -136,13 +136,13 @@ def test_reconcile_collection_external_ids() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             method=responses.PUT,
-            url=f"https://api.bitwarden.us/public/collections/id-{collection_01}",
+            url=f"https://api.bitwarden.com/public/collections/id-{collection_01}",
             status=200,
             match=[matchers.json_params_matcher({"externalId": f"ext-id-{collection_01}", "groups": []})],
         )
         rsps.add(
             method=responses.PUT,
-            url=f"https://api.bitwarden.us/public/collections/id-{collection_02}",
+            url=f"https://api.bitwarden.com/public/collections/id-{collection_02}",
             status=200,
             match=[matchers.json_params_matcher({"externalId": f"ext-id-{collection_02}", "groups": []})],
         )
