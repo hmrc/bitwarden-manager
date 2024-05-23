@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
-BW_SERVER_URI = "https://vault.bitwarden.us"
+BW_SERVER_URI = "https://vault.bitwarden.com"
 
 
 class BitwardenVaultClientError(Exception):

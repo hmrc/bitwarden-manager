@@ -25,11 +25,11 @@ This passes the `username` to the user-management portal (an internal API) which
 
 Subsequently, a group & collection is associated per corresponding team to the new user within BitWarden.
 The user is granted `edit` privileges on the group/collection they're assigned to.
-More information regarding access control can be found here [Bitwarden Access Control](https://bitwarden.us/help/user-types-access-control/#permissions)
+More information regarding access control can be found here [Bitwarden Access Control](https://bitwarden.com/help/user-types-access-control/#permissions)
 
 `role` is optional. Omitting or setting it to `user` or `super_admin` will invite the user as a `Regular User` while 
 setting it to `team_admin` or `all_team_admin` will invite them as a `Manager`. 
-See https://bitwarden.us/help/user-types-access-control/ for more information on role permissions in Bitwarden.
+See https://bitwarden.com/help/user-types-access-control/ for more information on role permissions in Bitwarden.
 
 ### Remove user
 
