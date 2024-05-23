@@ -41,7 +41,7 @@ data_export_schema = {
                     "id": {"type": "string"},
                     "organizationId": {"type": "string"},
                     "name": {"type": "string"},
-                    "externalId": {"type": ["string", None]},
+                    "externalId": {"type": ["string", "null"]},
                 },
             },
         },
