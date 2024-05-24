@@ -31,6 +31,21 @@ More information regarding access control can be found here [Bitwarden Access Co
 setting it to `team_admin` or `all_team_admin` will invite them as a `Manager`. 
 See https://bitwarden.eu/help/user-types-access-control/ for more information on role permissions in Bitwarden.
 
+### Update User Groups
+
+Reconcile an existing user's Bitwarden groups and collections with their team membership in UMP. 
+
+This is currently run ad-hoc when a user moves team. It does not remove the user from any custom groups or 
+collections that have been manually created in Bitwarden.
+
+```json
+{
+    "event_name": "update_user_groups",
+    "username": "test.user01",
+    "email": "test.user01@example.com",
+}
+```
+
 ### Remove user
 
 Sending this event will remove a user from the Bitwarden organisation, revoke his/her access to collections 
