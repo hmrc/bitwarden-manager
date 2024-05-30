@@ -64,6 +64,7 @@ class BitwardenPublicApi:
         return not bool(external_id and external_id.strip())
 
     def __fetch_user_id(self, email: Optional[str] = None, external_id: Optional[str] = None) -> str:
+        self.__fetch_token()
         for user in self.get_users():
             if external_id and external_id == user.get("externalId", ""):
                 return str(user.get("id", ""))
