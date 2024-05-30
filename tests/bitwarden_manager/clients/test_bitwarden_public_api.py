@@ -1033,6 +1033,7 @@ MOCKED_LOGIN = responses.Response(
 
 def test_fetch_user_id_by_email() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
@@ -1054,6 +1055,7 @@ def test_fetch_user_id_by_email() -> None:
 
 def test_fetch_user_id_by_external_id() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
