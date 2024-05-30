@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any
 from jsonschema import validate
 from datetime import datetime
 
@@ -6,6 +6,7 @@ from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, UserType
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
+import bitwarden_manager.groups_and_collections as GroupsAndCollections
 
 onboard_user_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -70,7 +71,9 @@ class OnboardUser:
         )
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
         existing_collections = self.bitwarden_api.list_existing_collections(teams)
-        self.bitwarden_vault_client.create_collections(self._missing_collection_names(teams, existing_collections))
+        self.bitwarden_vault_client.create_collections(
+            GroupsAndCollections.missing_collection_names(teams, existing_collections)
+        )
         collections = self.bitwarden_api.list_existing_collections(teams)
 
         managed_group_ids = self.bitwarden_api.collate_user_group_ids(
@@ -79,18 +82,10 @@ class OnboardUser:
             collections=collections,
         )
 
-        custom_group_ids = self._non_ump_based_group_ids(
+        custom_group_ids = GroupsAndCollections.non_ump_based_group_ids(
             groups=self.bitwarden_api.get_groups(), teams=self.user_management_api.get_teams()
         )
 
         self.bitwarden_api.associate_user_to_groups(
             user_id=user_id, managed_group_ids=managed_group_ids, custom_group_ids=custom_group_ids
         )
-
-    @staticmethod
-    def _missing_collection_names(teams: List[str], existing_collections: Dict[str, Dict[str, str]]) -> List[str]:
-        return [team for team in teams if not existing_collections.get(team)]
-
-    @staticmethod
-    def _non_ump_based_group_ids(groups: Dict[str, str], teams: List[str]) -> List[str]:
-        return [id for name, id in groups.items() if name not in teams]
