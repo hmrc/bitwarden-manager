@@ -71,7 +71,7 @@ class BitwardenPublicApi:
                 return str(user.get("id", ""))
         return ""
 
-    def __fetch_user_id_by_email(self, email: str) -> str:
+    def fetch_user_id_by_email(self, email: str) -> str:
         return self.__fetch_user_id(email=email)
 
     def __fetch_user_id_by_external_id(self, external_id: str) -> str:
@@ -162,7 +162,7 @@ class BitwardenPublicApi:
                 and response.json().get("message", None) == "This user has already been invited."
             ):
                 self.__logger.info("User already invited ignoring error")
-                return self.__fetch_user_id_by_email(email)
+                return self.fetch_user_id_by_email(email)
             raise Exception("Failed to invite user", response.content, error) from error
 
         self.__logger.info("User has been invited to Bitwarden")

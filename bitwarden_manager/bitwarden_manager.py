@@ -19,6 +19,7 @@ from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 from bitwarden_manager.temp.list_collection_items import ListCollectionItems
 from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
 from bitwarden_manager.temp.update_collection_external_ids import UpdateCollectionExternalIds
+from bitwarden_manager.update_user_groups import UpdateUserGroups
 
 
 class BitwardenManager:
@@ -51,6 +52,14 @@ class BitwardenManager:
                         user_management_api=self._get_user_management_api(),
                         bitwarden_vault_client=bitwarden_vault_client,
                         dynamodb_client=DynamodbClient(),
+                    ).run(event=event)
+                case "update_user_groups":
+                    self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
+                    self.__logger.debug("handling event with UpdateUserGroups")
+                    UpdateUserGroups(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                        user_management_api=self._get_user_management_api(),
+                        bitwarden_vault_client=bitwarden_vault_client,
                     ).run(event=event)
                 case "export_vault":
                     self.__logger.debug("handling event with ExportVault")

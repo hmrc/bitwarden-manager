@@ -166,13 +166,6 @@ def test_onboard_user_rejects_bad_emails() -> None:
     assert not mock_client_bitwarden.invite_user.called
 
 
-def test_onboard_user_missing_collection_names() -> None:
-    teams = ["Team Name One", "Team Name Two"]
-    existing_collections = {"Team Name One": {"id": "ZZZZZZZZ", "externalID": ""}}
-    expected = ["Team Name Two"]
-    assert expected == OnboardUser._missing_collection_names(teams, existing_collections)
-
-
 def test_onboard_user_writes_invite_date_to_db() -> None:
     event = {
         "event_name": "new_user",
@@ -195,14 +188,3 @@ def test_onboard_user_writes_invite_date_to_db() -> None:
     mock_client_dynamodb.write_item_to_table.assert_called_with(
         table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0}
     )
-
-
-def test_non_ump_based_group_ids() -> None:
-    teams = ["team-one", "team-two"]
-    groups = {
-        "team-one": "id-team-four",
-        "team-two": "id-team-two",
-        "team-three": "id-team-three",
-        "team-four": "id-team-four",
-    }
-    assert ["id-team-three", "id-team-four"] == OnboardUser._non_ump_based_group_ids(groups=groups, teams=teams)

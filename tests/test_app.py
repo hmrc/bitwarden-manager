@@ -14,6 +14,7 @@ from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.reinvite_users import ReinviteUsers
+from bitwarden_manager.update_user_groups import UpdateUserGroups
 
 
 @mock.patch("boto3.client")
@@ -137,6 +138,19 @@ def test_handler_routes_remove_user(_: Mock) -> None:
                 handler(event=event, context={})
 
     remove_user_mock.assert_called_once_with(event=event)
+    bitwarden_logout.assert_called_once()
+
+
+@mock.patch("boto3.client")
+def test_handler_routes_update_user_groups(_: Mock) -> None:
+    event = dict(event_name="update_user_groups")
+    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+        secrets_manager_mock.return_value = "23497858247589473589734805734853"
+        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+            with patch.object(UpdateUserGroups, "run") as update_user_groups_mock:
+                handler(event=event, context={})
+
+    update_user_groups_mock.assert_called_once_with(event=event)
     bitwarden_logout.assert_called_once()
 
 
