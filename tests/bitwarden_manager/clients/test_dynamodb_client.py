@@ -2,7 +2,7 @@ import boto3
 import pytest
 from datetime import datetime
 from boto3_type_annotations import dynamodb
-from moto import mock_dynamodb
+from moto import mock_aws
 
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 
@@ -16,7 +16,7 @@ def create_table_in_local_region(dynamodb: dynamodb.Client, table_name: str) -> 
     )
 
 
-@mock_dynamodb
+@mock_aws
 def test_write_item_to_table() -> None:
     client = DynamodbClient()
 
@@ -34,7 +34,7 @@ def test_write_item_to_table() -> None:
     assert table.get_item(Key=key)["Item"] == item
 
 
-@mock_dynamodb
+@mock_aws
 def test_delete_item_from_table() -> None:
     client = DynamodbClient()
 
@@ -52,7 +52,7 @@ def test_delete_item_from_table() -> None:
     assert table.scan().get("Count") == 0
 
 
-@mock_dynamodb
+@mock_aws
 def test_get_item_from_table() -> None:
     client = DynamodbClient()
 
@@ -69,7 +69,7 @@ def test_get_item_from_table() -> None:
     assert client.get_item_from_table(table_name=table_name, key={"username": "missing.user"}) is None
 
 
-@mock_dynamodb
+@mock_aws
 def test_update_item_in_table() -> None:
     client = DynamodbClient()
 
