@@ -3,10 +3,11 @@ from jsonschema import validate
 from datetime import datetime
 
 from bitwarden_manager.clients.user_management_api import UserManagementApi
-from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, UserType
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 import bitwarden_manager.groups_and_collections as GroupsAndCollections
+from bitwarden_manager.user import UmpUser
 
 onboard_user_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -27,19 +28,11 @@ onboard_user_event_schema = {
             "type": "string",
             "pattern": "user|team_admin|super_admin|all_team_admin",
             "description": """Users that are Team Administrators or All-Team Administrators in UMP
-             should have the 'Manager' role in Bitwarden. All other user types or omitting this
+             should have the 'can manage' permission on their team collection. All other user types or omitting this
              parameter should result in 'Regular User' type""",
         },
     },
     "required": ["event_name", "username", "email"],
-}
-
-
-user_type_mapping = {
-    "user": UserType.REGULAR_USER,
-    "super_admin": UserType.REGULAR_USER,
-    "team_admin": UserType.MANAGER,
-    "all_team_admin": UserType.MANAGER,
 }
 
 
@@ -58,13 +51,9 @@ class OnboardUser:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
-        teams = self.user_management_api.get_user_teams(username=event["username"])
-        type = user_type_mapping[event.get("role", "user")]
-        user_id = self.bitwarden_api.invite_user(
-            username=event["username"],
-            email=event["email"],
-            type=type,
-        )
+        user = UmpUser(username=event["username"], email=event["email"], role=event.get("role", "user"))
+        teams = self.user_management_api.get_user_teams(username=user.username)
+        user_id = self.bitwarden_api.invite_user(user=user)
         date = datetime.today().strftime("%Y-%m-%d")
         self.dynamodb_client.write_item_to_table(
             table_name="bitwarden", item={"username": event["username"], "invite_date": date, "reinvites": 0}
@@ -89,3 +78,5 @@ class OnboardUser:
         self.bitwarden_api.associate_user_to_groups(
             user_id=user_id, managed_group_ids=managed_group_ids, custom_group_ids=custom_group_ids
         )
+
+        self.bitwarden_api.grant_can_manage_permission_to_team_collections(user=user, teams=teams)

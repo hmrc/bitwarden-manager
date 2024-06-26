@@ -1,27 +1,10 @@
 import base64
-from enum import IntEnum
 from logging import Logger
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 from requests import HTTPError, Session
 
-
-# Bitwarden server enum definition:
-# https://github.com/bitwarden/server/blob/main/src/Core/AdminConsole/Enums/OrganizationUserType.cs
-class UserType(IntEnum):
-    OWNER = 0
-    ADMIN = 1
-    REGULAR_USER = 2
-    MANAGER = 3
-    CUSTOM = 4
-
-
-# https://github.com/bitwarden/server/blob/main/src/Core/AdminConsole/Enums/OrganizationUserStatusType.cs
-class UserStatus(IntEnum):
-    INVITED = 0
-    ACCEPTED = 1
-    CONFIRMED = 2
-    REVOKED = -1
+from bitwarden_manager.user import UmpUser, UserStatus
 
 
 REQUEST_TIMEOUT_SECONDS = 30
@@ -63,20 +46,27 @@ class BitwardenPublicApi:
         # since you cannot add one through the UI - only through the API
         return not bool(external_id and external_id.strip())
 
-    def __fetch_user_id(self, email: Optional[str] = None, external_id: Optional[str] = None) -> str:
+    def get_user_by_email(self, email: str) -> Dict[str, Any]:
+        self.__fetch_token()
+        for user in self.get_users():
+            if email and email == user.get("email", ""):
+                return user
+        else:
+            raise Exception(f"No user with email {email} found")
+
+    def get_user_by_external_id(self, external_id: str) -> Dict[str, Any]:
         self.__fetch_token()
         for user in self.get_users():
             if external_id and external_id == user.get("externalId", ""):
-                return str(user.get("id", ""))
-            if email and email == user.get("email", ""):
-                return str(user.get("id", ""))
-        return ""
+                return user
+        else:
+            raise Exception(f"No user with external_id {external_id} found")
 
     def fetch_user_id_by_email(self, email: str) -> str:
-        return self.__fetch_user_id(email=email)
+        return str(self.get_user_by_email(email=email)["id"])
 
-    def __fetch_user_id_by_external_id(self, external_id: str) -> str:
-        return self.__fetch_user_id(external_id=external_id)
+    def fetch_user_id_by_external_id(self, external_id: str) -> str:
+        return str(self.get_user_by_external_id(external_id=external_id)["id"])
 
     def __fetch_token(self) -> str:
         response = session.post(
@@ -141,16 +131,16 @@ class BitwardenPublicApi:
                 pending.append(user)
         return pending
 
-    def invite_user(self, username: str, email: str, type: UserType = UserType.REGULAR_USER) -> str:
+    def invite_user(self, user: UmpUser) -> str:
         self.__fetch_token()
         response = session.post(
             f"{API_URL}/members",
             json={
-                "type": type,
+                "type": user.org_user_type(),
                 "accessAll": False,
                 "resetPasswordEnrolled": True,
-                "externalId": username,
-                "email": email,
+                "externalId": user.username,
+                "email": user.email,
                 "collections": [],
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
@@ -163,7 +153,7 @@ class BitwardenPublicApi:
                 and response.json().get("message", None) == "This user has already been invited."
             ):
                 self.__logger.info("User already invited ignoring error")
-                return self.fetch_user_id_by_email(email)
+                return self.fetch_user_id_by_external_id(user.username)
             raise Exception("Failed to invite user", response.content, error) from error
 
         self.__logger.info("User has been invited to Bitwarden")
@@ -178,10 +168,50 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception(f"Failed to reinvite {username}", response.content, error) from error
 
+    def grant_can_manage_permission_to_team_collections(self, user: UmpUser, teams: List[str]) -> None:
+        if not user.can_manage_team_collection():
+            return
+
+        bw_user = self.get_user_by_external_id(external_id=user.username)
+        collections = self.list_existing_collections(teams=teams)
+
+        permissions = []
+        for key, value in collections.items():
+            if value["id"] == "duplicate":
+                raise Exception(f"Duplicate collection found - {key}")
+            permissions.append(
+                {
+                    "id": value["id"],
+                    "readOnly": False,
+                    "hidePasswords": False,
+                    "manage": True,
+                }
+            )
+
+        response = session.put(
+            f"{API_URL}/members/{bw_user['id']}",
+            json={
+                "type": bw_user["type"],
+                "accessAll": bw_user["accessAll"],
+                "externalId": bw_user["externalId"],
+                "resetPasswordEnrolled": bw_user["resetPasswordEnrolled"],
+                "permissions": bw_user["permissions"],
+                "collections": permissions,
+            },
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception('Failed to grant "can manage" permission to user', response.content, error) from error
+
+        self.__logger.info(f'User has been granted "can manage" permissions to collections: {collections.keys()}')
+
     def remove_user(self, username: str) -> None:
         self.__fetch_token()
-        id = self.__fetch_user_id_by_external_id(external_id=username)
-        if not id:
+        try:
+            id = self.fetch_user_id_by_external_id(external_id=username)
+        except Exception:
             self.__logger.info(f"User {username} not found in the Bitwarden organisation")
             return
 
