@@ -13,7 +13,8 @@
         "type": 1,
         "accessAll": false,
         "externalId": "test.user01",
-        "resetPasswordEnrolled": false
+        "resetPasswordEnrolled": false,
+        "permissions": null
       },
       {
         "object": "member",
@@ -24,10 +25,11 @@
         "twoFactorEnabled": true,
         "status": 2,
         "collections": null,
-        "type": 1,
+        "type": 2,
         "accessAll": false,
         "externalId": "test.user02",
-        "resetPasswordEnrolled": false
+        "resetPasswordEnrolled": false,
+        "permissions": null
       },
       {
         "object": "member",
@@ -41,7 +43,8 @@
         "type": 1,
         "accessAll": false,
         "externalId": "",
-        "resetPasswordEnrolled": false
+        "resetPasswordEnrolled": false,
+        "permissions": null
       }
     ],
     "continuationToken": null

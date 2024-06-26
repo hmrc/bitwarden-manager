@@ -8,6 +8,195 @@ from _pytest.logging import LogCaptureFixture
 from responses import matchers
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.user import UmpUser
+
+
+MOCKED_GET_MEMBERS = responses.Response(
+    status=200,
+    content_type="application/json",
+    method=responses.GET,
+    url="https://api.bitwarden.eu/public/members",
+    body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+)
+
+
+def test_get_user_by_email() -> None:
+    email = "test.user01@example.com"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        user = client.get_user_by_email(email=email)
+
+        assert email == user["email"]
+        assert "11111111" == user["id"]
+
+        with pytest.raises(Exception, match=r"No user with email .* found"):
+            client.get_user_by_email(email="does.not.exist@example.com")
+
+
+def test_fetch_user_id_by_email() -> None:
+    email = "test.user01@example.com"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        user_id = client.fetch_user_id_by_email(email=email)
+
+        assert user_id == "11111111"
+
+
+def test_get_user_by_external_id() -> None:
+    external_id = "test.user01"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        user = client.get_user_by_external_id(external_id=external_id)
+
+        assert external_id == user["externalId"]
+        assert "11111111" == user["id"]
+
+        with pytest.raises(Exception, match=r"No user with external_id .* found"):
+            client.get_user_by_external_id(external_id="")
+
+
+@pytest.mark.parametrize("role", [("team_admin"), ("all_team_admin")])
+def test_grant_can_manage_permission_to_team_collections_to_team_admin(role: str) -> None:
+    user = UmpUser(username="test.user02", email="test.user02@example.com", role=role)
+    teams = ["team-one", "team-two"]
+    member_id = "22222222"
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url="https://api.bitwarden.eu/public/collections",
+            json={
+                "data": [
+                    _collection_object_with_base64_encoded_external_id("team-one", groups=[]),
+                    _collection_object_with_base64_encoded_external_id("team-two", groups=[]),
+                ]
+            },
+        )
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.eu/public/members/{member_id}",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "type": 2,
+                        "accessAll": False,
+                        "externalId": user.username,
+                        "resetPasswordEnrolled": False,
+                        "permissions": None,
+                        "collections": [
+                            {"id": "id-team-one", "readOnly": False, "hidePasswords": False, "manage": True},
+                            {"id": "id-team-two", "readOnly": False, "hidePasswords": False, "manage": True},
+                        ],
+                        # "groups": [],
+                    }
+                )
+            ],
+            json={
+                "type": 2,
+                "accessAll": False,
+                "externalId": user.username,
+                "resetPasswordEnrolled": True,
+                "permissions": None,
+                "object": "member",
+                "id": member_id,
+                "userId": "user-id",
+                "name": "Test User",
+                "email": user.email,
+                "twoFactorEnabled": True,
+                "status": 0,
+                "collections": [],
+            },
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        client.grant_can_manage_permission_to_team_collections(
+            user=user,
+            teams=teams,
+        )
+
+        assert rsps.calls[-1].request.method == "PUT"
+        assert rsps.calls[-1].request.url == f"https://api.bitwarden.eu/public/members/{member_id}"
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.PUT,
+            url=f"https://api.bitwarden.eu/public/members/{member_id}",
+            json={"error": "error"},
+        )
+
+        with pytest.raises(Exception, match='Failed to grant "can manage" permission to user'):
+            client.grant_can_manage_permission_to_team_collections(
+                user=user,
+                teams=teams,
+            )
+
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url="https://api.bitwarden.eu/public/collections",
+            json={
+                "data": [
+                    _collection_object_with_base64_encoded_external_id("team-one", groups=[]),
+                    _collection_object_with_base64_encoded_external_id("team-one", groups=[]),
+                ]
+            },
+        )
+
+        with pytest.raises(Exception, match="Duplicate collection found"):
+            client.grant_can_manage_permission_to_team_collections(
+                user=user,
+                teams=teams,
+            )
+
+
+@pytest.mark.parametrize("role", [("user"), ("super_admin")])
+def test_grant_can_manage_permission_to_team_collections_to_regular_user(role: str) -> None:
+    user = UmpUser(username="test.user02", email="test.user02@example.com", role=role)
+    teams = ["team-one", "team-two"]
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        client.grant_can_manage_permission_to_team_collections(
+            user=user,
+            teams=teams,
+        )
+
+        assert len(rsps.calls) == 0
 
 
 def test_invite_user() -> None:
@@ -30,10 +219,20 @@ def test_invite_user() -> None:
                     }
                 )
             ],
-            body=b'{ "type": 0, "accessAll": true, "externalId": null, "resetPasswordEnrolled": true, "object": '
-            b'"member", "id": "XXXXXXXX", "userId": "YYYYYYYY",'
-            b'"name": "John Smith", "email": "jsmith@example.com", '
-            b'"twoFactorEnabled": true, "status": 0, "collections": [] }',
+            json={
+                "type": 2,
+                "accessAll": True,
+                "externalId": None,
+                "resetPasswordEnrolled": True,
+                "object": "member",
+                "id": "XXXXXXXX",
+                "userId": "YYYYYYYY",
+                "name": "John Smith",
+                "email": "jsmith@example.com",
+                "twoFactorEnabled": True,
+                "status": 0,
+                "collections": [],
+            },
             status=200,
             content_type="application/json",
         )
@@ -43,10 +242,7 @@ def test_invite_user() -> None:
             client_id="foo",
             client_secret="bar",
         )
-        user_id = client.invite_user(
-            username=test_user,
-            email=test_email,
-        )
+        user_id = client.invite_user(user=UmpUser(username=test_user, email=test_email))
 
         assert user_id == "XXXXXXXX"
 
@@ -68,7 +264,7 @@ def test_failed_invite() -> None:
         )
 
         with pytest.raises(Exception, match="Failed to invite user"):
-            client.invite_user(username="test.user", email="test@example.com")
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
 
 
 def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
@@ -77,17 +273,31 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
-            body=b'{"data": [ { "type": 0, "accessAll": true, "externalId": "external_id_123456", '
-            b'"resetPasswordEnrolled": true, "object": "member", "id": "XXXXXXXX", '
-            b'"userId": "YYYYYYYY", "name": "test.user", '
-            b'"email": "test@example.com", "twoFactorEnabled": true, "status": 0, "collections": [] } ] }',
+            json={
+                "data": [
+                    {
+                        "type": 0,
+                        "accessAll": True,
+                        "externalId": "test.user",
+                        "resetPasswordEnrolled": True,
+                        "object": "member",
+                        "id": "XXXXXXXX",
+                        "userId": "YYYYYYYY",
+                        "name": "test.user",
+                        "email": "test@example.com",
+                        "twoFactorEnabled": True,
+                        "status": 0,
+                        "collections": [],
+                    }
+                ]
+            },
             status=200,
             content_type="application/json",
         )
         rsps.add(
             responses.POST,
             "https://api.bitwarden.eu/public/members",
-            body=b'{"object":"error","message":"This user has already been invited.","errors":null}',
+            json={"object": "error", "message": "This user has already been invited.", "errors": None},
             status=400,
         )
 
@@ -98,7 +308,7 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
         )
 
         with caplog.at_level(logging.INFO):
-            client.invite_user(username="test.user", email="test@example.com")
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
 
         assert "User already invited ignoring error" in caplog.text
 
@@ -109,17 +319,31 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
-            body=b'{"data": [ { "type": 0, "accessAll": true, "externalId": "external_id_123456", '
-            b'"resetPasswordEnrolled": true, "object": "member", "id": "XXXXXXXX", '
-            b'"userId": "YYYYYYYY", "name": "test.user", '
-            b'"email": "test@example.com", "twoFactorEnabled": true, "status": 0, "collections": [] } ] }',
+            json={
+                "data": [
+                    {
+                        "type": 0,
+                        "accessAll": True,
+                        "externalId": "test.user",
+                        "resetPasswordEnrolled": True,
+                        "object": "member",
+                        "id": "XXXXXXXX",
+                        "userId": "YYYYYYYY",
+                        "name": "test.user",
+                        "email": "test@example.com",
+                        "twoFactorEnabled": True,
+                        "status": 0,
+                        "collections": [],
+                    }
+                ]
+            },
             status=200,
             content_type="application/json",
         )
         rsps.add(
             responses.POST,
             "https://api.bitwarden.eu/public/members",
-            body=b'{"object":"error","message":"This user has already been invited.","errors":null}',
+            json={"object": "error", "message": "This user has already been invited.", "errors": None},
             status=400,
         )
 
@@ -130,7 +354,7 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
         )
 
         with caplog.at_level(logging.INFO):
-            client.invite_user(username="test.user", email="no_match@example.com")
+            client.invite_user(user=UmpUser(username="test.user", email="no_match@example.com"))
 
         assert "User already invited ignoring error" in caplog.text
 
@@ -141,14 +365,14 @@ def test_handle_already_invited_http_error(caplog: LogCaptureFixture) -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
-            body=b'{"object":"error","message":"The request\'s model state is invalid."}',
+            json={"object": "error", "message": "The request's model state is invalid."},
             status=400,
             content_type="application/json",
         )
         rsps.add(
             responses.POST,
             "https://api.bitwarden.eu/public/members",
-            body=b'{"object":"error","message":"This user has already been invited.","errors":null}',
+            json={"object": "error", "message": "This user has already been invited.", "errors": None},
             status=400,
         )
 
@@ -162,12 +386,10 @@ def test_handle_already_invited_http_error(caplog: LogCaptureFixture) -> None:
             Exception,
             match="Failed to retrieve users",
         ):
-            client.invite_user(username="test.user", email="test@example.com")
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
 
 
 def test_failed_login() -> None:
-    test_user = "test.user"
-    test_email = "test@example.com"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
             responses.POST,
@@ -187,7 +409,7 @@ def test_failed_login() -> None:
             Exception,
             match="Failed to authenticate with " "https://identity.bitwarden.eu/connect/token, " "creds incorrect?",
         ):
-            client.invite_user(test_user, test_email)
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
 
 
 def test_create_group() -> None:
@@ -1029,51 +1251,6 @@ MOCKED_LOGIN = responses.Response(
         "token_type": "Bearer",
     },
 )
-
-
-def test_fetch_user_id_by_email() -> None:
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
-        rsps.add(
-            responses.GET,
-            "https://api.bitwarden.eu/public/members",
-            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
-            status=200,
-            content_type="application/json",
-        )
-
-        client = BitwardenPublicApi(
-            logger=logging.getLogger(),
-            client_id="foo",
-            client_secret="bar",
-        )
-        user_id = client._BitwardenPublicApi__fetch_user_id(  # type: ignore
-            email="test.user01@example.com",
-        )
-        assert user_id == "11111111"
-
-
-def test_fetch_user_id_by_external_id() -> None:
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
-        rsps.add(
-            responses.GET,
-            "https://api.bitwarden.eu/public/members",
-            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
-            status=200,
-            content_type="application/json",
-        )
-
-        client = BitwardenPublicApi(
-            logger=logging.getLogger(),
-            client_id="foo",
-            client_secret="bar",
-        )
-        user_id = client._BitwardenPublicApi__fetch_user_id(  # type: ignore
-            external_id="test.user02",
-        )
-
-        assert user_id == "22222222"
 
 
 def test_remove_user(caplog: LogCaptureFixture) -> None:
