@@ -172,7 +172,7 @@ class BitwardenPublicApi:
         if not user.can_manage_team_collection():
             return
 
-        bw_user = self.get_user_by_external_id(external_id=user.username)
+        bw_user = self.get_user_by_email(email=str(user.email))
         collections = self.list_existing_collections(teams=teams)
 
         permissions = []
@@ -205,7 +205,9 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception('Failed to grant "can manage" permission to user', response.content, error) from error
 
-        self.__logger.info(f'User has been granted "can manage" permissions to collections: {collections.keys()}')
+        self.__logger.info(
+            f'User has been granted "can manage" permissions to collections: {[k for k, _ in collections.items()]}'
+        )
 
     def remove_user(self, username: str) -> None:
         self.__fetch_token()
