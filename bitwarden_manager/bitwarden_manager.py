@@ -41,7 +41,7 @@ class BitwardenManager:
 
     def _run(self, event: Dict[str, Any]) -> None:
         event_name = event["event_name"]
-        self.__logger.debug(event)
+        self.__logger.debug('%s', event)
         bitwarden_vault_client = self._get_bitwarden_vault_client()
         try:
             match event_name:
