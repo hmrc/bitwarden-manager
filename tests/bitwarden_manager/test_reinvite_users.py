@@ -2,13 +2,15 @@ from unittest.mock import MagicMock
 
 import pytest
 from jsonschema.exceptions import ValidationError
-from datetime import datetime
+from datetime import datetime, timedelta
+from freezegun import freeze_time
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
-from bitwarden_manager.reinvite_users import ReinviteUsers
+from bitwarden_manager.reinvite_users import MAX_INVITE_DURATION_IN_DAYS, MAX_REINVITES, ReinviteUsers
 
 
+@freeze_time("2024-01-01")
 def test_reinvite_users() -> None:
     event = {"event_name": "reinvite_users"}
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
@@ -33,8 +35,9 @@ def test_reinvite_users() -> None:
         ]
     )
 
+    invite_date = datetime.today() - timedelta(days=MAX_INVITE_DURATION_IN_DAYS + 1)
     mock_client_dynamodb.get_item_from_table = MagicMock(
-        return_value={"username": "test.user02", "invite_date": "2024-01-01", "reinvites": 0}
+        return_value={"username": "test.user02", "invite_date": invite_date.strftime("%Y-%m-%d"), "reinvites": 0}
     )
 
     ReinviteUsers(
@@ -85,7 +88,7 @@ def test_reinvite_pending_users_invite_not_expired_yet() -> None:
     assert not mock_client_bitwarden.reinvite_user.called
 
 
-def test_reinvite_pending_users_already_reinvited() -> None:
+def test_reinvite_pending_users_already_reinvited_max_reinvite_times() -> None:
     event = {"event_name": "reinvite_users"}
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
@@ -110,7 +113,7 @@ def test_reinvite_pending_users_already_reinvited() -> None:
     )
 
     mock_client_dynamodb.get_item_from_table = MagicMock(
-        return_value={"username": "test.user02", "invite_date": "2024-01-01", "reinvites": 1}
+        return_value={"username": "test.user02", "invite_date": "2024-01-01", "reinvites": MAX_REINVITES}
     )
 
     ReinviteUsers(
