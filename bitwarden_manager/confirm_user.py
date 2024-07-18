@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
 from jsonschema import validate
 
@@ -27,7 +27,7 @@ class ConfirmUser:
         self.confirm_valid_users(unconfirmed_users, self.allowed_domains)
 
     def confirm_valid_users(self, unconfirmed_users: list[Dict[str, str]], allowed_domains: list[str]) -> None:
-        errors = []
+        errors: List[Exception] = []
         for user in unconfirmed_users:
             user_email = user["email"]
             user_id = user["id"]
