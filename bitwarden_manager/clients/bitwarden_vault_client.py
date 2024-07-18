@@ -3,7 +3,7 @@ import subprocess  # nosec B404
 import os
 import base64
 from logging import Logger
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
@@ -222,7 +222,7 @@ class BitwardenVaultClient:
                 )
         return unconfirmed_users
 
-    def confirm_user(self, user_id: str) -> None:
+    def confirm_user(self, user_id: str) -> Any:
         tmp_env = os.environ.copy()
         tmp_env["BW_SESSION"] = self.session_token()
         try:

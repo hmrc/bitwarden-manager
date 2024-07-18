@@ -4,10 +4,12 @@ from unittest import mock
 from unittest.mock import Mock, call, patch
 
 from pytest import LogCaptureFixture
+import pytest
 
 
 from bitwarden_manager.bitwarden_manager import BitwardenManager
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.confirm_user import BitwardenConfirmUserInvalidDomain
 
 
 @mock.patch("boto3.client")
@@ -77,15 +79,34 @@ def test_confirm_user_passed_allowed_domains(mock_secretsmanager: Mock) -> None:
 
     bitwarden_mock = Mock(
         spec=BitwardenVaultClient,
+        list_unconfirmed_users=Mock(return_value=[dict(email="test@example.com", id=111)]),
+    )
+    with patch.object(BitwardenManager, "_get_bitwarden_vault_client") as _get_bitwarden_vault_client:
+        _get_bitwarden_vault_client.return_value = bitwarden_mock
+        BitwardenManager().run(event={"event_name": "confirm_user"})
+
+    bitwarden_mock.confirm_user.assert_called_once_with(user_id=111)
+
+
+@mock.patch.dict(os.environ, {"ALLOWED_DOMAINS": "example.com"})
+@mock.patch("boto3.client")
+def test_confirm_user_failed_when_passed_users_with_invalid_email_domains(mock_secretsmanager: Mock) -> None:
+    get_secret_value = Mock(return_value={"SecretString": "secret"})
+    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+
+    bitwarden_mock = Mock(
+        spec=BitwardenVaultClient,
         list_unconfirmed_users=Mock(
             return_value=[dict(email="test@example.com", id=111), dict(email="test@evil.com", id=222)]
         ),
     )
     with patch.object(BitwardenManager, "_get_bitwarden_vault_client") as _get_bitwarden_vault_client:
         _get_bitwarden_vault_client.return_value = bitwarden_mock
-
-        manager = BitwardenManager()
-        manager.run(event={"event_name": "confirm_user"})
+        with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
+            BitwardenManager().run(event={"event_name": "confirm_user"})
+            assert exception_group.group_contains(
+                BitwardenConfirmUserInvalidDomain, match="Invalid Domain detected: evil.com"
+            )
 
     bitwarden_mock.confirm_user.assert_called_once_with(user_id=111)
 
@@ -125,7 +146,11 @@ def test_event_is_logged_in_debug_mode(
         _get_bitwarden_vault_client.return_value = bitwarden_mock
 
         with caplog.at_level(logging.DEBUG):
-            BitwardenManager().run(event={"event_name": "confirm_user"})
+            with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
+                BitwardenManager().run(event={"event_name": "confirm_user"})
+                assert exception_group.group_contains(
+                    BitwardenConfirmUserInvalidDomain, match="Invalid Domain detected: evil.com"
+                )
 
             assert "{'event_name': 'confirm_user'}" in caplog.text
 
