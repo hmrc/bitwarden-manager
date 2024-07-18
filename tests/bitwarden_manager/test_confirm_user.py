@@ -2,7 +2,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
-from bitwarden_manager.confirm_user import ConfirmUser
+from bitwarden_manager.confirm_user import ConfirmUser, BitwardenConfirmUserInvalidDomain
 from unittest.mock import Mock, MagicMock
 from jsonschema.exceptions import ValidationError
 
@@ -35,9 +35,11 @@ def test_confirm_user_invalid_domain() -> None:
             {"email": "test@example.co.uk@invaliddomain.co.uk", "id": "example_id"},
         ]
     )
-    ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
+    with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
+        ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
+        assert exception_group.exception[0] is BitwardenConfirmUserInvalidDomain
 
-    assert mock_client.confirm_user.not_called
+    assert mock_client.confirm_user.call_count == 0
 
 
 def test_confirm_user_handles_errors(caplog: LogCaptureFixture) -> None:
@@ -54,8 +56,11 @@ def test_confirm_user_handles_errors(caplog: LogCaptureFixture) -> None:
 
     mock_client.confirm_user = MagicMock(side_effect=BitwardenVaultClientError())
 
-    with pytest.raises(BitwardenVaultClientError, match="Confirmation process failed"):
+    with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
         ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
+        assert exception_group.exception[0] is BitwardenVaultClientError
+        assert exception_group.exception[1] is BitwardenVaultClientError
+        assert exception_group.exception[2] is BitwardenConfirmUserInvalidDomain
 
     assert mock_client.confirm_user.call_count == 2
 

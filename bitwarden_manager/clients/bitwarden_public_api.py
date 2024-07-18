@@ -15,6 +15,7 @@ API_URL = "https://api.bitwarden.eu/public"
 session = Session()
 
 
+
 class BitwardenPublicApi:
     def __init__(self, logger: Logger, client_id: str, client_secret: str) -> None:
         self.__logger = logger
