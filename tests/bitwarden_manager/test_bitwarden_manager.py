@@ -104,7 +104,9 @@ def test_confirm_user_failed_when_passed_users_with_invalid_email_domains(mock_s
         _get_bitwarden_vault_client.return_value = bitwarden_mock
         with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
             BitwardenManager().run(event={"event_name": "confirm_user"})
-            assert exception_group.exception[0] is BitwardenConfirmUserInvalidDomain
+            assert exception_group.group_contains(
+                BitwardenConfirmUserInvalidDomain, match="Invalid Domain detected: evil.com"
+            )
 
     bitwarden_mock.confirm_user.assert_called_once_with(user_id=111)
 
@@ -146,7 +148,9 @@ def test_event_is_logged_in_debug_mode(
         with caplog.at_level(logging.DEBUG):
             with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
                 BitwardenManager().run(event={"event_name": "confirm_user"})
-                assert exception_group.exception[0] is BitwardenConfirmUserInvalidDomain
+                assert exception_group.group_contains(
+                    BitwardenConfirmUserInvalidDomain, match="Invalid Domain detected: evil.com"
+                )
 
             assert "{'event_name': 'confirm_user'}" in caplog.text
 

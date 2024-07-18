@@ -37,7 +37,9 @@ def test_confirm_user_invalid_domain() -> None:
     )
     with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
         ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
-        assert exception_group.exception[0] is BitwardenConfirmUserInvalidDomain
+        assert exception_group.group_contains(
+            BitwardenConfirmUserInvalidDomain, match="Invalid Domain detected: invalidexample.co.uk"
+        )
 
     assert mock_client.confirm_user.call_count == 0
 
@@ -58,9 +60,10 @@ def test_confirm_user_handles_errors(caplog: LogCaptureFixture) -> None:
 
     with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
         ConfirmUser(bitwarden_vault_client=mock_client, allowed_domains=["example.co.uk"]).run(event)
-        assert exception_group.exception[0] is BitwardenVaultClientError
-        assert exception_group.exception[1] is BitwardenVaultClientError
-        assert exception_group.exception[2] is BitwardenConfirmUserInvalidDomain
+        assert exception_group.group_contains(BitwardenVaultClientError)
+        assert exception_group.group_contains(
+            BitwardenConfirmUserInvalidDomain, match="Invalid Domain detected: invalidexample.co.uk"
+        )
 
     assert mock_client.confirm_user.call_count == 2
 
