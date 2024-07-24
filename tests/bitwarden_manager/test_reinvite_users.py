@@ -124,6 +124,7 @@ def test_reinvite_pending_users_already_reinvited_max_reinvite_times() -> None:
     mock_client_bitwarden.get_pending_users.assert_called
     mock_client_dynamodb.get_item_from_table.assert_called_with(table_name="bitwarden", key={"username": "test.user02"})
     assert not mock_client_bitwarden.reinvite_user.called
+    mock_client_bitwarden.remove_user.assert_called_with(username="test.user02")
 
 
 def test_reinvite_users_rejects_bad_events() -> None:

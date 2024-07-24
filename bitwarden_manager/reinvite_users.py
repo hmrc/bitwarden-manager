@@ -46,5 +46,7 @@ class ReinviteUsers:
                     self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
                     reinvites += 1
                     self.dynamodb_client.update_item_in_table(table_name="bitwarden", key=key, reinvites=reinvites)
+                elif invite_date < date:
+                    self.bitwarden_api.remove_user(username=username)
             else:
                 self.__logger.info(f"No record matches {key} in the DB")
