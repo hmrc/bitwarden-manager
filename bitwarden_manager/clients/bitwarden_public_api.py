@@ -4,7 +4,7 @@ from typing import Dict, List, Any
 
 from requests import HTTPError, Session
 
-from bitwarden_manager.user import UmpUser, UserStatus
+from bitwarden_manager.user import UmpUser, UserStatus, UserType
 
 
 REQUEST_TIMEOUT_SECONDS = 30
@@ -136,7 +136,7 @@ class BitwardenPublicApi:
         response = session.post(
             f"{API_URL}/members",
             json={
-                "type": user.org_user_type(),
+                "type": UserType.REGULAR_USER,
                 "accessAll": False,
                 "resetPasswordEnrolled": True,
                 "externalId": user.username,
@@ -169,30 +169,31 @@ class BitwardenPublicApi:
             raise Exception(f"Failed to reinvite {username}", response.content, error) from error
 
     def grant_can_manage_permission_to_team_collections(self, user: UmpUser, teams: List[str]) -> None:
-        if not user.can_manage_team_collection():
-            return
 
-        bw_user = self.get_user_by_email(email=str(user.email))
         collections = self.list_existing_collections(teams=teams)
 
         permissions = []
         for key, value in collections.items():
             if value["id"] == "duplicate":
                 raise Exception(f"Duplicate collection found - {key}")
-            permissions.append(
-                {
-                    "id": value["id"],
-                    "readOnly": False,
-                    "hidePasswords": False,
-                    "manage": True,
-                }
-            )
+            if user.can_manage_team_collection(team=key):
+                permissions.append(
+                    {
+                        "id": value["id"],
+                        "readOnly": False,
+                        "hidePasswords": False,
+                        "manage": True,
+                    }
+                )
 
+        if len(permissions) == 0:
+            return
+
+        bw_user = self.get_user_by_email(email=str(user.email))
         response = session.put(
             f"{API_URL}/members/{bw_user['id']}",
             json={
                 "type": bw_user["type"],
-                "accessAll": bw_user["accessAll"],
                 "externalId": bw_user["externalId"],
                 "resetPasswordEnrolled": bw_user["resetPasswordEnrolled"],
                 "permissions": bw_user["permissions"],

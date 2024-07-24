@@ -76,11 +76,14 @@ def test_get_user_by_external_id() -> None:
             client.get_user_by_external_id(external_id="")
 
 
-@pytest.mark.parametrize("role", [("team_admin"), ("all_team_admin")])
-def test_grant_can_manage_permission_to_team_collections_to_team_admin(role: str) -> None:
-    user = UmpUser(username="test.user02", email="test.user02@example.com", role=role)
-    teams = ["team-one", "team-two"]
+def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None:
     member_id = "22222222"
+    teams = ["team-one", "team-two"]
+    user = UmpUser(
+        username="test.user02",
+        email="test.user02@example.com",
+        roles_by_team={"team-one": "team_admin", "team-two": "all_team_admin"},
+    )
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_GET_MEMBERS)
@@ -105,7 +108,6 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin(role: str
                 matchers.json_params_matcher(
                     {
                         "type": 2,
-                        "accessAll": False,
                         "externalId": user.username,
                         "resetPasswordEnrolled": False,
                         "permissions": None,
@@ -119,7 +121,6 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin(role: str
             ],
             json={
                 "type": 2,
-                "accessAll": False,
                 "externalId": user.username,
                 "resetPasswordEnrolled": True,
                 "permissions": None,
@@ -181,11 +182,26 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin(role: str
             )
 
 
-@pytest.mark.parametrize("role", [("user"), ("super_admin")])
-def test_grant_can_manage_permission_to_team_collections_to_regular_user(role: str) -> None:
-    user = UmpUser(username="test.user02", email="test.user02@example.com", role=role)
+def test_grant_can_manage_permission_to_team_collections_to_regular_user() -> None:
     teams = ["team-one", "team-two"]
+    user = UmpUser(
+        username="test.user02",
+        email="test.user02@example.com",
+        roles_by_team={"team-one": "user", "team-two": "super_admin"},
+    )
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method="GET",
+            url="https://api.bitwarden.eu/public/collections",
+            json={
+                "data": [
+                    _collection_object_with_base64_encoded_external_id("team-one", groups=[]),
+                    _collection_object_with_base64_encoded_external_id("team-two", groups=[]),
+                ]
+            },
+        )
         client = BitwardenPublicApi(
             logger=logging.getLogger(),
             client_id="foo",
@@ -196,7 +212,8 @@ def test_grant_can_manage_permission_to_team_collections_to_regular_user(role: s
             teams=teams,
         )
 
-        assert len(rsps.calls) == 0
+        assert len(rsps.calls) == 1
+        assert rsps.calls[0].request.method != "PUT"
 
 
 def test_invite_user() -> None:
@@ -242,7 +259,7 @@ def test_invite_user() -> None:
             client_id="foo",
             client_secret="bar",
         )
-        user_id = client.invite_user(user=UmpUser(username=test_user, email=test_email))
+        user_id = client.invite_user(user=UmpUser(username=test_user, email=test_email, roles_by_team={}))
 
         assert user_id == "XXXXXXXX"
 
@@ -264,7 +281,7 @@ def test_failed_invite() -> None:
         )
 
         with pytest.raises(Exception, match="Failed to invite user"):
-            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com", roles_by_team={}))
 
 
 def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
@@ -277,7 +294,6 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
                 "data": [
                     {
                         "type": 0,
-                        "accessAll": True,
                         "externalId": "test.user",
                         "resetPasswordEnrolled": True,
                         "object": "member",
@@ -308,12 +324,12 @@ def test_handle_already_invited_user(caplog: LogCaptureFixture) -> None:
         )
 
         with caplog.at_level(logging.INFO):
-            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com", roles_by_team={}))
 
         assert "User already invited ignoring error" in caplog.text
 
 
-def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
+def test_handle_already_invited_no_matching_email(caplog: LogCaptureFixture) -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
@@ -323,7 +339,6 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
                 "data": [
                     {
                         "type": 0,
-                        "accessAll": True,
                         "externalId": "test.user",
                         "resetPasswordEnrolled": True,
                         "object": "member",
@@ -354,7 +369,7 @@ def test_handle_already_no_matching_email(caplog: LogCaptureFixture) -> None:
         )
 
         with caplog.at_level(logging.INFO):
-            client.invite_user(user=UmpUser(username="test.user", email="no_match@example.com"))
+            client.invite_user(user=UmpUser(username="test.user", email="no_match@example.com", roles_by_team={}))
 
         assert "User already invited ignoring error" in caplog.text
 
@@ -386,7 +401,7 @@ def test_handle_already_invited_http_error(caplog: LogCaptureFixture) -> None:
             Exception,
             match="Failed to retrieve users",
         ):
-            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com", roles_by_team={}))
 
 
 def test_failed_login() -> None:
@@ -409,7 +424,7 @@ def test_failed_login() -> None:
             Exception,
             match="Failed to authenticate with " "https://identity.bitwarden.eu/connect/token, " "creds incorrect?",
         ):
-            client.invite_user(user=UmpUser(username="test.user", email="test@example.com"))
+            client.invite_user(user=UmpUser(username="test.user", email="test@example.com", roles_by_team={}))
 
 
 def test_create_group() -> None:

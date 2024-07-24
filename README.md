@@ -16,8 +16,7 @@ If the user already exists within BitWarden then the lambda will log this.
 {
     "event_name": "new_user",
     "username": "test.user01",
-    "email": "test.user01@example.com",
-    "role": "user"
+    "email": "test.user01@example.com"
 }
 ```
 

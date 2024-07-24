@@ -24,13 +24,6 @@ onboard_user_event_schema = {
             "pattern": "^(.+)@(.+)$",
             "description": "The users full work email address",
         },
-        "role": {
-            "type": "string",
-            "pattern": "user|team_admin|super_admin|all_team_admin",
-            "description": """Users that are Team Administrators or All-Team Administrators in UMP
-             should have the 'can manage' permission on their team collection. All other user types or omitting this
-             parameter should result in 'Regular User' type""",
-        },
     },
     "required": ["event_name", "username", "email"],
 }
@@ -51,12 +44,16 @@ class OnboardUser:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
-        user = UmpUser(username=event["username"], email=event["email"], role=event.get("role", "user"))
-        teams = self.user_management_api.get_user_teams(username=user.username)
+        teams = self.user_management_api.get_user_teams(username=event["username"])
+        roles_by_team = {
+            team: self.user_management_api.get_user_role_by_team(event["username"], team=team) for team in teams
+        }
+
+        user = UmpUser(username=event["username"], email=event["email"], roles_by_team=roles_by_team)
         user_id = self.bitwarden_api.invite_user(user=user)
         date = datetime.today().strftime("%Y-%m-%d")
         self.dynamodb_client.write_item_to_table(
-            table_name="bitwarden", item={"username": event["username"], "invite_date": date, "reinvites": 0}
+            table_name="bitwarden", item={"username": user.username, "invite_date": date, "reinvites": 0}
         )
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
         existing_collections = self.bitwarden_api.list_existing_collections(teams)

@@ -3,6 +3,7 @@ import logging
 import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
+from urllib.parse import quote
 
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 
@@ -107,11 +108,10 @@ def test_invalid_user(caplog: LogCaptureFixture) -> None:
 @responses.activate
 def test_failed_login() -> None:
     test_user = "test.user"
-    auth_url = "https://user-management-auth-production.tools.tax.service.gov.uk/v1/login"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
-            responses.POST,
-            auth_url,
+            method=responses.POST,
+            url=AUTH_URL,
             body=b'{"reason": "Unauthorised"}',
             status=401,
             content_type="application/json",
@@ -125,9 +125,70 @@ def test_failed_login() -> None:
 
         with pytest.raises(
             Exception,
-            match="Failed to authenticate with " f"{auth_url}, " "creds incorrect?",
+            match="Failed to authenticate with " f"{AUTH_URL}, " "creds incorrect?",
         ):
             client.get_user_teams(username=test_user)
+
+
+def test_get_user_role_by_team() -> None:
+    team = "Cloud Security"
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=responses.GET,
+            url=f"{API_URL}/organisations/teams/{quote(team)}/members",
+            json={
+                "documentation": "https://docs.hmrc.gov.uk/cloudsec",
+                "members": [
+                    {
+                        "displayName": "John Doe",
+                        "familyName": "Doe",
+                        "givenName": "John",
+                        "organisation": "MDTP",
+                        "primaryEmail": "john.doe@digital.hmrc.gov.uk",
+                        "role": "user",
+                        "username": "john.doe",
+                    },
+                    {
+                        "displayName": "Foo Bar",
+                        "familyName": "Bar",
+                        "givenName": "Foo",
+                        "organisation": "MDTP",
+                        "primaryEmail": "foo.bar@digital.hmrc.gov.uk",
+                        "role": "team_admin",
+                        "username": "foo.bar",
+                    },
+                ],
+                "slack": "https://hmrcdigital.slack.com/messages/team-cloudsec",
+                "slackNotification": "https://hmrcdigital.slack.com/messages/int-cloudsec-notifications",
+                "team": "Cloud Security",
+            },
+        )
+
+        client = UserManagementApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        assert "user" == client.get_user_role_by_team("john.doe", team)
+        assert "team_admin" == client.get_user_role_by_team("foo.bar", team)
+
+        with pytest.raises(Exception, match=f"fake.user is not a member of {team}"):
+            client.get_user_role_by_team("fake.user", team)
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=responses.GET,
+            url=f"{API_URL}/organisations/teams/{quote(team)}/members",
+            json={"error": "error"},
+        )
+
+        with pytest.raises(Exception, match=f"Failed to get team members of {team}"):
+            client.get_user_role_by_team("john.doe", team)
 
 
 def test_get_teams() -> None:
@@ -137,7 +198,7 @@ def test_get_teams() -> None:
             status=200,
             content_type="application/json",
             method=responses.GET,
-            url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
+            url=f"{API_URL}/organisations/teams",
             json={
                 "teams": [
                     {"team": "team-one", "slack": "https://myorg.slack.com/messages/team-one"},
@@ -161,7 +222,7 @@ def test_get_teams() -> None:
             status=400,
             content_type="application/json",
             method=responses.GET,
-            url="https://user-management-backend-production.tools.tax.service.gov.uk/v2/organisations/teams",
+            url=f"{API_URL}/organisations/teams",
             json={"error": "error"},
         )
 
@@ -171,7 +232,7 @@ def test_get_teams() -> None:
 
 MOCKED_LOGIN = responses.Response(
     method="POST",
-    url="https://user-management-auth-production.tools.tax.service.gov.uk/v1/login",
+    url=AUTH_URL,
     status=200,
     json={
         "Token": "TEST_BEARER_TOKEN",

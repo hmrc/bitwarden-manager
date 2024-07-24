@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional
+from typing import Dict, Optional
 
 
 # Bitwarden server enum definition:
@@ -23,22 +23,20 @@ class UserStatus(IntEnum):
     REVOKED = -1
 
 
-ump_role_to_org_user_type_mapping = {
-    "user": {"org_user_type": UserType.REGULAR_USER, "can_manage_team_collection": False},
-    "super_admin": {"org_user_type": UserType.REGULAR_USER, "can_manage_team_collection": False},
-    "team_admin": {"org_user_type": UserType.REGULAR_USER, "can_manage_team_collection": True},
-    "all_team_admin": {"org_user_type": UserType.REGULAR_USER, "can_manage_team_collection": True},
+ump_role_to_collection_permission_mapping = {
+    "user": {"can_manage_team_collection": False},
+    "super_admin": {"can_manage_team_collection": False},
+    "team_admin": {"can_manage_team_collection": True},
+    "all_team_admin": {"can_manage_team_collection": True},
 }
 
 
 @dataclass
 class UmpUser:
     username: str
+    roles_by_team: Dict[str, str]
     email: Optional[str] = None
-    role: str = "user"
 
-    def org_user_type(self) -> int:
-        return ump_role_to_org_user_type_mapping[self.role]["org_user_type"]
-
-    def can_manage_team_collection(self) -> bool:
-        return bool(ump_role_to_org_user_type_mapping[self.role]["can_manage_team_collection"])
+    def can_manage_team_collection(self, team: str) -> bool:
+        role = self.roles_by_team.get(team, "user")
+        return bool(ump_role_to_collection_permission_mapping[role]["can_manage_team_collection"])

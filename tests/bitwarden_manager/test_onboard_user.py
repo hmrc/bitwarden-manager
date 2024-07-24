@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from datetime import datetime
 
 import pytest
@@ -19,35 +19,14 @@ def test_onboard_user_invites_user_to_org() -> None:
         "email": "testemail@example.com",
     }
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
-    mock_client_user_management = MagicMock(spec=UserManagementApi)
     mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
-
-    OnboardUser(
-        bitwarden_api=mock_client_bitwarden,
-        user_management_api=mock_client_user_management,
-        bitwarden_vault_client=mock_client_bitwarden_vault,
-        dynamodb_client=mock_client_dynamodb,
-    ).run(event)
-
-    mock_client_bitwarden.invite_user.assert_called_with(
-        user=UmpUser(username="test.user", email="testemail@example.com", role="user")
+    mock_client_user_management = MagicMock(
+        spec=UserManagementApi,
+        get_user_teams=Mock(return_value=["team-one"]),
+        get_user_role_by_team=Mock(return_value="user"),
     )
 
-
-@pytest.mark.parametrize("role", [("user"), ("super_admin")])
-def test_onboard_non_admin_user_invites_user_to_org(role: str) -> None:
-    event = {
-        "event_name": "new_user",
-        "username": "test.user",
-        "email": "testemail@example.com",
-        "role": role,
-    }
-    mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
-    mock_client_user_management = MagicMock(spec=UserManagementApi)
-    mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
-    mock_client_dynamodb = MagicMock(spec=DynamodbClient)
-
     OnboardUser(
         bitwarden_api=mock_client_bitwarden,
         user_management_api=mock_client_user_management,
@@ -56,32 +35,7 @@ def test_onboard_non_admin_user_invites_user_to_org(role: str) -> None:
     ).run(event)
 
     mock_client_bitwarden.invite_user.assert_called_with(
-        user=UmpUser(username="test.user", email="testemail@example.com", role=role)
-    )
-
-
-@pytest.mark.parametrize("role", [("team_admin"), ("all_team_admin")])
-def test_onboard_team_admin_user_invites_user_to_org(role: str) -> None:
-    event = {
-        "event_name": "new_user",
-        "username": "test.user",
-        "email": "testemail@example.com",
-        "role": role,
-    }
-    mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
-    mock_client_user_management = MagicMock(spec=UserManagementApi)
-    mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
-    mock_client_dynamodb = MagicMock(spec=DynamodbClient)
-
-    OnboardUser(
-        bitwarden_api=mock_client_bitwarden,
-        user_management_api=mock_client_user_management,
-        bitwarden_vault_client=mock_client_bitwarden_vault,
-        dynamodb_client=mock_client_dynamodb,
-    ).run(event)
-
-    mock_client_bitwarden.invite_user.assert_called_with(
-        user=UmpUser(username="test.user", email="testemail@example.com", role=role)
+        user=UmpUser(username="test.user", email="testemail@example.com", roles_by_team={"team-one": "user"})
     )
 
 
