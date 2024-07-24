@@ -173,6 +173,7 @@ class BitwardenPublicApi:
         collections = self.list_existing_collections(teams=teams)
 
         permissions = []
+        _can_manage_collections = []
         for key, value in collections.items():
             if value["id"] == "duplicate":
                 raise Exception(f"Duplicate collection found - {key}")
@@ -185,6 +186,7 @@ class BitwardenPublicApi:
                         "manage": True,
                     }
                 )
+                _can_manage_collections.append(key)
 
         if len(permissions) == 0:
             return
@@ -206,9 +208,7 @@ class BitwardenPublicApi:
         except HTTPError as error:
             raise Exception('Failed to grant "can manage" permission to user', response.content, error) from error
 
-        self.__logger.info(
-            f'User has been granted "can manage" permissions to collections: {[k for k, _ in collections.items()]}'
-        )
+        self.__logger.info(f'User has been granted "can manage" permissions to collections: {_can_manage_collections}')
 
     def remove_user(self, username: str) -> None:
         self.__fetch_token()
