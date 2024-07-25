@@ -89,7 +89,14 @@ any that match the criteria.
 
 ### Expired invites
 
-Bitwarden invites expire after 5 days if not accepted by the user. To handle this, when a user is added to Bitwarden via the `New User` event, they are added to a [DynamoDB](https://github.com/hmrc/platsec-terraform/blob/main/components/lambda_bitwarden_manager/dynamodb.tf) table in PlatSec Production (or Development) account which tracks the number of invites for each user. A [daily job](https://github.com/hmrc/platsec-terraform/blob/main/components/lambda_bitwarden_manager/lambda.tf#L36) checks this table and reinvites users who's invites have expired and who have not yet had a "reinvite". Users who's reinvites have expired without being accepted are removed from Bitwarden, the assumption being that they do not currently need it. Users that have been removed from Bitwarden in this way will still be present in the DynamoDB table. 
+Bitwarden invites expire after 5 days if not accepted by the user. To handle this, when a user is added to Bitwarden 
+via the `New User` event, they are added to a 
+[DynamoDB](https://github.com/hmrc/platsec-terraform/blob/main/components/lambda_bitwarden_manager/dynamodb.tf) table in
+ PlatSec Production (or Development) account which tracks the number of invites for each user. A 
+[daily job](https://github.com/hmrc/platsec-terraform/blob/main/components/lambda_bitwarden_manager/lambda.tf#L36) 
+checks this table and reinvites users who's invites have expired and who have not yet had a "reinvite". Users whose 
+reinvites have expired without being accepted are removed from Bitwarden, the assumption being that they do not 
+currently need it. Users that have been removed from Bitwarden in this way will still be present in the DynamoDB table.
 
 ## Environment Variables
 
