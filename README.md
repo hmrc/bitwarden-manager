@@ -94,7 +94,7 @@ via the `New User` event, they are added to a
 [DynamoDB](https://github.com/hmrc/platsec-terraform/blob/main/components/lambda_bitwarden_manager/dynamodb.tf) table in
  PlatSec Production (or Development) account which tracks the number of invites for each user. A 
 [daily job](https://github.com/hmrc/platsec-terraform/blob/main/components/lambda_bitwarden_manager/lambda.tf#L36) 
-checks this table and reinvites users who's invites have expired and who have not yet had a "reinvite". Users whose 
+checks this table and reinvites users whose invites have expired and who have not yet had a "reinvite". Users whose 
 reinvites have expired without being accepted are removed from Bitwarden, the assumption being that they do not 
 currently need it. Users that have been removed from Bitwarden in this way will still be present in the DynamoDB table.
 
