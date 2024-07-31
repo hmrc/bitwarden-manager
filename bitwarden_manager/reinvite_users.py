@@ -17,6 +17,7 @@ reinvite_users_event_schema = {
 }
 
 MAX_REINVITES = 2
+# Bitwarden invites expire after 5 days
 MAX_INVITE_DURATION_IN_DAYS = 5
 
 
@@ -32,8 +33,6 @@ class ReinviteUsers:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=reinvite_users_event_schema)
-        # Bitwarden invites expire after 5 days
-        date = datetime.today() - timedelta(days=MAX_INVITE_DURATION_IN_DAYS)
         for user in self.bitwarden_api.get_pending_users():
             username = user.get("externalId", "")
             key = {"username": username}
@@ -42,6 +41,8 @@ class ReinviteUsers:
                 inv_date = record.get("invite_date", "")
                 invite_date = datetime.strptime(inv_date, "%Y-%m-%d")
                 reinvites = record.get("reinvites", 0)
+                days = MAX_INVITE_DURATION_IN_DAYS * (reinvites + 1)
+                date = datetime.today() - timedelta(days=days)
                 if invite_date < date and reinvites < MAX_REINVITES:
                     self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
                     reinvites += 1

@@ -127,6 +127,48 @@ def test_reinvite_pending_users_already_reinvited_max_reinvite_times() -> None:
     mock_client_bitwarden.remove_user.assert_called_with(username="test.user02")
 
 
+def test_reinvite_pending_users_already_reinvited_max_reinvite_times_but_not_yet_expired() -> None:
+    event = {"event_name": "reinvite_users"}
+    mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
+    mock_client_dynamodb = MagicMock(spec=DynamodbClient)
+    # 14 = Original 5 days, plus 5 after first invite, plus 5 after second reinvite (max 2)
+    date = datetime.today() - timedelta(days=14)
+    date_str = date.strftime("%Y-%m-%d")
+
+    mock_client_bitwarden.get_pending_users = MagicMock(
+        return_value=[
+            {
+                "object": "member",
+                "id": "22222222",
+                "userId": "",
+                "name": "test user02",
+                "email": "test.user02@example.com",
+                "twoFactorEnabled": True,
+                "status": 0,
+                "collections": [],
+                "type": 1,
+                "accessAll": False,
+                "externalId": "test.user02",
+                "resetPasswordEnrolled": False,
+            }
+        ]
+    )
+
+    mock_client_dynamodb.get_item_from_table = MagicMock(
+        return_value={"username": "test.user02", "invite_date": date_str, "reinvites": MAX_REINVITES}
+    )
+
+    ReinviteUsers(
+        bitwarden_api=mock_client_bitwarden,
+        dynamodb_client=mock_client_dynamodb,
+    ).run(event)
+
+    mock_client_bitwarden.get_pending_users.assert_called
+    mock_client_dynamodb.get_item_from_table.assert_called_with(table_name="bitwarden", key={"username": "test.user02"})
+    assert not mock_client_bitwarden.reinvite_user.called
+    assert not mock_client_bitwarden.remove_user.called
+
+
 def test_reinvite_users_rejects_bad_events() -> None:
     event = {"somthing?": 1}
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
