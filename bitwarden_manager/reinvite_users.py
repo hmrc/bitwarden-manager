@@ -41,7 +41,7 @@ class ReinviteUsers:
                 inv_date = record.get("invite_date", "")
                 invite_date = datetime.strptime(inv_date, "%Y-%m-%d")
                 reinvites = record.get("reinvites", 0)
-                days = MAX_INVITE_DURATION_IN_DAYS * max(reinvites, 1)
+                days = MAX_INVITE_DURATION_IN_DAYS * (reinvites + 1)
                 date = datetime.today() - timedelta(days=days)
                 if invite_date < date and reinvites < MAX_REINVITES:
                     self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)

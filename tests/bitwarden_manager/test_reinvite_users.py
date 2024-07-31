@@ -131,8 +131,8 @@ def test_reinvite_pending_users_already_reinvited_max_reinvite_times_but_not_yet
     event = {"event_name": "reinvite_users"}
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
-    days = MAX_INVITE_DURATION_IN_DAYS * MAX_REINVITES - 1
-    date = datetime.today() - timedelta(days=days)
+    # 14 = Original 5 days, plus 5 after first invite, plus 5 after second reinvite (max 2)
+    date = datetime.today() - timedelta(days=14)
     date_str = date.strftime("%Y-%m-%d")
 
     mock_client_bitwarden.get_pending_users = MagicMock(
