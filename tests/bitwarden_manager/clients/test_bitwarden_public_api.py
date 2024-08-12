@@ -58,8 +58,8 @@ def test_get_user_collections_returns_collections_where_collections_exist() -> N
     )
 
     user_colletions = [
-        _user_collection_object_with_empty_external_id("manually-created"),
-        _user_collection_object_with_base64_encoded_external_id("manager-created")
+        _user_collection("manually-created"),
+        _user_collection("manager-created")
     ]
 
     collections = [
@@ -88,7 +88,7 @@ def test_get_user_collections_throws_exception_when_collections_dont_exist() -> 
     )
 
     user_collections = [
-        _user_collection_object_with_empty_external_id("non-existent")
+        _user_collection("non-existent")
     ]
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -147,8 +147,8 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
         roles_by_team={"team-one": "team_admin", "team-two": "all_team_admin"},
     )
     user_collections = [
-        _collection_object_with_empty_external_id("manually-created"),
-        _collection_object_with_base64_encoded_external_id("manager-created"),
+        _collection_object_with_empty_external_id("manually-created", groups=[]),
+        _collection_object_with_base64_encoded_external_id("manager-created", groups=[]),
     ]
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -164,7 +164,8 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
                 "data": [
                     _collection_object_with_base64_encoded_external_id("team-one", groups=[]),
                     _collection_object_with_base64_encoded_external_id("team-two", groups=[]),
-                    _collection_object_with_empty_external_id("manually-created"),
+                    _collection_object_with_base64_encoded_external_id("manager-created", groups=[]),
+                    _collection_object_with_empty_external_id("manually-created", groups=[]),
                 ]
             },
         )
@@ -191,9 +192,9 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
                         "resetPasswordEnrolled": False,
                         "permissions": None,
                         "collections": [
-                            {"id": "id-team-one", "readOnly": False, "hidePasswords": False, "manage": True},
-                            {"id": "id-team-two", "readOnly": False, "hidePasswords": False, "manage": True},
-                            {"id": "id-manually-created", "readOnly": False, "hidePasswords": False, "manage": True},
+                            _user_collection(name="team-one",  readOnly=False, manage=True),
+                            _user_collection(name="team-two", readOnly=False, manage=True),
+                            _user_collection(name="manually-created", readOnly=False, manage=True)
                         ],
                         # "groups": [],
                     }
@@ -212,9 +213,9 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
                 "twoFactorEnabled": True,
                 "status": 0,
                 "collections": [
-                    {"id": "id-team-one", "readOnly": False, "hidePasswords": False, "manage": True},
-                    {"id": "id-team-two", "readOnly": False, "hidePasswords": False, "manage": True},
-                    {"id": "id-manually-created", "readOnly": False, "hidePasswords": False, "manage": True},
+                    _user_collection(name="team-one", readOnly=False, manage=True),
+                    _user_collection(name="team-two", readOnly=False, manage=True),
+                    _user_collection(name="manually-created", readOnly=False, manage=True)
                 ],
             },
         )
@@ -235,7 +236,7 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
         rsps.add(
             status=400,
             content_type="application/json",
-            method=responses.PUT,
+            method=rsps.PUT,
             url=f"https://api.bitwarden.eu/public/members/{member_id}",
             json={"error": "error"},
         )
@@ -249,7 +250,7 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
         rsps.add(
             status=200,
             content_type="application/json",
-            method="GET",
+            method=rsps.GET,
             url="https://api.bitwarden.eu/public/collections",
             json={
                 "data": [
@@ -1569,15 +1570,7 @@ def _collection_object_with_empty_external_id(name: str, groups: List[Dict[str, 
         "groups": groups,
     }
 
-def _user_collection_object_with_base64_encoded_external_id(name: str, readOnly: bool = True, hidePasswords: bool = False, manage: bool = False) -> Dict[str, Any]:
-    return {
-        "id": _collection_id(name),
-        "readOnly": readOnly,
-        "hidePasswords": hidePasswords,
-        "manage": manage
-    }
-
-def _user_collection_object_with_empty_external_id(name: str, readOnly: bool = True, hidePasswords: bool = False, manage: bool = False) -> Dict[str, Any]:
+def _user_collection(name: str, readOnly: bool = True, hidePasswords: bool = False, manage: bool = False) -> Dict[str, Any]:
     return {
         "id": _collection_id(name),
         "readOnly": readOnly,
