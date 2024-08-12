@@ -212,7 +212,9 @@ class BitwardenPublicApi:
         bw_user_collections = self.__get_user_collections(bw_user.get("collections"))
         for bw_user_collection in bw_user_collections:
             if self.__collection_manually_created(bw_user_collection["id"]):
-                assign_collections.append(next(item for item in bw_user.get("collections") if item["id"] == bw_user_collection["id"]))
+                assign_collections.append(
+                    next(item for item in bw_user.get("collections") if item["id"] == bw_user_collection["id"])
+                )
 
         response = session.put(
             f"{API_URL}/members/{bw_user['id']}",

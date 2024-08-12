@@ -17,7 +17,7 @@ MOCKED_GET_MEMBERS = responses.Response(
     method=responses.GET,
     url="https://api.bitwarden.eu/public/members",
     body=open("tests/bitwarden_manager/resources/get_members.json").read(),
-    #body=open("../resources/get_members.json").read(),
+    # body=open("../resources/get_members.json").read(),
 )
 
 
@@ -40,6 +40,7 @@ def test_get_user_by_email() -> None:
         with pytest.raises(Exception, match=r"No user with email .* found"):
             client.get_user_by_email(email="does.not.exist@example.com")
 
+
 def test_get_user_collections_returns_empty_list_when_collections_are_none() -> None:
     client = BitwardenPublicApi(
         logger=logging.getLogger(),
@@ -50,6 +51,7 @@ def test_get_user_collections_returns_empty_list_when_collections_are_none() -> 
     result = client._BitwardenPublicApi__get_user_collections(None)
     assert result == []
 
+
 def test_get_user_collections_returns_collections_where_collections_exist() -> None:
     client = BitwardenPublicApi(
         logger=logging.getLogger(),
@@ -57,14 +59,11 @@ def test_get_user_collections_returns_collections_where_collections_exist() -> N
         client_secret="bar",
     )
 
-    user_colletions = [
-        _user_collection("manually-created"),
-        _user_collection("manager-created")
-    ]
+    user_colletions = [_user_collection("manually-created"), _user_collection("manager-created")]
 
     collections = [
         _collection_object_with_empty_external_id("manually-created"),
-        _collection_object_with_base64_encoded_external_id("manager-created")
+        _collection_object_with_base64_encoded_external_id("manager-created"),
     ]
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
@@ -80,6 +79,7 @@ def test_get_user_collections_returns_collections_where_collections_exist() -> N
         result = client._BitwardenPublicApi__get_user_collections(user_colletions)
         assert result == collections
 
+
 def test_get_user_collections_throws_exception_when_collections_dont_exist() -> None:
     client = BitwardenPublicApi(
         logger=logging.getLogger(),
@@ -87,9 +87,7 @@ def test_get_user_collections_throws_exception_when_collections_dont_exist() -> 
         client_secret="bar",
     )
 
-    user_collections = [
-        _user_collection("non-existent")
-    ]
+    user_collections = [_user_collection("non-existent")]
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(
@@ -101,6 +99,7 @@ def test_get_user_collections_throws_exception_when_collections_dont_exist() -> 
         client._BitwardenPublicApi__get_user_collections(None)
         with pytest.raises(Exception, match=r"Failed to get collection"):
             client._BitwardenPublicApi__get_user_collections(user_collections)
+
 
 def test_fetch_user_id_by_email() -> None:
     email = "test.user01@example.com"
@@ -192,9 +191,9 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
                         "resetPasswordEnrolled": False,
                         "permissions": None,
                         "collections": [
-                            _user_collection(name="team-one",  readOnly=False, manage=True),
+                            _user_collection(name="team-one", readOnly=False, manage=True),
                             _user_collection(name="team-two", readOnly=False, manage=True),
-                            _user_collection(name="manually-created", readOnly=False, manage=True)
+                            _user_collection(name="manually-created", readOnly=False, manage=True),
                         ],
                         # "groups": [],
                     }
@@ -215,7 +214,7 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
                 "collections": [
                     _user_collection(name="team-one", readOnly=False, manage=True),
                     _user_collection(name="team-two", readOnly=False, manage=True),
-                    _user_collection(name="manually-created", readOnly=False, manage=True)
+                    _user_collection(name="manually-created", readOnly=False, manage=True),
                 ],
             },
         )
@@ -1562,6 +1561,7 @@ def _collection_object_with_unencoded_external_id(name: str, groups: List[Dict[s
         "groups": groups,
     }
 
+
 def _collection_object_with_empty_external_id(name: str, groups: List[Dict[str, Any]] = []) -> Dict[str, Any]:
     return {
         "externalId": "",
@@ -1570,10 +1570,8 @@ def _collection_object_with_empty_external_id(name: str, groups: List[Dict[str, 
         "groups": groups,
     }
 
-def _user_collection(name: str, readOnly: bool = True, hidePasswords: bool = False, manage: bool = False) -> Dict[str, Any]:
-    return {
-        "id": _collection_id(name),
-        "readOnly": readOnly,
-        "hidePasswords": hidePasswords,
-        "manage": manage
-    }
+
+def _user_collection(
+    name: str, readOnly: bool = True, hidePasswords: bool = False, manage: bool = False
+) -> Dict[str, Any]:
+    return {"id": _collection_id(name), "readOnly": readOnly, "hidePasswords": hidePasswords, "manage": manage}
