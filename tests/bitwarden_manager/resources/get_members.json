@@ -24,7 +24,18 @@
         "email": "test.user02@example.com",
         "twoFactorEnabled": true,
         "status": 2,
-        "collections": null,
+        "collections": [{
+            "id": "id-manager-created",
+            "readOnly": true,
+            "hidePasswords": false,
+            "manage": false
+          },
+        {
+          "id": "id-manually-created",
+          "readOnly": false,
+          "hidePasswords": false,
+          "manage": true
+        }],
         "type": 2,
         "accessAll": false,
         "externalId": "test.user02",

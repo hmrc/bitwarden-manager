@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION
 
-FROM python:${PYTHON_VERSION}-slim AS base
+FROM --platform=linux/amd64 python:${PYTHON_VERSION}-slim AS base
 
 WORKDIR /build
 
