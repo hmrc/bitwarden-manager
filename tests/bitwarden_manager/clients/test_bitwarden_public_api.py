@@ -48,7 +48,7 @@ def test_get_user_collections_returns_empty_list_when_collections_are_none() -> 
         client_secret="bar",
     )
 
-    result = client._BitwardenPublicApi__get_user_collections(None) # type: ignore
+    result = client._BitwardenPublicApi__get_user_collections(None)  # type: ignore
     assert result == []
 
 
@@ -76,7 +76,7 @@ def test_get_user_collections_returns_collections_where_collections_exist() -> N
                 json=collection,
             )
 
-        result = client._BitwardenPublicApi__get_user_collections(user_colletions) # type: ignore
+        result = client._BitwardenPublicApi__get_user_collections(user_colletions)  # type: ignore
         assert result == collections
 
 
@@ -96,9 +96,9 @@ def test_get_user_collections_throws_exception_when_collections_dont_exist() -> 
             status=404,
         )
 
-        client._BitwardenPublicApi__get_user_collections(None) # type: ignore
+        client._BitwardenPublicApi__get_user_collections(None)  # type: ignore
         with pytest.raises(Exception, match=r"Failed to get collection"):
-            client._BitwardenPublicApi__get_user_collections(user_collections) # type: ignore
+            client._BitwardenPublicApi__get_user_collections(user_collections)  # type: ignore
 
 
 def test_fetch_user_id_by_email() -> None:
