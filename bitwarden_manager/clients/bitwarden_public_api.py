@@ -28,11 +28,11 @@ class BitwardenPublicApi:
     def external_id_base64_encoded(id: str) -> str:
         return base64.b64encode(id.encode()).decode("utf-8")
 
-    def __get_user_collections(self, user_collections: Optional[List[Dict]]) -> List[Dict]:
+    def __get_user_collections(self, user_collections: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         if user_collections is None:
             return []
 
-        collections: List[Dict] = []
+        collections: List[Dict[str, Any]] = []
         for collection in user_collections:
             response = session.get(f"{API_URL}/collections/{collection.get("id")}")
             try:
@@ -209,11 +209,11 @@ class BitwardenPublicApi:
             return
 
         bw_user = self.get_user_by_email(email=str(user.email))
-        bw_user_collections = self.__get_user_collections(bw_user.get("collections"))
+        bw_user_collections = self.__get_user_collections(bw_user.get("collections", []))
         for bw_user_collection in bw_user_collections:
             if self.__collection_manually_created(bw_user_collection["id"]):
                 assign_collections.append(
-                    next(item for item in bw_user.get("collections") if item["id"] == bw_user_collection["id"])
+                    next(item for item in bw_user.get("collections", []) if item["id"] == bw_user_collection["id"])
                 )
 
         response = session.put(
