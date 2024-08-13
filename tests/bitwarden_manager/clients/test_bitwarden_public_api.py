@@ -17,6 +17,7 @@ MOCKED_GET_MEMBERS = responses.Response(
     method=responses.GET,
     url="https://api.bitwarden.eu/public/members",
     body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+    # body=open("../resources/get_members.json").read(),
 )
 
 
@@ -38,6 +39,66 @@ def test_get_user_by_email() -> None:
 
         with pytest.raises(Exception, match=r"No user with email .* found"):
             client.get_user_by_email(email="does.not.exist@example.com")
+
+
+def test_get_user_collections_returns_empty_list_when_collections_are_none() -> None:
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+
+    result = client._BitwardenPublicApi__get_user_collections(None)  # type: ignore
+    assert result == []
+
+
+def test_get_user_collections_returns_collections_where_collections_exist() -> None:
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+
+    user_colletions = [_user_collection("manually-created"), _user_collection("manager-created")]
+
+    collections = [
+        _collection_object_with_empty_external_id("manually-created"),
+        _collection_object_with_base64_encoded_external_id("manager-created"),
+    ]
+
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        for collection in collections:
+            rsps.add(
+                status=200,
+                content_type="application/json",
+                method=rsps.GET,
+                url=f"https://api.bitwarden.eu/public/collections/{collection["id"]}",
+                json=collection,
+            )
+
+        result = client._BitwardenPublicApi__get_user_collections(user_colletions)  # type: ignore
+        assert result == collections
+
+
+def test_get_user_collections_throws_exception_when_collections_dont_exist() -> None:
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+
+    user_collections = [_user_collection("non-existent")]
+
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            rsps.GET,
+            f"https://api.bitwarden.eu/public/collections/{user_collections[0]["id"]}",
+            status=404,
+        )
+
+        client._BitwardenPublicApi__get_user_collections(None)  # type: ignore
+        with pytest.raises(Exception, match=r"Failed to get collection"):
+            client._BitwardenPublicApi__get_user_collections(user_collections)  # type: ignore
 
 
 def test_fetch_user_id_by_email() -> None:
@@ -84,25 +145,43 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
         email="test.user02@example.com",
         roles_by_team={"team-one": "team_admin", "team-two": "all_team_admin"},
     )
+    user_collections = [
+        _collection_object_with_empty_external_id("manually-created", groups=[]),
+        _collection_object_with_base64_encoded_external_id("manager-created", groups=[]),
+    ]
+
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_GET_MEMBERS)
+
         rsps.add(
             status=200,
             content_type="application/json",
-            method="GET",
+            method=rsps.GET,
             url="https://api.bitwarden.eu/public/collections",
             json={
                 "data": [
                     _collection_object_with_base64_encoded_external_id("team-one", groups=[]),
                     _collection_object_with_base64_encoded_external_id("team-two", groups=[]),
+                    _collection_object_with_base64_encoded_external_id("manager-created", groups=[]),
+                    _collection_object_with_empty_external_id("manually-created", groups=[]),
                 ]
             },
         )
+
+        for collection in user_collections:
+            rsps.add(
+                status=200,
+                content_type="application/json",
+                method=rsps.GET,
+                url=f"https://api.bitwarden.eu/public/collections/{collection["id"]}",
+                json=collection,
+            )
+
         rsps.add(
             status=200,
             content_type="application/json",
-            method=responses.PUT,
+            method=rsps.PUT,
             url=f"https://api.bitwarden.eu/public/members/{member_id}",
             match=[
                 matchers.json_params_matcher(
@@ -112,8 +191,9 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
                         "resetPasswordEnrolled": False,
                         "permissions": None,
                         "collections": [
-                            {"id": "id-team-one", "readOnly": False, "hidePasswords": False, "manage": True},
-                            {"id": "id-team-two", "readOnly": False, "hidePasswords": False, "manage": True},
+                            _user_collection(name="team-one", readOnly=False, manage=True),
+                            _user_collection(name="team-two", readOnly=False, manage=True),
+                            _user_collection(name="manually-created", readOnly=False, manage=True),
                         ],
                         # "groups": [],
                     }
@@ -131,7 +211,11 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
                 "email": user.email,
                 "twoFactorEnabled": True,
                 "status": 0,
-                "collections": [],
+                "collections": [
+                    _user_collection(name="team-one", readOnly=False, manage=True),
+                    _user_collection(name="team-two", readOnly=False, manage=True),
+                    _user_collection(name="manually-created", readOnly=False, manage=True),
+                ],
             },
         )
 
@@ -151,7 +235,7 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
         rsps.add(
             status=400,
             content_type="application/json",
-            method=responses.PUT,
+            method=rsps.PUT,
             url=f"https://api.bitwarden.eu/public/members/{member_id}",
             json={"error": "error"},
         )
@@ -165,7 +249,7 @@ def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None
         rsps.add(
             status=200,
             content_type="application/json",
-            method="GET",
+            method=rsps.GET,
             url="https://api.bitwarden.eu/public/collections",
             json={
                 "data": [
@@ -1476,3 +1560,18 @@ def _collection_object_with_unencoded_external_id(name: str, groups: List[Dict[s
         "id": _collection_id(name),
         "groups": groups,
     }
+
+
+def _collection_object_with_empty_external_id(name: str, groups: List[Dict[str, Any]] = []) -> Dict[str, Any]:
+    return {
+        "externalId": "",
+        "object": "collection",
+        "id": _collection_id(name),
+        "groups": groups,
+    }
+
+
+def _user_collection(
+    name: str, readOnly: bool = True, hidePasswords: bool = False, manage: bool = False
+) -> Dict[str, Any]:
+    return {"id": _collection_id(name), "readOnly": readOnly, "hidePasswords": hidePasswords, "manage": manage}

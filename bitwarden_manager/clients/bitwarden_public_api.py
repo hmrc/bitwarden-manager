@@ -1,6 +1,6 @@
 import base64
 from logging import Logger
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from requests import HTTPError, Session
 
@@ -16,6 +16,9 @@ session = Session()
 
 
 class BitwardenPublicApi:
+
+    bitwarden_access_token = None
+
     def __init__(self, logger: Logger, client_id: str, client_secret: str) -> None:
         self.__logger = logger
         self.__client_secret = client_secret
@@ -24,6 +27,21 @@ class BitwardenPublicApi:
     @staticmethod
     def external_id_base64_encoded(id: str) -> str:
         return base64.b64encode(id.encode()).decode("utf-8")
+
+    def __get_user_collections(self, user_collections: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+        if user_collections is None:
+            return []
+
+        collections: List[Dict[str, Any]] = []
+        for collection in user_collections:
+            response = session.get(f"{API_URL}/collections/{collection.get("id")}")
+            try:
+                response.raise_for_status()
+            except HTTPError as error:
+                raise Exception("Failed to get collection", response.content, error) from error
+            collections.append(response.json())
+
+        return collections
 
     def __get_user_groups(self, user_id: str) -> List[str]:
         response = session.get(f"{API_URL}/members/{user_id}/group-ids")
@@ -62,6 +80,15 @@ class BitwardenPublicApi:
         else:
             raise Exception(f"No user with external_id {external_id} found")
 
+    def get_users(self) -> List[Dict[str, Any]]:
+        response = session.get(f"{API_URL}/members", timeout=REQUEST_TIMEOUT_SECONDS)
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to retrieve users", response.content, error) from error
+        response_json: Dict[str, Any] = response.json()
+        return list(response_json.get("data", []))
+
     def fetch_user_id_by_email(self, email: str) -> str:
         return str(self.get_user_by_email(email=email)["id"])
 
@@ -69,25 +96,26 @@ class BitwardenPublicApi:
         return str(self.get_user_by_external_id(external_id=external_id)["id"])
 
     def __fetch_token(self) -> str:
-        response = session.post(
-            LOGIN_URL,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
-                "grant_type": "client_credentials",
-                "scope": "api.organization",
-                "client_id": self.__client_id,
-                "client_secret": self.__client_secret,
-            },
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
-        try:
-            response.raise_for_status()
-        except HTTPError as error:
-            raise Exception(f"Failed to authenticate with {LOGIN_URL}, creds incorrect?", error) from error
-        response_json: Dict[str, str] = response.json()
-        access_token = response_json["access_token"]
-        session.headers.update({"Authorization": f"Bearer {access_token}"})
-        return access_token
+        if self.bitwarden_access_token is None:
+            response = session.post(
+                LOGIN_URL,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "grant_type": "client_credentials",
+                    "scope": "api.organization",
+                    "client_id": self.__client_id,
+                    "client_secret": self.__client_secret,
+                },
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            try:
+                response.raise_for_status()
+            except HTTPError as error:
+                raise Exception(f"Failed to authenticate with {LOGIN_URL}, creds incorrect?", error) from error
+            response_json: Dict[str, str] = response.json()
+            self.bitwarden_access_token = response_json["access_token"]
+        session.headers.update({"Authorization": f"Bearer {self.bitwarden_access_token}"})
+        return self.bitwarden_access_token
 
     def __get_collection(self, collection_id: str) -> Dict[str, Any]:
         response = session.get(f"{API_URL}/collections/{collection_id}")
@@ -113,15 +141,6 @@ class BitwardenPublicApi:
             return list(response_json.get("data", []))
         except HTTPError as error:
             raise Exception("Failed to list collections", response.content, error) from error
-
-    def get_users(self) -> List[Dict[str, Any]]:
-        response = session.get(f"{API_URL}/members", timeout=REQUEST_TIMEOUT_SECONDS)
-        try:
-            response.raise_for_status()
-        except HTTPError as error:
-            raise Exception("Failed to retrieve users", response.content, error) from error
-        response_json: Dict[str, Any] = response.json()
-        return list(response_json.get("data", []))
 
     def get_pending_users(self) -> List[Dict[str, Any]]:
         self.__fetch_token()
@@ -169,16 +188,14 @@ class BitwardenPublicApi:
             raise Exception(f"Failed to reinvite {username}", response.content, error) from error
 
     def grant_can_manage_permission_to_team_collections(self, user: UmpUser, teams: List[str]) -> None:
-
         collections = self.list_existing_collections(teams=teams)
-
-        permissions = []
+        assign_collections = []
         _can_manage_collections = []
         for key, value in collections.items():
             if value["id"] == "duplicate":
                 raise Exception(f"Duplicate collection found - {key}")
             if user.can_manage_team_collection(team=key):
-                permissions.append(
+                assign_collections.append(
                     {
                         "id": value["id"],
                         "readOnly": False,
@@ -188,10 +205,17 @@ class BitwardenPublicApi:
                 )
                 _can_manage_collections.append(key)
 
-        if len(permissions) == 0:
+        if len(assign_collections) == 0:
             return
 
         bw_user = self.get_user_by_email(email=str(user.email))
+        bw_user_collections = self.__get_user_collections(bw_user.get("collections", []))
+        for bw_user_collection in bw_user_collections:
+            if self.__collection_manually_created(bw_user_collection["id"]):
+                assign_collections.append(
+                    next(item for item in bw_user.get("collections", []) if item["id"] == bw_user_collection["id"])
+                )
+
         response = session.put(
             f"{API_URL}/members/{bw_user['id']}",
             json={
@@ -199,7 +223,7 @@ class BitwardenPublicApi:
                 "externalId": bw_user["externalId"],
                 "resetPasswordEnrolled": bw_user["resetPasswordEnrolled"],
                 "permissions": bw_user["permissions"],
-                "collections": permissions,
+                "collections": assign_collections,
             },
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
