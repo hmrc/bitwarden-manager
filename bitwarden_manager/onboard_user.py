@@ -52,16 +52,22 @@ class OnboardUser:
         user = UmpUser(username=event["username"], email=event["email"], roles_by_team=roles_by_team)
         user_id = self.bitwarden_api.invite_user(user=user)
         date = datetime.today().strftime("%Y-%m-%d")
+
+        record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": user.username})
+        if record:
+            self.dynamodb_client.delete_item_from_table(table_name="bitwarden", key={"username": user.username})
+
         self.dynamodb_client.write_item_to_table(
             table_name="bitwarden", item={"username": user.username, "invite_date": date, "reinvites": 0}
         )
+
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
         existing_collections = self.bitwarden_api.list_existing_collections(teams)
         self.bitwarden_vault_client.create_collections(
             GroupsAndCollections.missing_collection_names(teams, existing_collections)
         )
-        collections = self.bitwarden_api.list_existing_collections(teams)
 
+        collections = self.bitwarden_api.list_existing_collections(teams)
         managed_group_ids = self.bitwarden_api.collate_user_group_ids(
             teams=teams,
             groups=existing_groups,

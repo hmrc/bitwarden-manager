@@ -1,7 +1,7 @@
 from logging import Logger
 from typing import Dict, Any, List
 from urllib.parse import quote
-from requests import get, post, HTTPError
+from requests import get, post, HTTPError, Timeout
 
 REQUEST_TIMEOUT_SECONDS = 5
 
@@ -46,24 +46,29 @@ class UserManagementApi:
 
     def get_user_role_by_team(self, username: str, team: str) -> str:
         bearer = self.__fetch_token()
-        response = get(
-            f"{API_URL}/organisations/teams/{quote(team)}/members",
-            headers={
-                "Token": bearer,
-                "requester": self.__client_id,
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-            timeout=REQUEST_TIMEOUT_SECONDS,
-        )
         try:
+            response = get(
+                f"{API_URL}/organisations/teams/{quote(team)}/members",
+                headers={
+                    "Token": bearer,
+                    "requester": self.__client_id,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+
             response.raise_for_status()
         except HTTPError as e:
             raise Exception(f"Failed to get team members of {team}", response.content, e) from e
+        except Timeout:
+            raise Exception(f"Failed to get team members of {team} for {username} before the timeout")
+
         response_json: Dict[str, Any] = response.json()
         roles: List[str] = [m["role"] for m in response_json.get("members", []) if m["username"] == username]
         if len(roles) == 0:
             raise Exception(f"{username} is not a member of {team}")
+
         return roles[0]
 
     def get_teams(self) -> List[str]:

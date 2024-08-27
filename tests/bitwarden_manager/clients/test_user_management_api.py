@@ -2,6 +2,7 @@ import logging
 
 import pytest
 import responses
+from requests.exceptions import ConnectTimeout
 from _pytest.logging import LogCaptureFixture
 from urllib.parse import quote
 
@@ -189,6 +190,38 @@ def test_get_user_role_by_team() -> None:
 
         with pytest.raises(Exception, match=f"Failed to get team members of {team}"):
             client.get_user_role_by_team("john.doe", team)
+
+
+@responses.activate
+def test_get_user_role_by_team_timeout() -> None:
+    team = "fake team"
+    user = "fake.user"
+
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.post(
+            url=AUTH_URL,
+            status=200,
+            json={
+                "Token": "TEST_BEARER_TOKEN",
+                "uid": "user.name",
+            },
+        )
+
+        rsps.add(
+            content_type="application/json",
+            method=responses.GET,
+            url=f"{API_URL}/organisations/teams/{quote(team)}/members",
+            body=ConnectTimeout(),
+        )
+
+        client = UserManagementApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        with pytest.raises(Exception, match=f"Failed to get team members of {team} for {user} before the timeout"):
+            client.get_user_role_by_team(user, team)
 
 
 def test_get_teams() -> None:
