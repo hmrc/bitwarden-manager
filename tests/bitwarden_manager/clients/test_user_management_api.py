@@ -192,6 +192,7 @@ def test_get_user_role_by_team() -> None:
         with pytest.raises(Exception, match=f"Failed to get team members of {team}"):
             client.get_user_role_by_team("john.doe", team)
 
+
 @responses.activate
 def test_get_user_role_by_team_timeout() -> None:
     team = "fake team"

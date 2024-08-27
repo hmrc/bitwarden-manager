@@ -53,12 +53,9 @@ class OnboardUser:
         user_id = self.bitwarden_api.invite_user(user=user)
         date = datetime.today().strftime("%Y-%m-%d")
 
-        record = self.dynamodb_client.get_item_from_table(
-            table_name="bitwarden",
-            key={"username": user.username}
-        )
+        record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": user.username})
         if record:
-            self.dynamodb_client.delete_item_from_table(table_name="bitwarden", key={ "username": user.username })
+            self.dynamodb_client.delete_item_from_table(table_name="bitwarden", key={"username": user.username})
 
         self.dynamodb_client.write_item_to_table(
             table_name="bitwarden", item={"username": user.username, "invite_date": date, "reinvites": 0}

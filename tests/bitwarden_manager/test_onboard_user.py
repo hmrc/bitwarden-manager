@@ -98,6 +98,7 @@ def test_onboard_user_writes_invite_date_to_db() -> None:
         table_name="bitwarden", item={"username": event.get("username"), "invite_date": date, "reinvites": 0}
     )
 
+
 def test_onboard_user_deletes_record_if_exists() -> None:
     event = {
         "event_name": "new_user",
@@ -121,5 +122,5 @@ def test_onboard_user_deletes_record_if_exists() -> None:
     ).run(event)
 
     mock_client_dynamodb.delete_item_from_table.assert_called_with(
-        table_name="bitwarden", key={ "username": event.get("username") }
+        table_name="bitwarden", key={"username": event.get("username")}
     )
