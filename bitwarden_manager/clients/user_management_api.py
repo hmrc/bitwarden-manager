@@ -57,13 +57,12 @@ class UserManagementApi:
                 },
                 timeout=REQUEST_TIMEOUT_SECONDS,
             )
-        except Timeout:
-            raise Exception(f"Failed to get team members of {team} for {username} before the timeout")
 
-        try:
             response.raise_for_status()
         except HTTPError as e:
             raise Exception(f"Failed to get team members of {team}", response.content, e) from e
+        except Timeout:
+            raise Exception(f"Failed to get team members of {team} for {username} before the timeout")
 
         response_json: Dict[str, Any] = response.json()
         roles: List[str] = [m["role"] for m in response_json.get("members", []) if m["username"] == username]
