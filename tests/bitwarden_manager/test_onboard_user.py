@@ -35,7 +35,7 @@ def test_onboard_user_invites_user_to_org() -> None:
     ).run(event)
 
     mock_client_bitwarden.invite_user.assert_called_with(
-        user=UmpUser(username=event.get("username"), email=event.get("email"), roles_by_team={"team-one": "user"})
+        user=UmpUser(username="test.user", email="testemail@example.com", roles_by_team={"team-one": "user"})
     )
 
 
@@ -95,7 +95,7 @@ def test_onboard_user_writes_invite_date_to_db() -> None:
 
     date = datetime.today().strftime("%Y-%m-%d")
     mock_client_dynamodb.write_item_to_table.assert_called_with(
-        table_name="bitwarden", item={"username": event.get("username"), "invite_date": date, "reinvites": 0}
+        table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0}
     )
 
 
