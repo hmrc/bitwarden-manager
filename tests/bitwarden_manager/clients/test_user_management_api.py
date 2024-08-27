@@ -1,13 +1,12 @@
 import logging
-import time
 
 import pytest
 import responses
-from requests.exceptions import ConnectTimeout, Timeout
+from requests.exceptions import ConnectTimeout
 from _pytest.logging import LogCaptureFixture
 from urllib.parse import quote
 
-from bitwarden_manager.clients.user_management_api import UserManagementApi, REQUEST_TIMEOUT_SECONDS
+from bitwarden_manager.clients.user_management_api import UserManagementApi
 
 API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
 AUTH_URL = "https://user-management-auth-production.tools.tax.service.gov.uk/v1/login"
