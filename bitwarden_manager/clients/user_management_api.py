@@ -3,7 +3,9 @@ from typing import Dict, Any, List
 from urllib.parse import quote
 from requests import get, post, HTTPError, Timeout
 
-REQUEST_TIMEOUT_SECONDS = 5
+# High timeout to handle large team
+# Main lambda timeout at 120 seconds
+REQUEST_TIMEOUT_SECONDS = 30
 
 API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
 AUTH_URL = "https://user-management-auth-production.tools.tax.service.gov.uk/v1/login"
