@@ -16,7 +16,7 @@ onboard_user_event_schema = {
         "event_name": {
             "type": "string",
             "description": "name of the current event",
-            "pattern": "new_user",
+            "const": "new_user",
         },
         "username": {"type": "string", "description": "the users ldap username"},
         "email": {
@@ -27,8 +27,8 @@ onboard_user_event_schema = {
         "service_name": {
             "type": "string",
             "description": "name of the service which invoked the event",
-            "enum": ["all", "bitwarden"]
-        }
+            "enum": ["all", "bitwarden"],
+        },
     },
     "required": ["event_name", "username", "email"],
 }
