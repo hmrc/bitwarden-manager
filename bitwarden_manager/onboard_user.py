@@ -24,6 +24,11 @@ onboard_user_event_schema = {
             "pattern": "^(.+)@(.+)$",
             "description": "The users full work email address",
         },
+        "service_name": {
+            "type": "string",
+            "description": "name of the service which invoked the event",
+            "enum": ["all", "bitwarden"]
+        }
     },
     "required": ["event_name", "username", "email"],
 }

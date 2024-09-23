@@ -15,6 +15,11 @@ offboard_user_event_schema = {
             "pattern": "remove_user",
         },
         "username": {"type": "string", "description": "the users ldap username"},
+        "service_name": {
+            "type": "string",
+            "description": "name of the service which invoked the event",
+            "enum": ["all", "bitwarden"]
+        },
     },
     "required": ["event_name", "username"],
 }
