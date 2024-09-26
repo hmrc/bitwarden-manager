@@ -20,6 +20,7 @@ from bitwarden_manager.temp.list_collection_items import ListCollectionItems
 from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
 from bitwarden_manager.temp.update_collection_external_ids import UpdateCollectionExternalIds
 from bitwarden_manager.update_user_groups import UpdateUserGroups
+from bitwarden_manager.check_user_details import CheckUserDetails
 
 
 class BitwardenManager:
@@ -40,7 +41,12 @@ class BitwardenManager:
             self._run(event=event)
 
     def _run(self, event: Dict[str, Any]) -> None:
-        event_name = event["event_name"]
+
+        if (event.get("event_name") is not None) and ("event_name" in event):
+            event_name = event["event_name"]
+        else:
+            event_name = event["path"].replace("/", " ").replace("?", " ").replace("-", "_").split()[-1]
+
         self.__logger.debug("%s", event)
         bitwarden_vault_client = self._get_bitwarden_vault_client()
         try:
@@ -69,6 +75,11 @@ class BitwardenManager:
                     self.__logger.debug("handling event with ConfirmUser")
                     ConfirmUser(
                         bitwarden_vault_client=bitwarden_vault_client, allowed_domains=self._get_allowed_email_domains()
+                    ).run(event=event)
+                case "check_user":
+                    self.__logger.debug("handling event with CheckUserDetails")
+                    CheckUserDetails(
+                        bitwarden_api=self._get_bitwarden_public_api(), bitwarden_vault_client=bitwarden_vault_client
                     ).run(event=event)
                 case "remove_user":
                     self.__logger.debug("handling event with OffboardUser")

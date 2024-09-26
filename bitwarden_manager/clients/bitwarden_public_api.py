@@ -72,6 +72,14 @@ class BitwardenPublicApi:
         else:
             raise Exception(f"No user with email {email} found")
 
+    def get_user_by_username(self, username: str) -> Dict[str, Any]:
+        self.__fetch_token()
+        for user in self.get_users():
+            if username and username in user.get("email", ""):
+                return user
+        else:
+            raise Exception(f"No user with username {username} found")
+
     def get_user_by_external_id(self, external_id: str) -> Dict[str, Any]:
         self.__fetch_token()
         for user in self.get_users():

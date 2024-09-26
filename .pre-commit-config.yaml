@@ -1,6 +1,6 @@
 repos:
     - repo: https://github.com/hmrc/security-git-hooks
-      rev: release/1.9.0
+      rev: release/1.11.0
       hooks:
           - id: secrets_filecontent
             name: Checking staged files for sensitive content
@@ -16,7 +16,7 @@ repos:
       #     name: Checking local hooks against latest release
       #     verbose: true
     - repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.4.0
+      rev: v4.6.0
       hooks:
           - id: end-of-file-fixer
           - id: trailing-whitespace
