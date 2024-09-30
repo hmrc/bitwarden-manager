@@ -41,12 +41,15 @@ class ReinviteUsers:
                 inv_date = record.get("invite_date", "")
                 invite_date = datetime.strptime(inv_date, "%Y-%m-%d")
                 reinvites = record.get("reinvites", 0)
+                total_invites = (record.get("total_invites", 1)) + 1
                 days = MAX_INVITE_DURATION_IN_DAYS * (reinvites + 1)
                 date = datetime.today() - timedelta(days=days)
                 if invite_date < date and reinvites < MAX_REINVITES:
                     self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
                     reinvites += 1
-                    self.dynamodb_client.update_item_in_table(table_name="bitwarden", key=key, reinvites=reinvites)
+                    self.dynamodb_client.update_item_in_table(
+                        table_name="bitwarden", key=key, reinvites=reinvites, total_invites=total_invites
+                    )
                 elif invite_date < date:
                     self.bitwarden_api.remove_user(username=username)
             else:

@@ -155,7 +155,12 @@ def test_reinvite_pending_users_already_reinvited_max_reinvite_times_but_not_yet
     )
 
     mock_client_dynamodb.get_item_from_table = MagicMock(
-        return_value={"username": "test.user02", "invite_date": date_str, "reinvites": MAX_REINVITES}
+        return_value={
+            "username": "test.user02",
+            "invite_date": date_str,
+            "reinvites": MAX_REINVITES,
+            "total_invites": 1,
+        }
     )
 
     ReinviteUsers(
