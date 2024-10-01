@@ -34,7 +34,7 @@ class BitwardenPublicApi:
 
         collections: List[Dict[str, Any]] = []
         for collection in user_collections:
-            response = session.get(f"{API_URL}/collections/{collection.get("id")}")
+            response = session.get(f"{API_URL}/collections/{collection.get('id')}")
             try:
                 response.raise_for_status()
             except HTTPError as error:

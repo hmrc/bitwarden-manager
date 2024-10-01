@@ -1,8 +1,8 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from jsonschema.exceptions import ValidationError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from freezegun import freeze_time
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
@@ -221,3 +221,70 @@ def test_reinvite_pending_users_not_in_dynamodb() -> None:
 
     mock_client_dynamodb.get_item_from_table.assert_called_with(table_name="bitwarden", key={"username": "test.user02"})
     assert not mock_client_bitwarden.reinvite_user.called
+
+
+
+@pytest.mark.parametrize(
+    "invite_date,today,reinvites,expected", 
+    [
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 0, False), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 0, False), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 12, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 15, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 0, True), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 20, tzinfo=timezone.utc), 0, True),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 1, False), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 1, False), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 12, tzinfo=timezone.utc), 1, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 15, tzinfo=timezone.utc), 1, False),
+        
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 1, True), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 20, tzinfo=timezone.utc), 1, True),  
+    ]  
+)
+def test_has_invite_expired(invite_date: datetime, today: datetime,reinvites: int, expected: bool) -> None:
+     assert expected == ReinviteUsers(
+        bitwarden_api=Mock(),
+        dynamodb_client=Mock(),
+    ).has_invite_expired(invite_date=invite_date, today=today, reinvites=reinvites)
+
+# if invite_date < date and reinvites < MAX_REINVITES:
+@pytest.mark.parametrize(
+    "invite_date,today,reinvites,expected", 
+    [
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 0, False), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 0, False), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 12, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 15, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 0, True), 
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 1, True),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 2, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 3, False),
+    ]  
+)
+def test_can_reinvite_user(invite_date: datetime,today: datetime,reinvites: int,expected: bool) -> None:
+    mock_client_dynamodb = MagicMock(spec=DynamodbClient)
+    mock_client_dynamodb.get_item_from_table = MagicMock(
+        return_value={"username": "test.user", "invite_date": "2024-04-10", "reinvites": 0, "total_invites": 0}
+    )
+    assert expected == ReinviteUsers(
+        bitwarden_api=Mock(),
+        dynamodb_client=mock_client_dynamodb,
+    ).can_reinvite_user(invite_date,today,reinvites)
+
+
+
+    # invite_date | date  | reinvite | max_reinvites | expected_outcome 
+    # t           | t - 5 | 0        | 5             | false
+    # t           | t - 2 | 0        | 5             | false
+    # t           | t - 1 | 0        | 5             | false
+    # t           | t     | 0        | 5             | false
+    # t           | t + 1 | 0        | 5             | true
+    # t           | t + 2 | 0        | 5             | true
+    # t           | t + 1 | 5        | 5             | false
+    # t           | t + 2 | 6        | 5             | false
+
+
+ 
+
+
