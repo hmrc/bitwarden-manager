@@ -55,7 +55,7 @@ class OnboardUser:
 
         record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": user.username})
         if record:
-            total_invites = (record.get("total_invites", 1)) + 1
+            total_invites = record.get("total_invites", 1) + 1
         else:
             total_invites = 1
 

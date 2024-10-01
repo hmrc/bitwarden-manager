@@ -175,7 +175,7 @@ def test_reinvite_pending_users_already_reinvited_max_reinvite_times_but_not_yet
 
 
 def test_reinvite_users_rejects_bad_events() -> None:
-    event = {"somthing?": 1}
+    event = {"something?": 1}
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
 
@@ -223,46 +223,44 @@ def test_reinvite_pending_users_not_in_dynamodb() -> None:
     assert not mock_client_bitwarden.reinvite_user.called
 
 
-
 @pytest.mark.parametrize(
-    "invite_date,today,reinvites,expected", 
+    "invite_date,today,reinvites,expected",
     [
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 0, False), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 0, False), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 12, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 0, False),
         (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 15, tzinfo=timezone.utc), 0, False),
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 0, True), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 20, tzinfo=timezone.utc), 0, True),
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 1, False), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 1, False), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 12, tzinfo=timezone.utc), 1, False),
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 15, tzinfo=timezone.utc), 1, False),
-        
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 1, True), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 20, tzinfo=timezone.utc), 1, True),  
-    ]  
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 0, True),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 20, tzinfo=timezone.utc), 1, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 21, tzinfo=timezone.utc), 1, True),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 25, tzinfo=timezone.utc), 2, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 26, tzinfo=timezone.utc), 2, True),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 30, tzinfo=timezone.utc), 3, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 5, 1, tzinfo=timezone.utc), 3, True),
+    ],
 )
-def test_has_invite_expired(invite_date: datetime, today: datetime,reinvites: int, expected: bool) -> None:
-     assert expected == ReinviteUsers(
+def test_has_invite_expired(invite_date: datetime, today: datetime, reinvites: int, expected: bool) -> None:
+    assert expected == ReinviteUsers(
         bitwarden_api=Mock(),
         dynamodb_client=Mock(),
     ).has_invite_expired(invite_date=invite_date, today=today, reinvites=reinvites)
 
-# if invite_date < date and reinvites < MAX_REINVITES:
+
 @pytest.mark.parametrize(
-    "invite_date,today,reinvites,expected", 
+    "invite_date,today,reinvites,expected",
     [
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 0, False), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 0, False), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 12, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 10, tzinfo=timezone.utc), 0, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 11, tzinfo=timezone.utc), 0, False),
         (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 15, tzinfo=timezone.utc), 0, False),
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 0, True), 
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 1, True),
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 2, False),
-        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 3, False),
-    ]  
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 16, tzinfo=timezone.utc), 0, True),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 20, tzinfo=timezone.utc), 1, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 21, tzinfo=timezone.utc), 1, True),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 25, tzinfo=timezone.utc), 2, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 26, tzinfo=timezone.utc), 2, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 4, 30, tzinfo=timezone.utc), 3, False),
+        (datetime(2024, 4, 10, tzinfo=timezone.utc), datetime(2024, 5, 1, tzinfo=timezone.utc), 3, False),
+    ],
 )
-def test_can_reinvite_user(invite_date: datetime,today: datetime,reinvites: int,expected: bool) -> None:
+def test_can_reinvite_user(invite_date: datetime, today: datetime, reinvites: int, expected: bool) -> None:
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
     mock_client_dynamodb.get_item_from_table = MagicMock(
         return_value={"username": "test.user", "invite_date": "2024-04-10", "reinvites": 0, "total_invites": 0}
@@ -270,21 +268,36 @@ def test_can_reinvite_user(invite_date: datetime,today: datetime,reinvites: int,
     assert expected == ReinviteUsers(
         bitwarden_api=Mock(),
         dynamodb_client=mock_client_dynamodb,
-    ).can_reinvite_user(invite_date,today,reinvites)
+    ).can_reinvite_user(invite_date, today, reinvites)
 
 
+def test_get_invite_date() -> None:
 
-    # invite_date | date  | reinvite | max_reinvites | expected_outcome 
-    # t           | t - 5 | 0        | 5             | false
-    # t           | t - 2 | 0        | 5             | false
-    # t           | t - 1 | 0        | 5             | false
-    # t           | t     | 0        | 5             | false
-    # t           | t + 1 | 0        | 5             | true
-    # t           | t + 2 | 0        | 5             | true
-    # t           | t + 1 | 5        | 5             | false
-    # t           | t + 2 | 6        | 5             | false
+    assert datetime(2024, 4, 10) == ReinviteUsers(
+        bitwarden_api=Mock(),
+        dynamodb_client=Mock(),
+    ).get_invite_date(record={"invite_date": "2024-04-10"})
 
-
- 
+    assert datetime(1970, 1, 1) == ReinviteUsers(
+        bitwarden_api=Mock(),
+        dynamodb_client=Mock(),
+    ).get_invite_date(record={})
 
 
+def test_reinvite_user() -> None:
+    mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
+    mock_client_dynamodb = MagicMock(spec=DynamodbClient)
+    username = "test.user"
+    key = {"username": username}
+    id = f"id-{username}"
+
+    ReinviteUsers(
+        bitwarden_api=mock_client_bitwarden,
+        dynamodb_client=mock_client_dynamodb,
+    ).reinvite_user(id=id, username=username, key=key, reinvites=1, total_invites=2)
+
+    mock_client_dynamodb.update_item_in_table.assert_called_with(
+        table_name="bitwarden", key=key, reinvites=2, total_invites=3
+    )
+
+    mock_client_bitwarden.reinvite_user(id=id, username=username)

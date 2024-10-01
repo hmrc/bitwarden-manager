@@ -40,7 +40,7 @@ def test_delete_item_from_table() -> None:
 
     table_name = "bitwarden"
     date = datetime.today().strftime("%Y-%m-%d")
-    item = {"username": "test.user", "date": date, "reinvites": 0}
+    item = {"username": "test.user", "date": date, "reinvites": 0, "total_invites": 1}
 
     dynamodb = boto3.resource("dynamodb", region_name="eu-west-2")
     create_table_in_local_region(dynamodb, table_name)
@@ -58,7 +58,7 @@ def test_get_item_from_table() -> None:
 
     table_name = "bitwarden"
     date = datetime.today().strftime("%Y-%m-%d")
-    item = {"username": "test.user", "date": date, "reinvites": 0}
+    item = {"username": "test.user", "date": date, "reinvites": 0, "total_invites": 1}
 
     dynamodb = boto3.resource("dynamodb", region_name="eu-west-2")
     create_table_in_local_region(dynamodb, table_name)
@@ -75,15 +75,15 @@ def test_update_item_in_table() -> None:
 
     table_name = "bitwarden"
     date = datetime.today().strftime("%Y-%m-%d")
-    item = {"username": "test.user", "date": date, "reinvites": 0}
-    updated_item = {"username": "test.user", "date": date, "reinvites": 1}
+    item = {"username": "test.user", "date": date, "reinvites": 0, "total_invites": 1}
+    updated_item = {"username": "test.user", "date": date, "reinvites": 1, "total_invites": 2}
 
     dynamodb = boto3.resource("dynamodb", region_name="eu-west-2")
     create_table_in_local_region(dynamodb, table_name)
     table = dynamodb.Table(table_name)
     table.put_item(Item=item)
     key = {"username": "test.user"}
-    client.update_item_in_table(table_name=table_name, key=key, reinvites=1)
+    client.update_item_in_table(table_name=table_name, key=key, reinvites=1, total_invites=2)
     assert client.get_item_from_table(table_name=table_name, key=key) == updated_item
 
 
@@ -121,4 +121,4 @@ def test_failed_to_update_item_in_table() -> None:
     table_name = "bitwarden"
     key = {"username": "test.user"}
     with pytest.raises(Exception, match="Failed to update item in DynamoDB"):
-        client.update_item_in_table(table_name=table_name, key=key, reinvites=1)
+        client.update_item_in_table(table_name=table_name, key=key, reinvites=1, total_invites=2)

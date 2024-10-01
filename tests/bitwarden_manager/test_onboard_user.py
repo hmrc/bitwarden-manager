@@ -75,7 +75,7 @@ def test_onboard_user_rejects_bad_emails() -> None:
     assert not mock_client_bitwarden.invite_user.called
 
 
-def test_onboard_user_writes_invite_date_to_db() -> None:
+def test_onboard_user_writes_invite_date_to_db_for_previously_invited_user() -> None:
     event = {
         "event_name": "new_user",
         "username": "test.user",
@@ -86,8 +86,38 @@ def test_onboard_user_writes_invite_date_to_db() -> None:
     mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
     mock_client_dynamodb.get_item_from_table = MagicMock(
-        return_value={"username": event.get("username"), "invite_date": "2024-03-11", "reinvites": 0, "total_invites": 0}
+        return_value={
+            "username": event.get("username"),
+            "invite_date": "2024-03-11",
+            "reinvites": 2,
+            "total_invites": 3,
+        }
     )
+
+    OnboardUser(
+        bitwarden_api=mock_client_bitwarden,
+        user_management_api=mock_client_user_management,
+        bitwarden_vault_client=mock_client_bitwarden_vault,
+        dynamodb_client=mock_client_dynamodb,
+    ).run(event)
+
+    date = datetime.today().strftime("%Y-%m-%d")
+    mock_client_dynamodb.write_item_to_table.assert_called_with(
+        table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0, "total_invites": 4}
+    )
+
+
+def test_onboard_user_writes_invite_date_to_db_for_first_time_user_invite() -> None:
+    event = {
+        "event_name": "new_user",
+        "username": "test.user",
+        "email": "testemail@example.com",
+    }
+    mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
+    mock_client_user_management = MagicMock(spec=UserManagementApi)
+    mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
+    mock_client_dynamodb = MagicMock(spec=DynamodbClient)
+    mock_client_dynamodb.get_item_from_table = MagicMock(return_value={})
 
     OnboardUser(
         bitwarden_api=mock_client_bitwarden,
@@ -100,6 +130,7 @@ def test_onboard_user_writes_invite_date_to_db() -> None:
     mock_client_dynamodb.write_item_to_table.assert_called_with(
         table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0, "total_invites": 1}
     )
+
 
 @freeze_time("2024-03-11")
 def test_onboard_user_updates_record_if_exists() -> None:
@@ -114,7 +145,12 @@ def test_onboard_user_updates_record_if_exists() -> None:
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
 
     mock_client_dynamodb.get_item_from_table = MagicMock(
-        return_value={"username": event.get("username"), "invite_date": "2024-03-11", "reinvites": 0, "total_invites": 3}
+        return_value={
+            "username": event.get("username"),
+            "invite_date": "2024-03-11",
+            "reinvites": 0,
+            "total_invites": 3,
+        }
     )
 
     OnboardUser(
@@ -125,5 +161,6 @@ def test_onboard_user_updates_record_if_exists() -> None:
     ).run(event)
 
     mock_client_dynamodb.write_item_to_table.assert_called_with(
-        table_name="bitwarden", item={"username": event.get("username"), "invite_date": "2024-03-11", "reinvites": 0, "total_invites": 4}
+        table_name="bitwarden",
+        item={"username": event.get("username"), "invite_date": "2024-03-11", "reinvites": 0, "total_invites": 4},
     )
