@@ -55,10 +55,13 @@ class OnboardUser:
 
         record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": user.username})
         if record:
-            self.dynamodb_client.delete_item_from_table(table_name="bitwarden", key={"username": user.username})
+            total_invites = record.get("total_invites", 1) + 1
+        else:
+            total_invites = 1
 
         self.dynamodb_client.write_item_to_table(
-            table_name="bitwarden", item={"username": user.username, "invite_date": date, "reinvites": 0}
+            table_name="bitwarden",
+            item={"username": user.username, "invite_date": date, "reinvites": 0, "total_invites": total_invites},
         )
 
         existing_groups = self.bitwarden_api.list_existing_groups(teams)

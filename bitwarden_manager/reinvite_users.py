@@ -19,6 +19,7 @@ reinvite_users_event_schema = {
 MAX_REINVITES = 2
 # Bitwarden invites expire after 5 days
 MAX_INVITE_DURATION_IN_DAYS = 5
+EPOCH_DATE = "1970-01-01"
 
 
 class ReinviteUsers:
@@ -38,16 +39,42 @@ class ReinviteUsers:
             key = {"username": username}
             record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key=key)
             if record:
-                inv_date = record.get("invite_date", "")
-                invite_date = datetime.strptime(inv_date, "%Y-%m-%d")
+                invite_date = self.get_invite_date(record=record)
                 reinvites = record.get("reinvites", 0)
-                days = MAX_INVITE_DURATION_IN_DAYS * (reinvites + 1)
-                date = datetime.today() - timedelta(days=days)
-                if invite_date < date and reinvites < MAX_REINVITES:
-                    self.bitwarden_api.reinvite_user(id=user.get("id", ""), username=username)
-                    reinvites += 1
-                    self.dynamodb_client.update_item_in_table(table_name="bitwarden", key=key, reinvites=reinvites)
-                elif invite_date < date:
+                # total invites defaults to 1 due to the initial invite.
+                total_invites = record.get("total_invites", 1)
+                today = datetime.today()
+                if self.can_reinvite_user(invite_date, today, reinvites):
+                    self.reinvite_user(
+                        id=user.get("id", ""),
+                        username=username,
+                        key=key,
+                        reinvites=reinvites,
+                        total_invites=total_invites,
+                    )
+                elif self.has_invite_expired(invite_date=invite_date, today=today, reinvites=reinvites):
                     self.bitwarden_api.remove_user(username=username)
             else:
                 self.__logger.info(f"No record matches {key} in the DB")
+
+    def has_invite_expired(self, invite_date: datetime, today: datetime, reinvites: int) -> bool:
+        days = MAX_INVITE_DURATION_IN_DAYS * (reinvites + 1)
+        date = today - timedelta(days=days)
+        return invite_date < date
+
+    def can_reinvite_user(self, invite_date: datetime, today: datetime, reinvites: int) -> bool:
+        return (
+            self.has_invite_expired(invite_date=invite_date, today=today, reinvites=reinvites)
+            and reinvites < MAX_REINVITES
+        )
+
+    def get_invite_date(self, record: Dict[str, Any]) -> datetime:
+        return datetime.strptime(record.get("invite_date", EPOCH_DATE), "%Y-%m-%d")
+
+    def reinvite_user(self, id: str, username: str, key: Dict[str, str], reinvites: int, total_invites: int) -> None:
+        reinvites += 1
+        total_invites += 1
+        self.bitwarden_api.reinvite_user(id=id, username=username)
+        self.dynamodb_client.update_item_in_table(
+            table_name="bitwarden", key=key, reinvites=reinvites, total_invites=total_invites
+        )
