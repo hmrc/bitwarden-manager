@@ -38,7 +38,6 @@ types-mock = "^5.1.0"
 moto = "^5.0.9"
 freezegun = "^1.5.0"
 
-
 [tool.flake8]
 ignore = ['E203'] # "Colons should not have any space before them" ignoring rule avoids incompatibaty with black formater https://github.com/psf/black/issues/315
 max-line-length = 120

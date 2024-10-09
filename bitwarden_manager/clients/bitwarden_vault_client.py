@@ -2,6 +2,7 @@ import json
 import subprocess  # nosec B404
 import os
 import base64
+
 from logging import Logger
 from typing import Dict, List, Optional, Any
 
@@ -47,6 +48,8 @@ class BitwardenVaultClient:
         self.cli_timeout = cli_timeout
 
     def configure_server(self) -> None:
+        self.__logger.info("Attempting to configure vault server")
+
         try:
             subprocess.check_call(
                 [self.cli_executable_path, "config", "server", BW_SERVER_URI],
@@ -54,14 +57,20 @@ class BitwardenVaultClient:
                 timeout=self.cli_timeout,
                 text=True,
             )  # nosec B603
+
+            self.__logger.info(f"Successfully set vault server to {BW_SERVER_URI}")
         except subprocess.CalledProcessError as e:
             raise BitwardenVaultClientError(f"Configuring server failed: {e}")
 
     def login(self) -> str:
+        self.__logger.info("Attempting login")
+
         tmp_env = os.environ.copy()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
         try:
+            self.__logger.info("Logging in")
+
             output = subprocess.check_output(
                 [self.cli_executable_path, "login", "--apikey"],
                 env=tmp_env,
@@ -70,18 +79,25 @@ class BitwardenVaultClient:
                 timeout=self.cli_timeout,
                 text=True,
             )  # nosec B603
+
+            self.__logger.info("Successfully logged in")
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             self.__logger.error(f"Login failed due to: {e.stderr!r}")
             if e.stderr and "client_id or client_secret is incorrect" in e.stderr:
                 raise BitwardenVaultClientIncorrectCredentialsError(e)
             else:
                 raise BitwardenVaultClientLoginError(e)
+
         return output
 
     def _unlock(self) -> str:
+        self.__logger.info("Attempting vault unlock")
+
         tmp_env = os.environ.copy()
         tmp_env["BW_PASSWORD"] = self.__password
         try:
+            self.__logger.info("Unlocking vault")
+
             output = subprocess.check_output(
                 [
                     self.cli_executable_path,
@@ -97,13 +113,20 @@ class BitwardenVaultClient:
                 timeout=self.cli_timeout,
             )  # nosec B603
             session_token = output.split()[-1]
+
+            self.__logger.info("Vault unlocked")
+
             return session_token
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             raise BitwardenVaultClientError(e)
 
     def logout(self) -> None:
+        self.__logger.info("Attempting logout")
+
         if self.__session_token:
             try:
+                self.__logger.info("Session found, logging out")
+
                 output = subprocess.check_output(
                     [self.cli_executable_path, "logout"],
                     encoding="utf-8",
@@ -112,12 +135,15 @@ class BitwardenVaultClient:
                     text=True,
                     timeout=self.cli_timeout,
                 )  # nosec B603
+
                 self.__session_token = None
                 self.__logger.debug(output)
+
+                self.__logger.info("Successfully logged out")
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 raise BitwardenVaultClientError(e)
         else:
-            self.__logger.warning("Not logged in so ignoring call to logout")
+            self.__logger.warning("No session found, skipping logout")
 
     def session_token(self) -> str:
         if not self.__session_token:
@@ -130,9 +156,13 @@ class BitwardenVaultClient:
         self.__session_token = self._unlock()
 
     def export_vault(self, file_path: str) -> str:
+        self.__logger.info("Attempting vault export")
+
         tmp_env = os.environ.copy()
         tmp_env["BW_SESSION"] = self.session_token()
         try:
+            self.__logger.info(f"Beginning vault export to {file_path}")
+
             subprocess.check_call(
                 [
                     self.cli_executable_path,
@@ -150,6 +180,7 @@ class BitwardenVaultClient:
                 stdout=subprocess.PIPE,
                 shell=False,
             )  # nosec B603
+
             self.__logger.info(f"Exported vault backup to {file_path}")
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             # do not raise the called process error unless you want the export password in the stacktrace
@@ -185,12 +216,12 @@ class BitwardenVaultClient:
                     timeout=self.cli_timeout,
                     stdout=subprocess.DEVNULL,
                 )  # nosec B603
+
                 self.__logger.info(f"Created collection: {collection}")
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
                 raise BitwardenVaultClientError(e)
 
     def list_unconfirmed_users(self) -> List[Dict[str, str]]:
-        unconfirmed_users = []
         tmp_env = os.environ.copy()
         tmp_env["BW_SESSION"] = self.session_token()
         try:
@@ -212,6 +243,7 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
 
         json_response = json.loads(out)
+        unconfirmed_users = []
         for user in json_response:
             if user.get("status") == 1:
                 unconfirmed_users.append(

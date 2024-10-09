@@ -41,70 +41,79 @@ class BitwardenManager:
             self._run(event=event)
 
     def _run(self, event: Dict[str, Any]) -> None:
-
         if (event.get("event_name") is not None) and ("event_name" in event):
             event_name = event["event_name"]
         else:
             event_name = event["path"].replace("/", " ").replace("?", " ").replace("-", "_").split()[-1]
 
         self.__logger.debug("%s", event)
+
         bitwarden_vault_client = self._get_bitwarden_vault_client()
         try:
             match event_name:
                 case "new_user":
                     self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
-                    self.__logger.debug("handling event with OnboardUser")
+                    self.__logger.info("handling event with OnboardUser")
                     OnboardUser(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         user_management_api=self._get_user_management_api(),
                         bitwarden_vault_client=bitwarden_vault_client,
                         dynamodb_client=DynamodbClient(),
                     ).run(event=event)
+
                 case "update_user_groups":
                     self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
-                    self.__logger.debug("handling event with UpdateUserGroups")
+                    self.__logger.info("handling event with UpdateUserGroups")
                     UpdateUserGroups(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         user_management_api=self._get_user_management_api(),
                         bitwarden_vault_client=bitwarden_vault_client,
                     ).run(event=event)
+
                 case "export_vault":
-                    self.__logger.debug("handling event with ExportVault")
+                    self.__logger.info("handling event with ExportVault")
                     ExportVault(bitwarden_vault_client=bitwarden_vault_client, s3_client=S3Client()).run(event=event)
+
                 case "confirm_user":
-                    self.__logger.debug("handling event with ConfirmUser")
+                    self.__logger.info("handling event with ConfirmUser")
                     ConfirmUser(
                         bitwarden_vault_client=bitwarden_vault_client, allowed_domains=self._get_allowed_email_domains()
                     ).run(event=event)
+
                 case "check_user":
-                    self.__logger.debug("handling event with CheckUserDetails")
+                    self.__logger.info("handling event with CheckUserDetails")
                     CheckUserDetails(
                         bitwarden_api=self._get_bitwarden_public_api(), bitwarden_vault_client=bitwarden_vault_client
                     ).run(event=event)
+
                 case "remove_user":
-                    self.__logger.debug("handling event with OffboardUser")
+                    self.__logger.info("handling event with OffboardUser")
                     OffboardUser(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         dynamodb_client=DynamodbClient(),
                     ).run(event=event)
+
                 case "reinvite_users":
                     self.__logger.info("handling reinvite users event with ReinviteUsers")
                     ReinviteUsers(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         dynamodb_client=DynamodbClient(),
                     ).run(event=event)
+
                 case "list_custom_groups":
                     self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
-                    self.__logger.debug("handling event with ListCustomGroups")
+                    self.__logger.info("handling event with ListCustomGroups")
                     ListCustomGroups(
                         bitwarden_api=self._get_bitwarden_public_api(),
                         user_management_api=self._get_user_management_api(),
                     ).run(event=event)
+
                 case "list_collection_items":
                     self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
                     ListCollectionItems(
                         bitwarden_vault_client=bitwarden_vault_client,
                     ).run(event=event)
+
                 case "update_collection_external_ids":
                     self.__logger.info(f"retrieved ldap creds with username {self._get_ldap_username()}")
                     UpdateCollectionExternalIds(
@@ -112,21 +121,26 @@ class BitwardenManager:
                         bitwarden_vault_client=bitwarden_vault_client,
                         s3_client=S3Client(),
                     ).run(event=event)
+
                 case _:
                     self.__logger.info(f"ignoring unknown event '{event_name}'")
+
         except BitwardenVaultClientLoginError as e:
             self.__logger.warning(f"Failed to complete {event_name} due to Bitwarden CLI login error - {e}")
+
         finally:
             bitwarden_vault_client.logout()
 
     def _get_bitwarden_cli_timeout(self) -> float:
         timeout = os.environ.get("BITWARDEN_CLI_TIMEOUT", "20")
+
         if timeout.isnumeric():
             return float(timeout)
         return 20.0
 
     def _get_allowed_email_domains(self) -> list[str]:
         domain_list = os.environ.get("ALLOWED_DOMAINS", "").split(",")
+
         if domain_list == [""]:
             return []
         else:
