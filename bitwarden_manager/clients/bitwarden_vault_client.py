@@ -11,6 +11,7 @@ from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
 BW_SERVER_URI = "https://vault.bitwarden.eu"
 
+
 class BitwardenVaultClientError(Exception):
     pass
 
@@ -286,6 +287,5 @@ class BitwardenVaultClient:
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             raise BitwardenVaultClientError(e)
 
-
-    def __get_config_dir(self):
+    def __get_config_dir(self) -> str:
         return os.path.join(gettempdir(), ".config")
