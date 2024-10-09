@@ -6,7 +6,7 @@ WORKDIR /build
 
 RUN sed -i 's/http:/https:/g' /etc/apt/sources.list.d/*
 RUN apt update && apt -y upgrade && apt -y install curl unzip
-RUN curl -LO "https://github.com/bitwarden/clients/releases/download/cli-v2023.3.0/bw-linux-2023.3.0.zip" && unzip *.zip -d /usr/local/bin/ && rm bw-linux-2023.3.0.zip
+RUN curl -LO "https://github.com/bitwarden/clients/releases/download/cli-v2024.9.0/bw-linux-2024.9.0.zip" && unzip *.zip -d /usr/local/bin/ && rm bw-linux-2024.9.0.zip
 RUN chmod +x /usr/local/bin/bw
 
 RUN pip install \
