@@ -2,6 +2,8 @@ import os
 import logging
 import tempfile
 import subprocess  # nosec B404
+
+from tempfile import gettempdir
 from unittest import mock
 from unittest.mock import patch
 
@@ -32,8 +34,11 @@ def test_login_timed_out(timeout_client: BitwardenVaultClient) -> None:
 
 
 def check_cli_server() -> str:
+    tmp_env = os.environ.copy()
+    tmp_env["BITWARDENCLI_APPDATA_DIR"] = os.path.join(gettempdir(), ".config")
     output = subprocess.check_output(
         ["bw", "config", "server"],
+        env=tmp_env,
         shell=False,
         stderr=subprocess.PIPE,
         timeout=20,

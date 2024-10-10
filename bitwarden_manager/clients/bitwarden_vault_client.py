@@ -4,6 +4,7 @@ import os
 import base64
 
 from logging import Logger
+from tempfile import gettempdir
 from typing import Dict, List, Optional, Any
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
@@ -51,8 +52,11 @@ class BitwardenVaultClient:
         self.__logger.info("Attempting to configure vault server")
 
         try:
+            tmp_env = os.environ.copy()
+            tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
             subprocess.check_call(
                 [self.cli_executable_path, "config", "server", BW_SERVER_URI],
+                env=tmp_env,
                 shell=False,
                 timeout=self.cli_timeout,
                 text=True,
@@ -66,6 +70,7 @@ class BitwardenVaultClient:
         self.__logger.info("Attempting login")
 
         tmp_env = os.environ.copy()
+        tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
         tmp_env["BW_CLIENTID"] = self.__client_id
         tmp_env["BW_CLIENTSECRET"] = self.__client_secret
         try:
@@ -94,6 +99,7 @@ class BitwardenVaultClient:
         self.__logger.info("Attempting vault unlock")
 
         tmp_env = os.environ.copy()
+        tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
         tmp_env["BW_PASSWORD"] = self.__password
         try:
             self.__logger.info("Unlocking vault")
@@ -126,9 +132,11 @@ class BitwardenVaultClient:
         if self.__session_token:
             try:
                 self.__logger.info("Session found, logging out")
-
+                tmp_env = os.environ.copy()
+                tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
                 output = subprocess.check_output(
                     [self.cli_executable_path, "logout"],
+                    env=tmp_env,
                     encoding="utf-8",
                     shell=False,
                     stderr=subprocess.PIPE,
@@ -159,6 +167,7 @@ class BitwardenVaultClient:
         self.__logger.info("Attempting vault export")
 
         tmp_env = os.environ.copy()
+        tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
         tmp_env["BW_SESSION"] = self.session_token()
         try:
             self.__logger.info(f"Beginning vault export to {file_path}")
@@ -200,6 +209,7 @@ class BitwardenVaultClient:
             json_collection = json.dumps(collection_object).encode("utf-8")
             json_encoded = base64.b64encode(json_collection)
             tmp_env = os.environ.copy()
+            tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
             tmp_env["BW_SESSION"] = self.session_token()
             try:
                 subprocess.check_call(
@@ -223,6 +233,7 @@ class BitwardenVaultClient:
 
     def list_unconfirmed_users(self) -> List[Dict[str, str]]:
         tmp_env = os.environ.copy()
+        tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
         tmp_env["BW_SESSION"] = self.session_token()
         try:
             out = subprocess.check_output(
@@ -256,6 +267,7 @@ class BitwardenVaultClient:
 
     def confirm_user(self, user_id: str) -> Any:
         tmp_env = os.environ.copy()
+        tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
         tmp_env["BW_SESSION"] = self.session_token()
         try:
             subprocess.check_call(
@@ -274,3 +286,6 @@ class BitwardenVaultClient:
             self.__logger.debug(f"User {user_id} confirmed successfully")
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             raise BitwardenVaultClientError(e)
+
+    def __get_config_dir(self) -> str:
+        return os.path.join(gettempdir(), ".config")
