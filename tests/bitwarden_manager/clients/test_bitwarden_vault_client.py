@@ -35,7 +35,7 @@ def test_login_timed_out(timeout_client: BitwardenVaultClient) -> None:
 
 def check_cli_server() -> str:
     tmp_env = os.environ.copy()
-    tmp_env["BITWARDENCLI_APPDATA_DIR"] = os.path.join(gettempdir(), ".config")
+    tmp_env["BITWARDENCLI_APPDATA_DIR"] = "/tmp/.config"
     output = subprocess.check_output(
         ["bw", "config", "server"],
         env=tmp_env,

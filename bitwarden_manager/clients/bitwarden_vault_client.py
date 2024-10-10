@@ -288,4 +288,4 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
 
     def __get_config_dir(self) -> str:
-        return os.path.join(gettempdir(), ".config")
+        return "/tmp/.config"
