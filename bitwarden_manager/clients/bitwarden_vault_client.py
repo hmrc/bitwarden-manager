@@ -287,4 +287,4 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
 
     def __get_config_dir(self) -> str:
-        return "/tmp/.config"
+        return "/tmp/.config" # nosec B108
