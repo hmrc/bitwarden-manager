@@ -58,7 +58,7 @@ class ReinviteUsers:
                 self.__logger.info(f"No record matches {key} in the DB")
 
     def has_invite_expired(self, invite_date: datetime, today: datetime, reinvites: int) -> bool:
-        days = MAX_INVITE_DURATION_IN_DAYS * (reinvites + 1)
+        days = int(MAX_INVITE_DURATION_IN_DAYS * (reinvites + 1))
         date = today - timedelta(days=days)
         return invite_date < date
 

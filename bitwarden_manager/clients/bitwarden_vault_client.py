@@ -4,7 +4,6 @@ import os
 import base64
 
 from logging import Logger
-from tempfile import gettempdir
 from typing import Dict, List, Optional, Any
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
@@ -288,4 +287,4 @@ class BitwardenVaultClient:
             raise BitwardenVaultClientError(e)
 
     def __get_config_dir(self) -> str:
-        return os.path.join(gettempdir(), ".config")
+        return "/tmp/.config"  # nosec B108
