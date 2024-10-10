@@ -4,7 +4,6 @@ import os
 import base64
 
 from logging import Logger
-from tempfile import gettempdir
 from typing import Dict, List, Optional, Any
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi

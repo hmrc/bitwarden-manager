@@ -3,7 +3,6 @@ import logging
 import tempfile
 import subprocess  # nosec B404
 
-from tempfile import gettempdir
 from unittest import mock
 from unittest.mock import patch
 
