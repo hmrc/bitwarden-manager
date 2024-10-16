@@ -81,6 +81,8 @@ def test_onboard_user_writes_invite_date_to_db_for_previously_invited_user() -> 
         "username": "test.user",
         "email": "testemail@example.com",
     }
+
+    date = datetime.today().strftime("%Y-%m-%d")
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_user_management = MagicMock(spec=UserManagementApi)
     mock_client_bitwarden_vault = MagicMock(spec=BitwardenVaultClient)
@@ -88,7 +90,7 @@ def test_onboard_user_writes_invite_date_to_db_for_previously_invited_user() -> 
     mock_client_dynamodb.get_item_from_table = MagicMock(
         return_value={
             "username": event.get("username"),
-            "invite_date": "2024-03-11",
+            "invite_date": date,
             "reinvites": 2,
             "total_invites": 3,
         }
@@ -101,8 +103,7 @@ def test_onboard_user_writes_invite_date_to_db_for_previously_invited_user() -> 
         dynamodb_client=mock_client_dynamodb,
     ).run(event)
 
-    date = datetime.today().strftime("%Y-%m-%d")
-    mock_client_dynamodb.write_item_to_table.assert_called_with(
+    mock_client_dynamodb.add_item_to_table.assert_called_with(
         table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0, "total_invites": 4}
     )
 
@@ -126,9 +127,14 @@ def test_onboard_user_writes_invite_date_to_db_for_first_time_user_invite() -> N
         dynamodb_client=mock_client_dynamodb,
     ).run(event)
 
-    date = datetime.today().strftime("%Y-%m-%d")
-    mock_client_dynamodb.write_item_to_table.assert_called_with(
-        table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0, "total_invites": 1}
+    mock_client_dynamodb.add_item_to_table.assert_called_with(
+        table_name="bitwarden",
+        item={
+            "username": "test.user",
+            "invite_date": datetime.today().strftime("%Y-%m-%d"),
+            "reinvites": 0,
+            "total_invites": 1,
+        },
     )
 
 
@@ -160,7 +166,7 @@ def test_onboard_user_updates_record_if_exists() -> None:
         dynamodb_client=mock_client_dynamodb,
     ).run(event)
 
-    mock_client_dynamodb.write_item_to_table.assert_called_with(
+    mock_client_dynamodb.add_item_to_table.assert_called_with(
         table_name="bitwarden",
         item={"username": event.get("username"), "invite_date": "2024-03-11", "reinvites": 0, "total_invites": 4},
     )

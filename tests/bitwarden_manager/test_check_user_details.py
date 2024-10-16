@@ -1,4 +1,5 @@
 import logging
+import os
 import pytest
 import responses
 import pathlib
@@ -14,6 +15,7 @@ fake_good_event = {
     "httpMethod": "GET",
     "queryStringParameters": {"username": "test.user01"},
 }
+
 fake_bad_event = {
     "resource": "/bitwarden-manager/check-user",
     "path": "/bitwarden-manager/check-user",
@@ -26,7 +28,7 @@ MOCKED_GET_MEMBERS = responses.Response(
     content_type="application/json",
     method=responses.GET,
     url="https://api.bitwarden.eu/public/members",
-    body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+    body=open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources", "get_members.json")).read(),
 )
 
 MOCKED_LOGIN = responses.Response(

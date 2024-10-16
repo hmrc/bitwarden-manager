@@ -35,7 +35,7 @@ def test_handler_ignores_unknown_events(_: Mock, __: Mock, caplog: LogCaptureFix
             with caplog.at_level(logging.INFO):
                 handler(event=dict(event_name="some_other_event"), context={})
 
-    assert "ignoring unknown event 'some_other_event'" in caplog.text
+    assert "Ignoring unknown event 'some_other_event'" in caplog.text
 
 
 @mock.patch("boto3.client")
@@ -51,7 +51,7 @@ def test_bitwarden_client_logout_is_called(_: Mock) -> None:
 @mock.patch("boto3.client")
 def test_bitwarden_client_logout_is_called_even_when_exception_thrown(_: Mock) -> None:
     with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-        with patch.object(DynamodbClient, "write_item_to_table"):
+        with patch.object(DynamodbClient, "add_item_to_table"):
             with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
                 secrets_manager_mock.return_value = "23497858247589473589734805734853"
                 event = dict(event_name="new_user")

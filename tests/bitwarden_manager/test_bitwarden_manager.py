@@ -13,60 +13,21 @@ from bitwarden_manager.confirm_user import BitwardenConfirmUserInvalidDomain
 
 
 @mock.patch("boto3.client")
-def test_get_ldap_credentials(mock_secretsmanager: Mock) -> None:
+def test_get_secret(mock_secretsmanager: Mock) -> None:
     get_secret_value = Mock(return_value={"SecretString": "secret"})
     mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
     manager = BitwardenManager()
 
-    assert manager._get_ldap_username() == "secret"
-    assert manager._get_ldap_password() == "secret"
+    assert manager._get_secret("ldap-username") == "secret"
+    assert manager._get_secret("ldap-password") == "secret"
 
     assert get_secret_value.call_count == 3
     get_secret_value.assert_has_calls(
         [
+            #  must be in order called
+            call(SecretId="/bitwarden/export-encryption-password"),  # called in bw manager init
             call(SecretId="/bitwarden/ldap-username"),
             call(SecretId="/bitwarden/ldap-password"),
-        ]
-    )
-
-
-@mock.patch("boto3.client")
-def test_get_bitwarden_api_creds(mock_secretsmanager: Mock) -> None:
-    get_secret_value = Mock(return_value={"SecretString": "secret"})
-    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
-    manager = BitwardenManager()
-
-    assert manager._get_bitwarden_client_id() == "secret"
-    get_secret_value.assert_has_calls([call(SecretId="/bitwarden/api-client-id")])
-
-    assert manager._get_bitwarden_client_secret() == "secret"
-    get_secret_value.assert_has_calls(
-        [
-            call(SecretId="/bitwarden/api-client-id"),
-            call(SecretId="/bitwarden/api-client-secret"),
-        ]
-    )
-
-
-@mock.patch("boto3.client")
-def test_get_bitwarden_vault_creds(mock_secretsmanager: Mock) -> None:
-    get_secret_value = Mock(return_value={"SecretString": "secret"})
-    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
-    manager = BitwardenManager()
-
-    assert manager._get_bitwarden_vault_client_id() == "secret"
-    get_secret_value.assert_has_calls([call(SecretId="/bitwarden/vault-client-id")])
-
-    assert manager._get_bitwarden_vault_client_secret() == "secret"
-    assert manager._get_bitwarden_vault_password() == "secret"
-    assert manager._get_bitwarden_export_encryption_password() == "secret"
-
-    get_secret_value.assert_has_calls(
-        [
-            call(SecretId="/bitwarden/vault-client-id"),
-            call(SecretId="/bitwarden/vault-client-secret"),
-            call(SecretId="/bitwarden/vault-password"),
-            call(SecretId="/bitwarden/export-encryption-password"),
         ]
     )
 
@@ -81,6 +42,7 @@ def test_confirm_user_passed_allowed_domains(mock_secretsmanager: Mock) -> None:
         spec=BitwardenVaultClient,
         list_unconfirmed_users=Mock(return_value=[dict(email="test@example.com", id=111)]),
     )
+
     with patch.object(BitwardenManager, "_get_bitwarden_vault_client") as _get_bitwarden_vault_client:
         _get_bitwarden_vault_client.return_value = bitwarden_mock
         BitwardenManager().run(event={"event_name": "confirm_user"})
@@ -100,6 +62,7 @@ def test_confirm_user_failed_when_passed_users_with_invalid_email_domains(mock_s
             return_value=[dict(email="test@example.com", id=111), dict(email="test@evil.com", id=222)]
         ),
     )
+
     with patch.object(BitwardenManager, "_get_bitwarden_vault_client") as _get_bitwarden_vault_client:
         _get_bitwarden_vault_client.return_value = bitwarden_mock
         with pytest.raises(ExceptionGroup, match="User Confirmation Errors: ") as exception_group:
