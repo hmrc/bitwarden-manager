@@ -70,7 +70,7 @@ class ReinviteUsers:
     def has_reached_max_invites_per_run(self, invites: int) -> bool:
         return invites >= MAX_INVITES_PER_RUN
 
-    def has_reached_max_total_invites(self, invites: int):
+    def has_reached_max_total_invites(self, invites: int) -> bool:
         return invites >= MAX_INVITES_TOTAL
 
     def str_to_datetime(self, date: str) -> datetime:

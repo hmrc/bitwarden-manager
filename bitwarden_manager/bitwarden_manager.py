@@ -161,9 +161,9 @@ class BitwardenManager:
 
     def _get_event_name(self, event: Dict[str, Any]) -> str:
         if (event.get("event_name") is not None) and ("event_name" in event):
-            event_name = event["event_name"]
+            event_name = str(event["event_name"])
         else:
-            event_name = event["path"].replace("/", " ").replace("?", " ").replace("-", "_").split()[-1]
+            event_name = str(event["path"].replace("/", " ").replace("?", " ").replace("-", "_").split()[-1])
 
         return event_name
 
