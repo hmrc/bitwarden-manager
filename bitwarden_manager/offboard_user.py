@@ -5,6 +5,8 @@ from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 
 from jsonschema import validate
 
+from bitwarden_manager.redacting_formatter import get_bitwarden_logger
+
 offboard_user_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
@@ -28,11 +30,18 @@ class OffboardUser:
     ):
         self.bitwarden_api = bitwarden_api
         self.dynamodb_client = dynamodb_client
+        self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=offboard_user_event_schema)
+
+        self.__logger.info(f"Offboarding user {event['username']}")
+
+        self.__logger.info(f"Removing user {event['username']} from bitwarden")
         self.bitwarden_api.remove_user(
             username=event["username"],
         )
+
+        self.__logger.info(f"Removing user {event['username']} from dynamodb")
         dynamo_key = {"username": event["username"]}
         self.dynamodb_client.delete_item_from_table(table_name="bitwarden", key=dynamo_key)

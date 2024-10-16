@@ -5,6 +5,7 @@ from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 import bitwarden_manager.groups_and_collections as GroupsAndCollections
+from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 update_user_groups_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -36,18 +37,21 @@ class UpdateUserGroups:
         self.bitwarden_api = bitwarden_api
         self.user_management_api = user_management_api
         self.bitwarden_vault_client = bitwarden_vault_client
+        self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=update_user_groups_event_schema)
+
         teams = self.user_management_api.get_user_teams(username=event["username"])
         user_id = self.bitwarden_api.fetch_user_id_by_email(event["email"])
+
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
         existing_collections = self.bitwarden_api.list_existing_collections(teams)
         self.bitwarden_vault_client.create_collections(
             GroupsAndCollections.missing_collection_names(teams, existing_collections)
         )
-        collections = self.bitwarden_api.list_existing_collections(teams)
 
+        collections = self.bitwarden_api.list_existing_collections(teams)
         managed_group_ids = self.bitwarden_api.collate_user_group_ids(
             teams=teams,
             groups=existing_groups,

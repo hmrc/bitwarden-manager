@@ -2,6 +2,7 @@ import base64
 import logging
 from typing import Any, Dict, List
 
+import os
 import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
@@ -16,8 +17,8 @@ MOCKED_GET_MEMBERS = responses.Response(
     content_type="application/json",
     method=responses.GET,
     url="https://api.bitwarden.eu/public/members",
-    body=open("tests/bitwarden_manager/resources/get_members.json").read(),
-    # body=open("../resources/get_members.json").read(),
+    # body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+    body=open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")).read(),
 )
 
 
@@ -1359,7 +1360,9 @@ def test_remove_user(caplog: LogCaptureFixture) -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
-            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            body=open(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")
+            ).read(),
             status=200,
             content_type="application/json",
         )
@@ -1416,7 +1419,9 @@ def test_remove_user_with_failure(caplog: LogCaptureFixture) -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
-            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            body=open(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")
+            ).read(),
             status=200,
             content_type="application/json",
         )
@@ -1444,7 +1449,9 @@ def test_get_users(caplog: LogCaptureFixture) -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
-            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            body=open(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")
+            ).read(),
             status=200,
             content_type="application/json",
         )
@@ -1483,7 +1490,9 @@ def test_get_pending_users(caplog: LogCaptureFixture) -> None:
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/members",
-            body=open("tests/bitwarden_manager/resources/get_members.json").read(),
+            body=open(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")
+            ).read(),
             status=200,
             content_type="application/json",
         )
