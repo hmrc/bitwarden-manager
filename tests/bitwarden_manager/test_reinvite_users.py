@@ -12,7 +12,6 @@ from bitwarden_manager.reinvite_users import (
     INVITE_VALID_DURATION_IN_DAYS,
     MAX_INVITES_PER_RUN,
     MAX_INVITES_TOTAL,
-    DYNAMODB_TABLE_NAME,
     ReinviteUsers,
 )
 
@@ -65,10 +64,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
     ).run(event)
 
     mock_client_dynamodb.get_item_from_table.assert_called_with(
-        table_name=DYNAMODB_TABLE_NAME,
-        key={
-            "username": bitwarden_user.get("externalId"),
-        },
+        username=bitwarden_user.get("externalId"),
     )
 
     mock_client_bitwarden.remove_user.assert_called_with(username=bitwarden_user.get("externalId"))
@@ -193,9 +189,7 @@ def test_invite_user(invite_date: datetime, today: datetime, invites: int, total
         ).run(event)
 
         mock_client_bitwarden.get_pending_users.assert_called()
-        mock_client_dynamodb.get_item_from_table.assert_called_with(
-            table_name=DYNAMODB_TABLE_NAME, key={"username": bitwarden_user.get("externalId")}
-        )
+        mock_client_dynamodb.get_item_from_table.assert_called_with(username=bitwarden_user.get("externalId"))
 
         if expected is True:
             mock_client_bitwarden.reinvite_user.assert_called_with(

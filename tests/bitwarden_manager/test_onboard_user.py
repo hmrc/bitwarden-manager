@@ -104,7 +104,7 @@ def test_onboard_user_writes_invite_date_to_db_for_previously_invited_user() -> 
     ).run(event)
 
     mock_client_dynamodb.add_item_to_table.assert_called_with(
-        table_name="bitwarden", item={"username": "test.user", "invite_date": date, "reinvites": 0, "total_invites": 4}
+        item={"username": "test.user", "invite_date": date, "reinvites": 0, "total_invites": 4}
     )
 
 
@@ -128,7 +128,6 @@ def test_onboard_user_writes_invite_date_to_db_for_first_time_user_invite() -> N
     ).run(event)
 
     mock_client_dynamodb.add_item_to_table.assert_called_with(
-        table_name="bitwarden",
         item={
             "username": "test.user",
             "invite_date": datetime.today().strftime("%Y-%m-%d"),
@@ -167,6 +166,5 @@ def test_onboard_user_updates_record_if_exists() -> None:
     ).run(event)
 
     mock_client_dynamodb.add_item_to_table.assert_called_with(
-        table_name="bitwarden",
         item={"username": event.get("username"), "invite_date": "2024-03-11", "reinvites": 0, "total_invites": 4},
     )

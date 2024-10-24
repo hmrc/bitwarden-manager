@@ -43,5 +43,4 @@ class OffboardUser:
         )
 
         self.__logger.info(f"Removing user {event['username']} from dynamodb")
-        dynamo_key = {"username": event["username"]}
-        self.dynamodb_client.delete_item_from_table(table_name="bitwarden", key=dynamo_key)
+        self.dynamodb_client.delete_item_from_table(username=event["username"])

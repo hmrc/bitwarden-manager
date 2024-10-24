@@ -60,7 +60,7 @@ class OnboardUser:
 
         self.__logger.info(f"Sending bitwarden invite to user {event['username']}'")
         user_id = self.bitwarden_api.invite_user(user=user)
-        record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": user.username})
+        record = self.dynamodb_client.get_item_from_table(username=user.username)
         if record:
             total_invites = record.get("total_invites", 1) + 1
         else:
@@ -68,7 +68,6 @@ class OnboardUser:
 
         self.__logger.info(f"Adding user {user.username} to dynamodb...")
         self.dynamodb_client.add_item_to_table(
-            table_name="bitwarden",
             item={
                 "username": user.username,
                 "invite_date": datetime.today().strftime("%Y-%m-%d"),

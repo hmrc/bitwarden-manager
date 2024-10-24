@@ -39,8 +39,7 @@ class ReinviteUsers:
 
         for user in self.bitwarden_api.get_pending_users():
             username = user.get("externalId", "")
-            table_key = {"username": username}
-            record = self.dynamodb_client.get_item_from_table(table_name=DYNAMODB_TABLE_NAME, key=table_key)
+            record = self.dynamodb_client.get_item_from_table(username=username)
 
             if record:
                 if self.can_invite_user(
@@ -49,7 +48,7 @@ class ReinviteUsers:
                     record.get("total_invites", 1),
                 ):
                     self.__logger.info(f"Inviting user, {username}...")
-                    self.invite_user(user.get("id", ""), username, table_key, record)
+                    self.invite_user(user.get("id", ""), username, record)
                 else:
                     self.__logger.info(f"User {username} not eligible for invite, removing...")
                     self.bitwarden_api.remove_user(username=username)
@@ -79,14 +78,11 @@ class ReinviteUsers:
     def datetime_to_str(self, date: datetime) -> str:
         return date.strftime("%Y-%m-%d")
 
-    def invite_user(
-        self, bitwarden_id: str, username: str, dynamodb_table_key: Dict[str, str], dynamodb_record: Dict[str, Any]
-    ) -> None:
+    def invite_user(self, bitwarden_id: str, username: str, dynamodb_record: Dict[str, Any]) -> None:
         self.bitwarden_api.reinvite_user(id=bitwarden_id, username=username)
 
         self.dynamodb_client.update_item_in_table(
-            table_name=DYNAMODB_TABLE_NAME,
-            key=dynamodb_table_key,
+            username=username,
             item={
                 "invite_date": self.datetime_to_str(datetime.today()),
                 "reinvites": dynamodb_record.get("invites", 0) + 1,
