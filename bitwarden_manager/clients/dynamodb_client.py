@@ -5,46 +5,97 @@ from typing import Dict, Any
 
 
 class DynamodbClient:
+    _table_name: str = "bitwarden"
+
     def __init__(self) -> None:
-        self._boto_dynamodb = boto3.resource("dynamodb", region_name="eu-west-2")
+        self._client = boto3.client("dynamodb", region_name="eu-west-2")
 
-    def write_item_to_table(self, table_name: str, item: Dict[str, Any]) -> None:
+    def add_item_to_table(self, item: Dict[str, Any]) -> None:
         try:
-            table = self._boto_dynamodb.Table(table_name)
-            table.put_item(Item=item)
+            self._client.put_item(
+                TableName=self._table_name,
+                Item={
+                    "username": {
+                        "S": item.get("username"),
+                    },
+                    "invite_date": {
+                        "S": item.get("invite_date"),
+                    },
+                    "reinvites": {
+                        "N": str(item.get("reinvites")),
+                    },
+                    "total_invites": {
+                        "N": str(item.get("total_invites")),
+                    },
+                },
+            )
         except (BotoCoreError, ClientError) as e:
-            raise Exception("Failed to write to DynamoDB", e) from e
+            raise Exception("Failed to add item to DynamoDB", e) from e
 
-    def delete_item_from_table(self, table_name: str, key: Dict[str, Any]) -> None:
+    def delete_item_from_table(self, username: str) -> None:
         try:
-            table = self._boto_dynamodb.Table(table_name)
-            table.delete_item(Key=key)
+            self._client.delete_item(
+                TableName=self._table_name,
+                Key={
+                    "username": {
+                        "S": username,
+                    }
+                },
+            )
         except (BotoCoreError, ClientError) as e:
             raise Exception("Failed to delete from DynamoDB", e) from e
 
-    def get_item_from_table(self, table_name: str, key: Dict[str, Any]) -> Any:
+    def get_item_from_table(self, username: str) -> Dict[str, Any] | None:
         try:
-            table = self._boto_dynamodb.Table(table_name)
-            resp = table.get_item(Key=key)
-            item = resp.get("Item", None)
-            return item
+            response = self._client.get_item(
+                TableName=self._table_name,
+                Key={
+                    "username": {
+                        "S": username,
+                    }
+                },
+                ProjectionExpression="username, invite_date, reinvites, total_invites",
+            )
+
+            item = response.get("Item", None)
+            if item:
+                return {
+                    "username": item.get("username", {}).get("S"),
+                    "invite_date": item.get("invite_date", {}).get("S"),
+                    "reinvites": int(item.get("reinvites", {}).get("N")),
+                    "total_invites": int(item.get("total_invites", {}).get("N")),
+                }
+
+            return None
         except (BotoCoreError, ClientError) as e:
             raise Exception("Failed to read from DynamoDB", e) from e
 
-    def update_item_in_table(self, table_name: str, key: Dict[str, Any], reinvites: int, total_invites: int) -> None:
+    def update_item_in_table(self, username: str, item: Dict[Any, Any]) -> None:
         try:
-            table = self._boto_dynamodb.Table(table_name)
-            table.update_item(
-                Key=key,
-                UpdateExpression="set reinvites=:r",
-                ExpressionAttributeValues={":r": reinvites},
-                ReturnValues="UPDATED_NEW",
-            )
-            table.update_item(
-                Key=key,
-                UpdateExpression="set total_invites=:t",
-                ExpressionAttributeValues={":t": total_invites},
-                ReturnValues="UPDATED_NEW",
+            self._client.update_item(
+                TableName=self._table_name,
+                Key={
+                    "username": {
+                        "S": username,
+                    }
+                },
+                AttributeUpdates={
+                    "invite_date": {
+                        "Value": {
+                            "S": item.get("invite_date"),
+                        }
+                    },
+                    "reinvites": {
+                        "Value": {
+                            "N": str(item.get("reinvites")),
+                        }
+                    },
+                    "total_invites": {
+                        "Value": {
+                            "N": str(item.get("total_invites")),
+                        }
+                    },
+                },
             )
         except (BotoCoreError, ClientError) as e:
             raise Exception("Failed to update item in DynamoDB", e) from e

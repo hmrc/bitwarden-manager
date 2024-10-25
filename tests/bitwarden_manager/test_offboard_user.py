@@ -52,5 +52,5 @@ def test_offboard_user_removes_item_from_dynamodb() -> None:
     ).run(event)
 
     mock_client_dynamodb.delete_item_from_table.assert_called_with(
-        table_name="bitwarden", key={"username": "test.user"}
+        username="test.user",
     )

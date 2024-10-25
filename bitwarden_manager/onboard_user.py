@@ -7,6 +7,7 @@ from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 import bitwarden_manager.groups_and_collections as GroupsAndCollections
+from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 from bitwarden_manager.user import UmpUser
 
 onboard_user_event_schema = {
@@ -41,27 +42,38 @@ class OnboardUser:
         self.user_management_api = user_management_api
         self.bitwarden_vault_client = bitwarden_vault_client
         self.dynamodb_client = dynamodb_client
+        self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=onboard_user_event_schema)
+
+        self.__logger.info(f"Onboarding user {event['username']} to bitwarden")
+
+        self.__logger.info(f"Acquiring teams and roles for user {event['username']}")
         teams = self.user_management_api.get_user_teams(username=event["username"])
         roles_by_team = {
             team: self.user_management_api.get_user_role_by_team(event["username"], team=team) for team in teams
         }
 
+        self.__logger.info(f"Acquiring user {event['username']}'s information from user management")
         user = UmpUser(username=event["username"], email=event["email"], roles_by_team=roles_by_team)
-        user_id = self.bitwarden_api.invite_user(user=user)
-        date = datetime.today().strftime("%Y-%m-%d")
 
-        record = self.dynamodb_client.get_item_from_table(table_name="bitwarden", key={"username": user.username})
+        self.__logger.info(f"Sending bitwarden invite to user {event['username']}'")
+        user_id = self.bitwarden_api.invite_user(user=user)
+        record = self.dynamodb_client.get_item_from_table(username=user.username)
         if record:
             total_invites = record.get("total_invites", 1) + 1
         else:
             total_invites = 1
 
-        self.dynamodb_client.write_item_to_table(
-            table_name="bitwarden",
-            item={"username": user.username, "invite_date": date, "reinvites": 0, "total_invites": total_invites},
+        self.__logger.info(f"Adding user {user.username} to dynamodb...")
+        self.dynamodb_client.add_item_to_table(
+            item={
+                "username": user.username,
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+                "total_invites": total_invites,
+            },
         )
 
         existing_groups = self.bitwarden_api.list_existing_groups(teams)
