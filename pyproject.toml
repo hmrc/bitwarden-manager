@@ -35,7 +35,7 @@ bandit = "^1.7.8"
 pre-commit = "^3.7.0"
 mock = "^5.1.0"
 types-mock = "^5.1.0"
-moto = "^5.0.9"
+moto = "^5.0.18"
 freezegun = "^1.5.0"
 
 [tool.flake8]
