@@ -152,7 +152,7 @@ class BitwardenManager:
             logger=self.__logger,
             client_id=self._get_secret("vault-client-id"),
             client_secret=self._get_secret("vault-client-secret"),
-            password=self._get_secret("vault-client-password"),
+            password=self._get_secret("vault-password"),
             export_enc_password=self._get_secret("export-encryption-password"),
             cli_executable_path="bw",
             organisation_id=self._get_secret("organisation-id"),
