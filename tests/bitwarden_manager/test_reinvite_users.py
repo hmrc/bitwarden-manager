@@ -1,4 +1,3 @@
-from trace import Trace
 from typing import Dict
 from unittest.mock import MagicMock, Mock
 
@@ -6,7 +5,6 @@ import pytest
 from jsonschema.exceptions import ValidationError
 from datetime import datetime
 from freezegun import freeze_time
-from moto.appmesh.dataclasses.virtual_node import Trust
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
