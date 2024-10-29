@@ -73,7 +73,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
 
 
 @pytest.mark.parametrize(
-    "invite_date,today,invites,total_invites,expected",
+    "invite_date,today,invites,total_invites,expected,user_removed",
     [
         # test date
         (
@@ -82,12 +82,14 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL - 1),
             False,
+            False,
         ),
         (
             datetime(2024, 4, 10),
             datetime(2024, 4, 10 + INVITE_VALID_DURATION_IN_DAYS),
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL - 1),
+            False,
             False,
         ),
         (
@@ -96,6 +98,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL - 1),
             True,
+            False,
         ),
         # test max per run
         (
@@ -104,6 +107,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL - 1),
             True,
+            False,
         ),
         (
             datetime(2024, 4, 10),
@@ -111,6 +115,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             MAX_INVITES_PER_RUN,
             (MAX_INVITES_TOTAL - 1),
             False,
+            True,
         ),
         (
             datetime(2024, 4, 10),
@@ -118,6 +123,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             (MAX_INVITES_PER_RUN + 1),
             (MAX_INVITES_TOTAL - 1),
             False,
+            True,
         ),
         # test max total
         (
@@ -126,6 +132,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL - 1),
             True,
+            False,
         ),
         (
             datetime(2024, 4, 10),
@@ -133,6 +140,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             (MAX_INVITES_PER_RUN - 1),
             MAX_INVITES_TOTAL,
             False,
+            True,
         ),
         (
             datetime(2024, 4, 10),
@@ -140,6 +148,7 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL + 1),
             False,
+            True,
         ),
         # test all max or expired
         (
@@ -148,10 +157,13 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
             MAX_INVITES_PER_RUN,
             MAX_INVITES_TOTAL,
             False,
+            True,
         ),
     ],
 )
-def test_invite_user(invite_date: datetime, today: datetime, invites: int, total_invites: int, expected: bool) -> None:
+def test_invite_user(
+    invite_date: datetime, today: datetime, invites: int, total_invites: int, expected: bool, user_removed: bool
+) -> None:
     event = get_event()
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
@@ -197,6 +209,11 @@ def test_invite_user(invite_date: datetime, today: datetime, invites: int, total
             )
         else:
             mock_client_bitwarden.reinvite_user.assert_not_called()
+
+        if user_removed is True:
+            mock_client_bitwarden.remove_user.assert_called_with(username=bitwarden_user.get("externalId"))
+        else:
+            mock_client_bitwarden.remove_user.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -246,87 +263,54 @@ def test_has_reached_max_total_invites(invites: int, expected: bool) -> None:
 
 
 @pytest.mark.parametrize(
-    "invite_date,today,invites,total_invites,expected",
+    "invites,total_invites,expected",
     [
-        # test date
-        (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS - 1)),
-            (MAX_INVITES_PER_RUN - 1),
-            (MAX_INVITES_TOTAL - 1),
-            False,
-        ),
-        (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + INVITE_VALID_DURATION_IN_DAYS),
-            (MAX_INVITES_PER_RUN - 1),
-            (MAX_INVITES_TOTAL - 1),
-            False,
-        ),
-        (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
-            (MAX_INVITES_PER_RUN - 1),
-            (MAX_INVITES_TOTAL - 1),
-            True,
-        ),
         # test max per run
         (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL - 1),
             True,
         ),
         (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
             MAX_INVITES_PER_RUN,
             (MAX_INVITES_TOTAL - 1),
             False,
         ),
         (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
             (MAX_INVITES_PER_RUN + 1),
             (MAX_INVITES_TOTAL - 1),
             False,
         ),
         # test max total
         (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL - 1),
             True,
         ),
         (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
             (MAX_INVITES_PER_RUN - 1),
             MAX_INVITES_TOTAL,
             False,
         ),
         (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
             (MAX_INVITES_PER_RUN - 1),
             (MAX_INVITES_TOTAL + 1),
             False,
         ),
-        # test all max or expired
+        # test min and max
         (
-            datetime(2024, 4, 10),
-            datetime(2024, 4, 10 + (INVITE_VALID_DURATION_IN_DAYS + 1)),
+            0,
+            0,
+            True,
+        ),
+        (
             MAX_INVITES_PER_RUN,
             MAX_INVITES_TOTAL,
             False,
         ),
     ],
 )
-def test_can_invite_user(
-    invite_date: datetime, today: datetime, invites: int, total_invites: int, expected: bool
-) -> None:
+def test_is_eligible(invites: int, total_invites: int, expected: bool) -> None:
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
     mock_client_dynamodb.get_item_from_table = MagicMock(
         return_value={
@@ -336,11 +320,11 @@ def test_can_invite_user(
             "total_invites": total_invites,
         }
     )
-    with freeze_time(today.strftime("%Y-%m-%d")):
-        assert expected == ReinviteUsers(
-            bitwarden_api=Mock(),
-            dynamodb_client=mock_client_dynamodb,
-        ).can_invite_user(invite_date=invite_date, invites_this_run=invites, total_invites=total_invites)
+
+    assert expected == ReinviteUsers(
+        bitwarden_api=Mock(),
+        dynamodb_client=mock_client_dynamodb,
+    ).is_eligible(invites_this_run=invites, total_invites=total_invites)
 
 
 @pytest.mark.parametrize(

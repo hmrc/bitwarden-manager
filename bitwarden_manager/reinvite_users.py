@@ -42,26 +42,21 @@ class ReinviteUsers:
             record = self.dynamodb_client.get_item_from_table(username=username)
 
             if record:
-                if self.can_invite_user(
-                    self.str_to_datetime(record.get("invite_date", EPOCH_DATE)),
-                    record.get("reinvites", 0),
-                    record.get("total_invites", 1),
-                ):
-                    self.__logger.info(f"Inviting user, {username}...")
-                    self.invite_user(user.get("id", ""), username, record)
-                else:
-                    self.__logger.info(f"User {username} not eligible for invite, removing...")
-                    self.bitwarden_api.remove_user(username=username)
+                if self.has_invite_expired(self.str_to_datetime(record.get("invite_date", EPOCH_DATE))):
+                    if self.is_eligible(record.get("reinvites", 0), record.get("total_invites", 1)):
+                        self.__logger.info(f"Inviting user, {username}...")
+                        self.invite_user(user.get("id", ""), username, record)
+                    else:
+                        self.__logger.info(f"User {username} not eligible for invite, removing...")
+                        self.bitwarden_api.remove_user(username=username)
             else:
                 self.__logger.info(f"User {username} does not exist in dynamodb table {DYNAMODB_TABLE_NAME}, removing")
                 self.bitwarden_api.remove_user(username=username)
 
-    def can_invite_user(self, invite_date: datetime, invites_this_run: int, total_invites: int) -> bool:
-        return (
-            self.has_invite_expired(invite_date=invite_date)
-            and not self.has_reached_max_invites_per_run(invites=invites_this_run)
-            and not self.has_reached_max_total_invites(invites=total_invites)
-        )
+    def is_eligible(self, invites_this_run: int, total_invites: int) -> bool:
+        return not self.has_reached_max_invites_per_run(
+            invites=invites_this_run
+        ) and not self.has_reached_max_total_invites(invites=total_invites)
 
     def has_invite_expired(self, invite_date: datetime) -> bool:
         return (datetime.today() - invite_date).days > INVITE_VALID_DURATION_IN_DAYS
