@@ -54,10 +54,9 @@ class ReinviteUsers:
                 self.bitwarden_api.remove_user(username=username)
 
     def is_eligible(self, invites_this_run: int, total_invites: int) -> bool:
-        return (
-            not self.has_reached_max_invites_per_run(invites=invites_this_run)
-            and not self.has_reached_max_total_invites(invites=total_invites)
-        )
+        return not self.has_reached_max_invites_per_run(
+            invites=invites_this_run
+        ) and not self.has_reached_max_total_invites(invites=total_invites)
 
     def has_invite_expired(self, invite_date: datetime) -> bool:
         return (datetime.today() - invite_date).days > INVITE_VALID_DURATION_IN_DAYS

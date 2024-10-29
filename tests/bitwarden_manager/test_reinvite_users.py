@@ -163,7 +163,9 @@ def test_pending_user_not_in_dynamodb_gets_removed() -> None:
         ),
     ],
 )
-def test_invite_user(invite_date: datetime, today: datetime, invites: int, total_invites: int, expected: bool, user_removed: bool) -> None:
+def test_invite_user(
+    invite_date: datetime, today: datetime, invites: int, total_invites: int, expected: bool, user_removed: bool
+) -> None:
     event = get_event()
     mock_client_bitwarden = MagicMock(spec=BitwardenPublicApi)
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
@@ -310,9 +312,7 @@ def test_has_reached_max_total_invites(invites: int, expected: bool) -> None:
         ),
     ],
 )
-def test_is_eligible(
-    invites: int, total_invites: int, expected: bool
-) -> None:
+def test_is_eligible(invites: int, total_invites: int, expected: bool) -> None:
     mock_client_dynamodb = MagicMock(spec=DynamodbClient)
     mock_client_dynamodb.get_item_from_table = MagicMock(
         return_value={
