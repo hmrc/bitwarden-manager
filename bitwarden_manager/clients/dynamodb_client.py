@@ -63,7 +63,7 @@ class DynamodbClient:
                     "username": item.get("username", {}).get("S"),
                     "invite_date": item.get("invite_date", {}).get("S"),
                     "reinvites": int(item.get("reinvites", {}).get("N")),
-                    "total_invites": int(item.get("total_invites", {}).get("N")),
+                    "total_invites": int(item.get("total_invites", {}).get("N", 0)),
                 }
 
             return None
