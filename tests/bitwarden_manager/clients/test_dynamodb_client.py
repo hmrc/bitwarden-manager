@@ -63,35 +63,38 @@ def test_delete_item_from_table() -> None:
 
 
 @mock_aws
-@pytest.mark.parametrize("item,expected", [
-    (
-        {
-            "username": "test.user",
-            "invite_date": datetime.today().strftime("%Y-%m-%d"),
-            "reinvites": 0,
-            "total_invites": 1,
-        },
-        {
-            "username": "test.user",
-            "invite_date": datetime.today().strftime("%Y-%m-%d"),
-            "reinvites": 0,
-            "total_invites": 1,
-        },
-    ),
-    (
-        {
-            "username": "test.user",
-            "invite_date": datetime.today().strftime("%Y-%m-%d"),
-            "reinvites": 0,
-        },  # total_invites does not exist
-        {
-            "username": "test.user",
-            "invite_date": datetime.today().strftime("%Y-%m-%d"),
-            "reinvites": 0,
-            "total_invites": 0,
-        },
-    ),
-])
+@pytest.mark.parametrize(
+    "item,expected",
+    [
+        (
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+                "total_invites": 1,
+            },
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+                "total_invites": 1,
+            },
+        ),
+        (
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+            },  # total_invites does not exist
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+                "total_invites": 0,
+            },
+        ),
+    ],
+)
 def test_get_item_from_table(item: Dict[str, Any], expected: Dict[str, Any]) -> None:
     client = DynamodbClient()
 
