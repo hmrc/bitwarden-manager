@@ -1,3 +1,4 @@
+from typing import Any, Dict
 import boto3
 import pytest
 from datetime import datetime
@@ -62,22 +63,47 @@ def test_delete_item_from_table() -> None:
 
 
 @mock_aws
-def test_get_item_from_table() -> None:
+@pytest.mark.parametrize(
+    "item,expected",
+    [
+        (
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+                "total_invites": 1,
+            },
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+                "total_invites": 1,
+            },
+        ),
+        (
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+            },  # total_invites does not exist
+            {
+                "username": "test.user",
+                "invite_date": datetime.today().strftime("%Y-%m-%d"),
+                "reinvites": 0,
+                "total_invites": 0,
+            },
+        ),
+    ],
+)
+def test_get_item_from_table(item: Dict[str, Any], expected: Dict[str, Any]) -> None:
     client = DynamodbClient()
-
-    item = {
-        "username": "test.user",
-        "invite_date": datetime.today().strftime("%Y-%m-%d"),
-        "reinvites": 0,
-        "total_invites": 1,
-    }
 
     dynamodb = boto3.resource("dynamodb", region_name="eu-west-2")
     create_table_in_local_region(dynamodb, TABLE_NAME)
     table = dynamodb.Table(TABLE_NAME)
 
     table.put_item(Item=item)
-    assert client.get_item_from_table(username="test.user") == item
+    assert client.get_item_from_table(username="test.user") == expected
     assert client.get_item_from_table(username="missing.user") is None
 
 
