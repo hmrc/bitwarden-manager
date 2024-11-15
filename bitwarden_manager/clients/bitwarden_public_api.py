@@ -78,7 +78,7 @@ class BitwardenPublicApi:
             if username and username in user.get("email", ""):
                 return user
         else:
-            raise Exception(f"No user with username {username} found")
+            return {"ERROR": f"Username {username} not found"}
 
     def get_user_by_external_id(self, external_id: str) -> Dict[str, Any]:
         self.__fetch_token()
