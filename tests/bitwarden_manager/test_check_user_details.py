@@ -1,13 +1,10 @@
 import logging
 import os
-import pytest
 import responses
-import pathlib
 
 
 from bitwarden_manager.check_user_details import CheckUserDetails
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
-from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 
 fake_good_event = {
     "resource": "/bitwarden-manager/check-user",
@@ -43,51 +40,40 @@ MOCKED_LOGIN = responses.Response(
 )
 
 
-def test_get_user_by_username() -> None:
-    username = "test.user01"
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
-        rsps.add(MOCKED_GET_MEMBERS)
-
-        client = BitwardenPublicApi(
-            logger=logging.getLogger(),
-            client_id="foo",
-            client_secret="bar",
-        )
-        user = client.get_user_by_username(username=username)
-
-        assert username in user["email"]
-        assert "11111111" == user["id"]
-
-        with pytest.raises(Exception, match=r"No user with username .* found"):
-            client.get_user_by_username(username="does.not.exist")
-
-
 def test_check_user_details() -> None:
     username = "test.user01"
+    api_client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_GET_MEMBERS)
-        api_client = BitwardenPublicApi(
-            logger=logging.getLogger(),
-            client_id="foo",
-            client_secret="bar",
-        )
-        vault_client = BitwardenVaultClient(
-            cli_executable_path=str(pathlib.Path(__file__).parent.joinpath("./stubs/bitwarden_client_stub.py")),
-            client_id="foo",
-            client_secret="bar",
-            export_enc_password="hmrc2023",
-            logger=logging.getLogger(),
-            organisation_id="abc-123",
-            password="very secure pa$$w0rd!",
-            cli_timeout=20,
-        )
-        response = CheckUserDetails(api_client, vault_client).run(event=fake_good_event)
+
+        response = CheckUserDetails(api_client).run(event=fake_good_event)
 
         assert username in response["email"]
         assert "11111111" == response["id"]
 
-        with pytest.raises(Exception, match=r"No user with username .* found"):
-            CheckUserDetails(api_client, vault_client).run(event=fake_bad_event)
+
+def test_get_user() -> None:
+    username = "test.user01"
+    api_client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+
+        check_user_details = CheckUserDetails(bitwarden_api=api_client)
+
+        user = check_user_details.get_user(username=username)
+        assert username in user["email"]
+        assert "11111111" == user["id"]
+
+        user = check_user_details.get_user(username="doesnot.exist")
+        assert user == {"ERROR": "Username doesnot.exist not found"}

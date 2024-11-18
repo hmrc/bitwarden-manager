@@ -74,9 +74,7 @@ class BitwardenManager:
 
                 case "check_user":
                     self.__logger.info(f"Handling event {event_name} with CheckUserDetails")
-                    CheckUserDetails(
-                        bitwarden_api=self._get_bitwarden_public_api(), bitwarden_vault_client=bitwarden_vault_client
-                    ).run(event=event)
+                    CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
 
                 case "remove_user":
                     self.__logger.info(f"Handling event {event_name} with OffboardUser")

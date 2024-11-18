@@ -15,6 +15,10 @@ API_URL = "https://api.bitwarden.eu/public"
 session = Session()
 
 
+class BitwardenUserNotFoundException(Exception):
+    pass
+
+
 class BitwardenPublicApi:
 
     bitwarden_access_token = None
@@ -70,7 +74,7 @@ class BitwardenPublicApi:
             if email and email == user.get("email", ""):
                 return user
         else:
-            raise Exception(f"No user with email {email} found")
+            raise BitwardenUserNotFoundException(f"No user with email {email} found")
 
     def get_user_by_username(self, username: str) -> Dict[str, Any]:
         self.__fetch_token()
@@ -78,7 +82,7 @@ class BitwardenPublicApi:
             if username and username in user.get("email", ""):
                 return user
         else:
-            raise Exception(f"No user with username {username} found")
+            raise BitwardenUserNotFoundException(f"No user with username {username} found")
 
     def get_user_by_external_id(self, external_id: str) -> Dict[str, Any]:
         self.__fetch_token()
@@ -86,7 +90,7 @@ class BitwardenPublicApi:
             if external_id and external_id == user.get("externalId", ""):
                 return user
         else:
-            raise Exception(f"No user with external_id {external_id} found")
+            raise BitwardenUserNotFoundException(f"No user with external_id {external_id} found")
 
     def get_users(self) -> List[Dict[str, Any]]:
         response = session.get(f"{API_URL}/members", timeout=REQUEST_TIMEOUT_SECONDS)
