@@ -37,7 +37,7 @@ class BitwardenManager:
         else:
             self._run(event=event)
 
-    def _run(self, event: Dict[str, Any]) -> None:
+    def _run(self, event: Dict[str, Any]) -> Any:
         self.__logger.debug("%s", event)
 
         event_name = self._get_event_name(event)
@@ -74,7 +74,7 @@ class BitwardenManager:
 
                 case "check_user":
                     self.__logger.info(f"Handling event {event_name} with CheckUserDetails")
-                    CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+                    return CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
 
                 case "remove_user":
                     self.__logger.info(f"Handling event {event_name} with OffboardUser")
