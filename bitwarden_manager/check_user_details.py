@@ -1,7 +1,6 @@
 from jsonschema import validate
 from typing import Dict, Any
-from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
-from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserNotFoundException
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 check_user_event_schema = {
@@ -26,14 +25,16 @@ check_user_event_schema = {
 
 
 class CheckUserDetails:
-    def __init__(
-        self,
-        bitwarden_api: BitwardenPublicApi,
-        bitwarden_vault_client: BitwardenVaultClient,
-    ):
+    def __init__(self, bitwarden_api: BitwardenPublicApi):
         self.bitwarden_api = bitwarden_api
-        self.bitwarden_vault_client = bitwarden_vault_client
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
+
+    def get_user(self, username: str) -> Dict[str, Any]:
+        try:
+            return self.bitwarden_api.get_user_by_username(username=username)
+        except BitwardenUserNotFoundException as e:
+            self.__logger.warning(str(e))
+            return {"ERROR": f"Username {username} not found"}
 
     def run(self, event: Dict[str, Any]) -> Dict[str, Any]:
         validate(instance=event, schema=check_user_event_schema)
@@ -41,4 +42,4 @@ class CheckUserDetails:
         username = event["queryStringParameters"]["username"]
 
         self.__logger.info(f"Fetching user details for {username}")
-        return self.bitwarden_api.get_user_by_username(username=username)
+        return self.get_user(username=username)
