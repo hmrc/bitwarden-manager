@@ -3,7 +3,11 @@ from jsonschema import validate
 from datetime import datetime
 
 from bitwarden_manager.clients.user_management_api import UserManagementApi
-from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.clients.bitwarden_public_api import (
+    BitwardenPublicApi,
+    BitwardenUserAlreadyExistsException,
+    BitwardenUserNotFoundException,
+)
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 import bitwarden_manager.groups_and_collections as GroupsAndCollections
@@ -48,6 +52,14 @@ class OnboardUser:
         validate(instance=event, schema=onboard_user_event_schema)
 
         self.__logger.info(f"Onboarding user {event['username']} to bitwarden")
+
+        try:
+            self.__logger.info(f"Checking if user {event['username']} already exists")
+            self.bitwarden_api.get_user_by(field="externalId", value=event["username"])
+            self.__logger.info(f"User {event['username']} already exists. Exiting.")
+            raise BitwardenUserAlreadyExistsException(f"User {event['username']} already exists.")
+        except BitwardenUserNotFoundException:
+            self.__logger.info(f"User {event['username']} does not exist. Creating user.")
 
         self.__logger.info(f"Acquiring teams and roles for user {event['username']}")
         teams = self.user_management_api.get_user_teams(username=event["username"])

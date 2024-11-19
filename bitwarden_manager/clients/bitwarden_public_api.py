@@ -19,6 +19,10 @@ class BitwardenUserNotFoundException(Exception):
     pass
 
 
+class BitwardenUserAlreadyExistsException(Exception):
+    pass
+
+
 class BitwardenPublicApi:
 
     bitwarden_access_token = None
@@ -100,6 +104,14 @@ class BitwardenPublicApi:
             raise Exception("Failed to retrieve users", response.content, error) from error
         response_json: Dict[str, Any] = response.json()
         return list(response_json.get("data", []))
+
+    def get_user_by(self, field: str, value: str) -> Dict[str, Any]:
+        self.__fetch_token()
+        for user in self.get_users():
+            if value and value in user.get(field, ""):
+                return user
+        else:
+            raise BitwardenUserNotFoundException(f"No user with {field} {value} found")
 
     def fetch_user_id_by_email(self, email: str) -> str:
         return str(self.get_user_by_email(email=email)["id"])
