@@ -37,10 +37,10 @@ class BitwardenManager:
         else:
             self._run(event=event)
 
-    def _run(self, event: Dict[str, Any]) -> Any:
+    def _run(self, event: Dict[str, Any]) -> None:
         self.__logger.debug("%s", event)
 
-        event_name = self._get_event_name(event)
+        event_name = event.get("event_name")
         bitwarden_vault_client = self._get_bitwarden_vault_client()
 
         try:
@@ -71,10 +71,6 @@ class BitwardenManager:
                     ConfirmUser(
                         bitwarden_vault_client=bitwarden_vault_client, allowed_domains=self._get_allowed_email_domains()
                     ).run(event=event)
-
-                case "check_user":
-                    self.__logger.info(f"Handling event {event_name} with CheckUserDetails")
-                    return CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
 
                 case "remove_user":
                     self.__logger.info(f"Handling event {event_name} with OffboardUser")
@@ -120,6 +116,18 @@ class BitwardenManager:
         finally:
             bitwarden_vault_client.logout()
 
+    def api_run(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        self.__logger.debug("%s", event)
+        api_path = event.get("path")
+
+        match api_path:
+            case "/bitwarden-manager/check-user":
+                self.__logger.info(f"Handling path {api_path} with CheckUserDetails")
+                return CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+            case _:
+                self.__logger.info(f"Ignoring unknown path '{api_path}'")
+                return
+
     def _is_sqs_event(self, event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
 
@@ -156,14 +164,6 @@ class BitwardenManager:
             organisation_id=self._get_secret("organisation-id"),
             cli_timeout=self._get_bitwarden_cli_timeout(),
         )
-
-    def _get_event_name(self, event: Dict[str, Any]) -> str:
-        if (event.get("event_name") is not None) and ("event_name" in event):
-            event_name = str(event["event_name"])
-        else:
-            event_name = str(event["path"].replace("/", " ").replace("?", " ").replace("-", "_").split()[-1])
-
-        return event_name
 
     def _get_secret(self, secret_id: str) -> str:
         return self._secretsmanager.get_secret_value(f"/bitwarden/{secret_id}")

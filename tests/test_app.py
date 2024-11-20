@@ -22,7 +22,7 @@ from bitwarden_manager.check_user_details import CheckUserDetails
 def test_handler_errors_on_invalid_format_events(_: Mock, caplog: LogCaptureFixture) -> None:
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with pytest.raises(KeyError):
+        with caplog.at_level(logging.INFO):
             handler(event=dict(not_what_we="are_expecting"), context={})
 
 
@@ -131,15 +131,13 @@ def test_handler_routes_confirm_user(_: Mock) -> None:
 
 @mock.patch("boto3.client")
 def test_handler_routes_check_user(_: Mock) -> None:
-    event = dict(event_name="check_user")
+    event = dict(path="/bitwarden-manager/check-user")
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-            with patch.object(CheckUserDetails, "run") as check_user_mock:
-                handler(event=event, context={})
+        with patch.object(CheckUserDetails, "run") as check_user_mock:
+            handler(event=event, context={})
 
     check_user_mock.assert_called_once_with(event=event)
-    bitwarden_logout.assert_called_once()
 
 
 @mock.patch("boto3.client")
