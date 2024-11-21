@@ -39,7 +39,7 @@ event_schema = {
     "oneOf": [
         {"required": ["event_name"]},
         {"required": ["path"]},
-    ]
+    ],
 }
 
 
@@ -49,7 +49,7 @@ class BitwardenManager:
 
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[self._get_secret("export-encryption-password")])
 
-    def _is_api_gateway_event(self, event: Dict[str, Any]) -> bool:
+    def _is_api_gateway_event(self, event: Dict[str, Any]) -> Any:
         return event.get("path") and "/bitwarden-manager/" in event["path"]
 
     def run(self, event: Dict[str, Any]) -> None:
@@ -60,7 +60,6 @@ class BitwardenManager:
                 self._run(json.loads(record["body"]))
         else:
             self._run(event=event)
-
 
     def _run(self, event: Dict[str, Any]) -> None:
         self.__logger.debug("%s", event)
@@ -153,7 +152,7 @@ class BitwardenManager:
                 return CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
             case _:
                 self.__logger.info(f"Ignoring unknown request path '{request_path}'")
-                return
+                return {"status": 200, "body": f"Unknown request path '{request_path}'"}
 
     def _is_sqs_event(self, event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
