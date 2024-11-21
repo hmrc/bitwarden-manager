@@ -2,6 +2,7 @@ import logging
 from unittest import mock
 from unittest.mock import patch, Mock, MagicMock
 
+from jsonschema import ValidationError
 import pytest
 from _pytest.logging import LogCaptureFixture
 
@@ -22,7 +23,7 @@ from bitwarden_manager.check_user_details import CheckUserDetails
 def test_handler_errors_on_invalid_format_events(_: Mock, caplog: LogCaptureFixture) -> None:
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with pytest.raises(KeyError):
+        with pytest.raises(ValidationError):
             handler(event=dict(not_what_we="are_expecting"), context={})
 
 
@@ -36,6 +37,16 @@ def test_handler_ignores_unknown_events(_: Mock, __: Mock, caplog: LogCaptureFix
                 handler(event=dict(event_name="some_other_event"), context={})
 
     assert "Ignoring unknown event 'some_other_event'" in caplog.text
+
+
+@mock.patch("boto3.client")
+def test_handler_ignores_unknown_request_path(_: Mock, caplog: LogCaptureFixture) -> None:
+    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+        secrets_manager_mock.return_value = "23497858247589473589734805734853"
+        with caplog.at_level(logging.INFO):
+            handler(event=dict(path="/bitwarden-manager/unknown"), context={})
+
+    assert "Ignoring unknown request path '/bitwarden-manager/unknown'" in caplog.text
 
 
 @mock.patch("boto3.client")
@@ -131,15 +142,13 @@ def test_handler_routes_confirm_user(_: Mock) -> None:
 
 @mock.patch("boto3.client")
 def test_handler_routes_check_user(_: Mock) -> None:
-    event = dict(event_name="check_user")
+    event = dict(path="/bitwarden-manager/check-user")
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-            with patch.object(CheckUserDetails, "run") as check_user_mock:
-                handler(event=event, context={})
+        with patch.object(CheckUserDetails, "run") as check_user_mock:
+            handler(event=event, context={})
 
     check_user_mock.assert_called_once_with(event=event)
-    bitwarden_logout.assert_called_once()
 
 
 @mock.patch("boto3.client")

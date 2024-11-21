@@ -31,12 +31,10 @@ class CheckUserDetails:
 
     def get_user(self, username: str) -> Dict[str, Any]:
         try:
-            user = self.bitwarden_api.get_user_by_username(username=username)
-            response = {"statusCode": 200, "body": user}
+            return {"statusCode": 200, "body": self.bitwarden_api.get_user_by_username(username=username)}
         except BitwardenUserNotFoundException as e:
             self.__logger.warning(str(e))
-            response = {"statusCode": 204, "body": {"ERROR": f"Username {username} not found"}}
-        return response
+            return {"statusCode": 404, "body": {"ERROR": f"Username {username} not found"}}
 
     def run(self, event: Dict[str, Any]) -> Dict[str, Any]:
         validate(instance=event, schema=check_user_event_schema)
