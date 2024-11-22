@@ -1,3 +1,4 @@
+import json
 from jsonschema import validate
 from typing import Dict, Any
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserNotFoundException
@@ -34,7 +35,7 @@ class CheckUserDetails:
             return {"statusCode": 200, "body": self.bitwarden_api.get_user_by_username(username=username)}
         except BitwardenUserNotFoundException as e:
             self.__logger.warning(str(e))
-            return {"statusCode": 404, "body": {"ERROR": f"Username {username} not found"}}
+            return {"statusCode": 404, "body": json.dumps({"ERROR": f"Username {username} not found"})}
 
     def run(self, event: Dict[str, Any]) -> Dict[str, Any]:
         validate(instance=event, schema=check_user_event_schema)

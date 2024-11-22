@@ -152,7 +152,7 @@ class BitwardenManager:
                 return CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
             case _:
                 self.__logger.info(f"Ignoring unknown request path '{request_path}'")
-                return {"status": 200, "body": f"Unknown request path '{request_path}'"}
+                return {"statusCode": 200, "body": json.dumps(f"Unknown request path '{request_path}'")}
 
     def _is_sqs_event(self, event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
