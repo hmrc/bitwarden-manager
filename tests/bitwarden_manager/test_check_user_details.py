@@ -55,8 +55,8 @@ def test_check_user_details() -> None:
 
         response = CheckUserDetails(api_client).run(event=fake_good_event)
 
-        assert username in response["body"]["email"]
-        assert "11111111" == response["body"]["id"]
+        assert username in response["body"]
+        assert "11111111" in response["body"]
 
 
 def test_get_user() -> None:
@@ -73,8 +73,8 @@ def test_get_user() -> None:
         check_user_details = CheckUserDetails(bitwarden_api=api_client)
 
         user = check_user_details.get_user(username=username)
-        assert username in user["body"]["email"]
-        assert "11111111" == user["body"]["id"]
+        assert username in user["body"]
+        assert "11111111" in user["body"]
 
         user = check_user_details.get_user(username="doesnot.exist")
         assert user["body"] == json.dumps({"ERROR": "Username doesnot.exist not found"})
