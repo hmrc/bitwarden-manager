@@ -52,14 +52,15 @@ class BitwardenManager:
     def _is_api_gateway_event(self, event: Dict[str, Any]) -> Any:
         return event.get("path") and "/bitwarden-manager/" in event["path"]
 
-    def run(self, event: Dict[str, Any]) -> None:
+    def run(self, event: Dict[str, Any]) -> Dict[str, Any] | None:
         if self._is_api_gateway_event(event=event):
-            self._api_run(event=event)
+            return self._api_run(event=event)
         elif self._is_sqs_event(event=event):
             for record in event["Records"]:
                 self._run(json.loads(record["body"]))
         else:
             self._run(event=event)
+        return None
 
     def _run(self, event: Dict[str, Any]) -> None:
         self.__logger.debug("%s", event)
