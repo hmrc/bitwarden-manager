@@ -1,6 +1,7 @@
 import logging
 import os
 import responses
+import json
 
 
 from bitwarden_manager.check_user_details import CheckUserDetails
@@ -76,4 +77,4 @@ def test_get_user() -> None:
         assert "11111111" == user["body"]["id"]
 
         user = check_user_details.get_user(username="doesnot.exist")
-        assert user["body"] == {"ERROR": "Username doesnot.exist not found"}
+        assert user["body"] == json.dumps({"ERROR": "Username doesnot.exist not found"})
