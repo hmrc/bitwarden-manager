@@ -8,7 +8,7 @@ import responses
 from _pytest.logging import LogCaptureFixture
 from responses import matchers
 
-from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserNotFoundException
 from bitwarden_manager.user import UmpUser
 
 
@@ -1461,6 +1461,54 @@ def test_get_users(caplog: LogCaptureFixture) -> None:
             client_secret="bar",
         )
         client.get_users()
+
+
+def test_get_user_by_can_get_user() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.eu/public/members",
+            body=open(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")
+            ).read(),
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        user = client.get_user_by(field="externalId", value="test.user01")
+
+        assert user.get("externalId", "") == "test.user01"
+        assert user.get("email", "") == "test.user01@example.com"
+
+
+def test_get_user_by_can_fail_to_get_user() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.eu/public/members",
+            body=open(
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")
+            ).read(),
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        with pytest.raises(BitwardenUserNotFoundException, match="No user with externalId idontexist found"):
+            client.get_user_by(field="externalId", value="idontexist")
 
 
 def test_get_users_failure(caplog: LogCaptureFixture) -> None:
