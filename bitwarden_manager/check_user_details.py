@@ -39,7 +39,13 @@ class CheckUserDetails:
             }
         except BitwardenUserNotFoundException as e:
             self.__logger.warning(str(e))
-            return {"statusCode": 404, "headers": {}, "body": json.dumps({"ERROR": f"Username {username} not found"})}
+            response = {
+                "statusCode": 404,
+                "headers": {},
+                "body": json.dumps({"ERROR": f"Username {username} not found"}),
+            }
+            self.__logger.info(json.dumps(response))
+            return response
 
     def run(self, event: Dict[str, Any]) -> Dict[str, Any]:
         validate(instance=event, schema=check_user_event_schema)
