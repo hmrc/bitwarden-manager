@@ -16,7 +16,7 @@ from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.reinvite_users import ReinviteUsers
 from bitwarden_manager.update_user_groups import UpdateUserGroups
-from bitwarden_manager.check_user_details import CheckUserDetails
+from bitwarden_manager.get_user_details import GetUserDetails
 
 
 @mock.patch("boto3.client")
@@ -141,14 +141,25 @@ def test_handler_routes_confirm_user(_: Mock) -> None:
 
 
 @mock.patch("boto3.client")
-def test_handler_routes_check_user(_: Mock) -> None:
-    event = dict(path="/bitwarden-manager/check-user")
+def test_handler_routes_user_get_method(_: Mock) -> None:
+    event = dict(path="/bitwarden-manager/user", httpMethod="GET")
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(CheckUserDetails, "run") as check_user_mock:
+        with patch.object(GetUserDetails, "run") as get_user_mock:
             handler(event=event, context={})
 
-    check_user_mock.assert_called_once_with(event=event)
+    get_user_mock.assert_called_once_with(event=event)
+
+
+@mock.patch("boto3.client")
+def test_handler_routes_user_unknown_method(_: Mock, caplog: LogCaptureFixture) -> None:
+
+    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+        secrets_manager_mock.return_value = "23497858247589473589734805734853"
+        with caplog.at_level(logging.INFO):
+            handler(event=dict(path="/bitwarden-manager/user", httpMethod="PUT"), context={})
+
+    assert "Ignoring unknown request method '/bitwarden-manager/user:PUT'" in caplog.text
 
 
 @mock.patch("boto3.client")
