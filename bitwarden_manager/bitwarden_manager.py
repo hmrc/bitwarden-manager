@@ -148,7 +148,7 @@ class BitwardenManager:
         request_path = event.get("path")
 
         match request_path:
-            case "/bitwarden-manager/user":
+            case "/bitwarden-manager/users":
                 if event.get("httpMethod") == "GET":
                     self.__logger.info(f"Handling path {request_path} with GetUserDetails")
                     return GetUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)

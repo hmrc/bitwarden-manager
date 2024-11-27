@@ -142,7 +142,7 @@ def test_handler_routes_confirm_user(_: Mock) -> None:
 
 @mock.patch("boto3.client")
 def test_handler_routes_user_get_method(_: Mock) -> None:
-    event = dict(path="/bitwarden-manager/user", httpMethod="GET")
+    event = dict(path="/bitwarden-manager/users", httpMethod="GET")
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
         with patch.object(GetUserDetails, "run") as get_user_mock:
@@ -157,9 +157,9 @@ def test_handler_routes_user_unknown_method(_: Mock, caplog: LogCaptureFixture) 
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
         with caplog.at_level(logging.INFO):
-            handler(event=dict(path="/bitwarden-manager/user", httpMethod="PUT"), context={})
+            handler(event=dict(path="/bitwarden-manager/users", httpMethod="PUT"), context={})
 
-    assert "Ignoring unknown request method '/bitwarden-manager/user:PUT'" in caplog.text
+    assert "Ignoring unknown request method '/bitwarden-manager/users:PUT'" in caplog.text
 
 
 @mock.patch("boto3.client")

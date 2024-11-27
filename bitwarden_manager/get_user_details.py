@@ -11,7 +11,7 @@ check_user_event_schema = {
         "path": {
             "type": "string",
             "description": "path of request",
-            "pattern": "/bitwarden-manager/user",
+            "pattern": "/bitwarden-manager/users",
         },
         "queryStringParameters": {
             "type": "object",

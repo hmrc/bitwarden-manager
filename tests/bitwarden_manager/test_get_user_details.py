@@ -8,15 +8,15 @@ from bitwarden_manager.get_user_details import GetUserDetails
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
 fake_good_event = {
-    "resource": "/bitwarden-manager/user",
-    "path": "/bitwarden-manager/user",
+    "resource": "/bitwarden-manager/users",
+    "path": "/bitwarden-manager/users",
     "httpMethod": "GET",
     "queryStringParameters": {"username": "test.user01"},
 }
 
 fake_bad_event = {
-    "resource": "/bitwarden-manager/user",
-    "path": "/bitwarden-manager/user",
+    "resource": "/bitwarden-manager/users",
+    "path": "/bitwarden-manager/users",
     "httpMethod": "GET",
     "queryStringParameters": {"username": "no.such-user"},
 }
