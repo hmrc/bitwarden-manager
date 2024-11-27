@@ -155,14 +155,14 @@ class BitwardenManager:
                 else:
                     self.__logger.info(f"Ignoring unknown request method '{request_path}:{event.get("httpMethod")}'")
                     return {
-                        "statusCode": 200,
+                        "statusCode": 501,
                         "body": json.dumps(
                             f"Unknown request method for path '{request_path}:{event.get("httpMethod")}'"
                         ),
                     }
             case _:
                 self.__logger.info(f"Ignoring unknown request path '{request_path}'")
-                return {"statusCode": 200, "body": json.dumps(f"Unknown request path '{request_path}'")}
+                return {"statusCode": 404, "body": json.dumps(f"Unknown request path '{request_path}'")}
 
     def _is_sqs_event(self, event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
