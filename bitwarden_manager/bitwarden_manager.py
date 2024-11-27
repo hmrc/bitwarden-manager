@@ -22,7 +22,7 @@ from bitwarden_manager.temp.list_collection_items import ListCollectionItems
 from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
 from bitwarden_manager.temp.update_collection_external_ids import UpdateCollectionExternalIds
 from bitwarden_manager.update_user_groups import UpdateUserGroups
-from bitwarden_manager.check_user_details import CheckUserDetails
+from bitwarden_manager.get_user_details import GetUserDetails
 
 
 # Only one of ["event_name", "path"] may be present in the event object
@@ -148,12 +148,21 @@ class BitwardenManager:
         request_path = event.get("path")
 
         match request_path:
-            case "/bitwarden-manager/check-user":
-                self.__logger.info(f"Handling path {request_path} with CheckUserDetails")
-                return CheckUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+            case "/bitwarden-manager/user":
+                if event.get("httpMethod") == "GET":
+                    self.__logger.info(f"Handling path {request_path} with GetUserDetails")
+                    return GetUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
+                else:
+                    self.__logger.info(f"Ignoring unknown request method '{request_path}:{event.get("httpMethod")}'")
+                    return {
+                        "statusCode": 501,
+                        "body": json.dumps(
+                            f"Unknown request method for path '{request_path}:{event.get("httpMethod")}'"
+                        ),
+                    }
             case _:
                 self.__logger.info(f"Ignoring unknown request path '{request_path}'")
-                return {"statusCode": 200, "body": json.dumps(f"Unknown request path '{request_path}'")}
+                return {"statusCode": 404, "body": json.dumps(f"Unknown request path '{request_path}'")}
 
     def _is_sqs_event(self, event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"

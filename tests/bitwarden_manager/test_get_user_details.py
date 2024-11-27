@@ -4,19 +4,19 @@ import responses
 import json
 
 
-from bitwarden_manager.check_user_details import CheckUserDetails
+from bitwarden_manager.get_user_details import GetUserDetails
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
 fake_good_event = {
-    "resource": "/bitwarden-manager/check-user",
-    "path": "/bitwarden-manager/check-user",
+    "resource": "/bitwarden-manager/user",
+    "path": "/bitwarden-manager/user",
     "httpMethod": "GET",
     "queryStringParameters": {"username": "test.user01"},
 }
 
 fake_bad_event = {
-    "resource": "/bitwarden-manager/check-user",
-    "path": "/bitwarden-manager/check-user",
+    "resource": "/bitwarden-manager/user",
+    "path": "/bitwarden-manager/user",
     "httpMethod": "GET",
     "queryStringParameters": {"username": "no.such-user"},
 }
@@ -41,7 +41,7 @@ MOCKED_LOGIN = responses.Response(
 )
 
 
-def test_check_user_details() -> None:
+def test_get_user_details() -> None:
     username = "test.user01"
     api_client = BitwardenPublicApi(
         logger=logging.getLogger(),
@@ -53,7 +53,7 @@ def test_check_user_details() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_GET_MEMBERS)
 
-        response = CheckUserDetails(api_client).run(event=fake_good_event)
+        response = GetUserDetails(api_client).run(event=fake_good_event)
 
         assert username in response["body"]
         assert "11111111" in response["body"]
@@ -70,11 +70,11 @@ def test_get_user() -> None:
         rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_GET_MEMBERS)
 
-        check_user_details = CheckUserDetails(bitwarden_api=api_client)
+        get_user_details = GetUserDetails(bitwarden_api=api_client)
 
-        user = check_user_details.get_user(username=username)
+        user = get_user_details.get_user(username=username)
         assert username in user["body"]
         assert "11111111" in user["body"]
 
-        user = check_user_details.get_user(username="doesnot.exist")
+        user = get_user_details.get_user(username="doesnot.exist")
         assert user["body"] == json.dumps({"ERROR": "Username doesnot.exist not found"})

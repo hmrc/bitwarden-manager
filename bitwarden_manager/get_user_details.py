@@ -11,7 +11,7 @@ check_user_event_schema = {
         "path": {
             "type": "string",
             "description": "path of request",
-            "pattern": "/bitwarden-manager/check-user",
+            "pattern": "/bitwarden-manager/user",
         },
         "queryStringParameters": {
             "type": "object",
@@ -25,7 +25,7 @@ check_user_event_schema = {
 }
 
 
-class CheckUserDetails:
+class GetUserDetails:
     def __init__(self, bitwarden_api: BitwardenPublicApi):
         self.bitwarden_api = bitwarden_api
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
