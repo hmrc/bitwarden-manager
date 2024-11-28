@@ -55,7 +55,7 @@ class OnboardUser:
 
         try:
             self.__logger.info(f"Checking if user {event['username']} already exists")
-            self.bitwarden_api.get_user_by(field="externalId", value=event["username"])
+            self.bitwarden_api.get_user_by(field="email", value=event["username"])
             self.__logger.info(f"User {event['username']} already exists. Exiting.")
             raise BitwardenUserAlreadyExistsException(f"User {event['username']} already exists.")
         except BitwardenUserNotFoundException:
