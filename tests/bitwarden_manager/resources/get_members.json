@@ -53,7 +53,7 @@
         "collections": null,
         "type": 1,
         "accessAll": false,
-        "externalId": "",
+        "externalId": null,
         "resetPasswordEnrolled": false,
         "permissions": null
       }

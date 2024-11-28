@@ -1507,8 +1507,8 @@ def test_get_user_by_can_fail_to_get_user() -> None:
             client_secret="bar",
         )
 
-        with pytest.raises(BitwardenUserNotFoundException, match="No user with externalId idontexist found"):
-            client.get_user_by(field="externalId", value="idontexist")
+        with pytest.raises(BitwardenUserNotFoundException, match="No user with email idontexist found"):
+            client.get_user_by(field="email", value="idontexist")
 
 
 def test_get_users_failure(caplog: LogCaptureFixture) -> None:
