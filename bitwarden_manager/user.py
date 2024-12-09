@@ -42,11 +42,11 @@ class UmpUser:
         return bool(ump_role_to_collection_permission_mapping[role]["can_manage_team_collection"])
 
 
-class CurateBitwardenUserResponse:
+class BitwardenUserResponse:
     def __init__(self, user: Dict[str, Any]):
         self.user = user
 
-    def curate_response(self) -> Dict[str, Any]:
+    def user_response(self) -> Dict[str, Any]:
         return {
             "email": self.user["email"],
             "twoFactorEnabled": self.user["twoFactorEnabled"],
