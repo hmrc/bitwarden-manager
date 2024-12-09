@@ -56,7 +56,7 @@ def test_get_user_details() -> None:
         response = GetUserDetails(api_client).run(event=fake_good_event)
 
         assert username in response["body"]
-        assert "11111111" in response["body"]
+        assert "ADMIN" in response["body"]
 
 
 def test_get_user() -> None:
@@ -74,7 +74,7 @@ def test_get_user() -> None:
 
         user = get_user_details.get_user(username=username)
         assert username in user["body"]
-        assert "11111111" in user["body"]
+        assert "CONFIRMED" in user["body"]
 
         user = get_user_details.get_user(username="doesnot.exist")
         assert user["body"] == json.dumps({"ERROR": "Username doesnot.exist not found"})
