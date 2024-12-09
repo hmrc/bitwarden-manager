@@ -3,6 +3,7 @@ from jsonschema import validate
 from typing import Dict, Any
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserNotFoundException
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
+from bitwarden_manager.user import CurateBitwardenUserResponse
 
 check_user_event_schema = {
     "$schema": "http://json-schema.org/draft-07/schema#",
@@ -32,10 +33,12 @@ class GetUserDetails:
 
     def get_user(self, username: str) -> Dict[str, Any]:
         try:
+            curated_response = CurateBitwardenUserResponse(self.bitwarden_api.get_user_by_username(username=username))
+
             return {
                 "statusCode": 200,
                 "headers": {},
-                "body": json.dumps(self.bitwarden_api.get_user_by_username(username=username)),
+                "body": json.dumps(curated_response.curate_response()),
             }
         except BitwardenUserNotFoundException as e:
             self.__logger.warning(str(e))

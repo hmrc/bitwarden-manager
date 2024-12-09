@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 
 # Bitwarden server enum definition:
@@ -40,3 +40,19 @@ class UmpUser:
     def can_manage_team_collection(self, team: str) -> bool:
         role = self.roles_by_team.get(team, "user")
         return bool(ump_role_to_collection_permission_mapping[role]["can_manage_team_collection"])
+
+
+class CurateBitwardenUserResponse:
+    def __init__(self, user: Dict[str, Any]):
+        self.user = user
+
+    def curate_response(self) -> Dict[str, Any]:
+        return {
+            "email": self.user["email"],
+            "twoFactorEnabled": self.user["twoFactorEnabled"],
+            "status": UserStatus(self.user["status"]).name,
+            "type": UserType(self.user["type"]).name,
+            "collections": self.user["collections"],
+            "externalId": self.user["externalId"],
+            "permissions": self.user["permissions"],
+        }
