@@ -7,7 +7,7 @@ import boto3
 from jsonschema import validate
 
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
-from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserAlreadyExistsException
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientLoginError
 from bitwarden_manager.clients.s3_client import S3Client
 from bitwarden_manager.clients.dynamodb_client import DynamodbClient
@@ -138,6 +138,8 @@ class BitwardenManager:
 
         except BitwardenVaultClientLoginError as e:
             self.__logger.warning(f"Failed to complete {event_name} due to Bitwarden CLI login error - {e}")
+        except BitwardenUserAlreadyExistsException as e:
+            self.__logger.warning(f"Failed to complete {event_name} due to user already exists - {e}")
 
         finally:
             bitwarden_vault_client.logout()
@@ -149,16 +151,15 @@ class BitwardenManager:
 
         match request_path:
             case "/bitwarden-manager/users":
-                if event.get("httpMethod") == "GET":
+                http_method = event.get("httpMethod")
+                if http_method == "GET":
                     self.__logger.info(f"Handling path {request_path} with GetUserDetails")
                     return GetUserDetails(bitwarden_api=self._get_bitwarden_public_api()).run(event=event)
                 else:
-                    self.__logger.info(f"Ignoring unknown request method '{request_path}:{event.get("httpMethod")}'")
+                    self.__logger.info(f"Ignoring unknown request method '{request_path}:{http_method}'")
                     return {
                         "statusCode": 501,
-                        "body": json.dumps(
-                            f"Unknown request method for path '{request_path}:{event.get("httpMethod")}'"
-                        ),
+                        "body": json.dumps(f"Unknown request method for path '{request_path}:{http_method}'"),
                     }
             case _:
                 self.__logger.info(f"Ignoring unknown request path '{request_path}'")
