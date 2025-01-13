@@ -1,15 +1,18 @@
 # Reference Architecture
 
+<!--lint disable no-missing-blank-lines definition-case-->
+
 <!--toc:start-->
 
 - [Reference Architecture](#reference-architecture)
-
   - [Bitwarden-UMP mapping](#bitwarden-ump-mapping)
   - [Supported Usecases](#supported-usecases)
   - [Edge Cases](#edge-cases)
   - [References](#references)
 
 <!--toc:end-->
+
+<!--lint enable no-missing-blank-lines definition-case-->
 
 ![reference-architecture](./bitwarden-ump.jpg)
 
@@ -62,9 +65,13 @@ at 04/12/2023:
 - [Bitwarden Admin Console entities][3]
 
 <!--reference-links:start-->
+
 [1]: <https://github.com/hmrc/user_management_backend/tree/main/user_management_backend> "UMP Backend"
+
 [2]: <https://github.com/bitwarden/server/tree/master/src/Core/Entities> "Bitwarden Core Entities"
+
 [3]: <https://github.com/bitwarden/server/tree/master/src/Core/AdminConsole/Entities> "Bitwarden Admin Console entities"
+
 [4]: <https://github.com/bitwarden/server/blob/master/src/Core/Vault/Entities/Cipher.cs> "Cipher"
 
 <!--reference-links:end-->
