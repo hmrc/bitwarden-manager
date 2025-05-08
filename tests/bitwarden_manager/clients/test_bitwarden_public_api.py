@@ -300,6 +300,125 @@ def test_grant_can_manage_permission_to_team_collections_to_regular_user() -> No
         assert rsps.calls[0].request.method != "PUT"
 
 
+def test_assign_custom_permissions_to_platsec_user() -> None:
+    member_id = "22222222"
+    teams = ["Platform Security", "team-two"]
+    user = UmpUser(
+        username="test.user02",
+        email="test.user02@example.com",
+        roles_by_team={"Platform Security": "user", "team-two": "super_admin"},
+    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+
+        rsps.add(
+            status=200,
+            content_type="application/json",
+            method=rsps.PUT,
+            url=f"https://api.bitwarden.eu/public/members/{member_id}",
+            match=[
+                matchers.json_params_matcher(
+                    {
+                        "type": 4,
+                        "permissions": {
+                            "accessEventLogs": True,
+                            "accessImportExport": False,
+                            "accessReports": True,
+                            "createNewCollections": False,
+                            "editAnyCollection": False,
+                            "deleteAnyCollection": False,
+                            "manageGroups": False,
+                            "managePolicies": False,
+                            "manageSso": False,
+                            "manageUsers": True,
+                            "manageResetPassword": True,
+                            "manageScim": False,
+                        },
+                    }
+                )
+            ],
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        client.assign_custom_permissions_to_platsec_user(
+            user=user,
+            teams=teams,
+        )
+
+        assert len(rsps.calls) == 3
+        assert rsps.calls[-1].request.method == "PUT"
+        assert rsps.calls[-1].request.url == f"https://api.bitwarden.eu/public/members/{member_id}"
+
+        rsps.add(
+            status=400,
+            content_type="application/json",
+            method=rsps.PUT,
+            url=f"https://api.bitwarden.eu/public/members/{member_id}",
+            json={"error": "error"},
+        )
+
+        with pytest.raises(Exception, match="Failed to grant custom permissions to PlatSec user"):
+            client.assign_custom_permissions_to_platsec_user(
+                user=user,
+                teams=teams,
+            )
+
+
+def test_assign_custom_permissions_to_platsec_admin() -> None:
+    teams = ["Platform Security", "team-two"]
+    user = UmpUser(
+        username="test.user01",
+        email="test.user01@example.com",
+        roles_by_team={"Platform Security": "team_admin", "team-two": "super_admin"},
+    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        client.assign_custom_permissions_to_platsec_user(
+            user=user,
+            teams=teams,
+        )
+
+        assert len(rsps.calls) == 2
+        assert rsps.calls[-1].request.method != "PUT"
+
+
+def test_assign_custom_permissions_to_non_platsec_user() -> None:
+    teams = ["team-one", "team-two"]
+    user = UmpUser(
+        username="test.user02",
+        email="test.user02@example.com",
+        roles_by_team={"team-one": "user", "team-two": "super_admin"},
+    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_GET_MEMBERS)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        client.assign_custom_permissions_to_platsec_user(
+            user=user,
+            teams=teams,
+        )
+
+        assert len(rsps.calls) == 2
+        assert rsps.calls[-1].request.method != "PUT"
+
+
 def test_invite_user() -> None:
     test_user = "test.user"
     test_email = "test@example.com"
