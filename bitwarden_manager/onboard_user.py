@@ -110,3 +110,4 @@ class OnboardUser:
         )
 
         self.bitwarden_api.grant_can_manage_permission_to_team_collections(user=user, teams=teams)
+        self.bitwarden_api.assign_custom_permissions_to_platsec_user(user=user, teams=teams)

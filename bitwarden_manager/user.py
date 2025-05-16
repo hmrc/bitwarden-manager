@@ -41,6 +41,9 @@ class UmpUser:
         role = self.roles_by_team.get(team, "user")
         return bool(ump_role_to_collection_permission_mapping[role]["can_manage_team_collection"])
 
+    def is_a_support_admin(self, teams: list[str], bw_user_type: int) -> bool:
+        return "Platform Security" in teams and bw_user_type == UserType.REGULAR_USER
+
 
 class BitwardenUserResponse:
     def __init__(self, user: Dict[str, Any]):

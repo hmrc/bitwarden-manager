@@ -258,6 +258,40 @@ class BitwardenPublicApi:
 
         self.__logger.info(f'User has been granted "can manage" permissions to collections: {_can_manage_collections}')
 
+    def assign_custom_permissions_to_platsec_user(self, user: UmpUser, teams: List[str]) -> None:
+        bw_user = self.get_user_by_email(email=str(user.email))
+        permissions = {
+            "accessEventLogs": True,
+            "accessImportExport": False,
+            "accessReports": True,
+            "createNewCollections": False,
+            "editAnyCollection": False,
+            "deleteAnyCollection": False,
+            "manageGroups": False,
+            "managePolicies": False,
+            "manageSso": False,
+            "manageUsers": True,
+            "manageResetPassword": True,
+            "manageScim": False,
+        }
+        if user.is_a_support_admin(teams, bw_user["type"]):
+            response = session.put(
+                f"{API_URL}/members/{bw_user['id']}",
+                json={
+                    "type": 4,
+                    "permissions": permissions,
+                },
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+            try:
+                response.raise_for_status()
+            except HTTPError as error:
+                raise Exception(
+                    "Failed to grant custom permissions to PlatSec user", response.content, error
+                ) from error
+
+        self.__logger.info(f"PlatSec user {user.username} has been granted custom permissions")
+
     def remove_user(self, username: str) -> None:
         self.__fetch_token()
         try:
