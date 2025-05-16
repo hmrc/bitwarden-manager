@@ -274,7 +274,7 @@ class BitwardenPublicApi:
             "manageResetPassword": True,
             "manageScim": False,
         }
-        if "Platform Security" in teams and bw_user["type"] == 2:
+        if user.is_a_support_admin(teams, bw_user['type']):
             response = session.put(
                 f"{API_URL}/members/{bw_user['id']}",
                 json={
