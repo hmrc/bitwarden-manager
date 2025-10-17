@@ -67,7 +67,7 @@ python-test: python
 		--no-cov-on-fail \
 		--cov-fail-under=100
 
-test: python-test flake8 fmt-check mypy bandit md-check
+test: flake8 bandit md-check fmt-check mypy python-test
 
 ci: test
 
