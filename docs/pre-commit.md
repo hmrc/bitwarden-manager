@@ -5,7 +5,8 @@ This guide explains how to set up and run TruffleHog v3 with pre-commit on your 
 1. Installing TruffleHog locally
    \[TruffleHog]: https://github.com/trufflesecurity/trufflehog
 
-> Note: You need to make sure you're running TruffleHog v3.Older versions (v2 or below) will not work with the pre-commit hook and may produce errors.
+> Note: You need to make sure you're running TruffleHog v3.
+> Older versions (v2 or below) will not work with the pre-commit hook and may produce errors.
 
 ```bash
 trufflehog --version
@@ -47,7 +48,8 @@ pre-commit run trufflehog
 trufflehog filesystem . --json
 ```
 
-> Note: TruffleHog scan must pass before you can commit or push your changes. This ensures that secrets are not accidentally added to the repository.
+> Note: TruffleHog scan must pass before you can commit or push your changes.
+> This ensures that secrets are not accidentally added to the repository.
 
 ### What to Do if the Scan Fails
 
@@ -59,6 +61,9 @@ If TruffleHog detects secrets:
 
 3. Remove or redact the secrets from your code or configuration.
 
-4. If the secret is legitimate and safe to ignore, discuss it with your team before allowing it. You can follow the official TruffleHog documentation for guidance on using the --allow flag to ignore specific files or patterns, creating custom rules to exclude certain secrets, or adding `# trufflehog:ignore` comments directly in code to bypass detection.
+4. If the secret is legitimate and safe to ignore, discuss it with your team before allowing it.
+   You can follow the official TruffleHog documentation for guidance on using the --allow flag to
+   ignore specific files or patterns, creating custom rules to exclude certain secrets, or
+   adding `# trufflehog:ignore` comments directly in code to bypass detection.
 
 5. Re-run the scan to ensure no other secrets are detected before committing or pushing.
