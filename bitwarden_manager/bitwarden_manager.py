@@ -10,13 +10,11 @@ from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManage
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserAlreadyExistsException
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientLoginError
 from bitwarden_manager.clients.s3_client import S3Client
-from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
-from bitwarden_manager.reinvite_users import ReinviteUsers
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 from bitwarden_manager.temp.list_collection_items import ListCollectionItems
 from bitwarden_manager.temp.list_custom_groups import ListCustomGroups
@@ -77,7 +75,6 @@ class BitwardenManager:
                         bitwarden_api=self._get_bitwarden_public_api(),
                         user_management_api=self._get_user_management_api(),
                         bitwarden_vault_client=bitwarden_vault_client,
-                        dynamodb_client=DynamodbClient(),
                     ).run(event=event)
 
                 case "update_user_groups":
@@ -102,15 +99,11 @@ class BitwardenManager:
                     self.__logger.info(f"Handling event {event_name} with OffboardUser")
                     OffboardUser(
                         bitwarden_api=self._get_bitwarden_public_api(),
-                        dynamodb_client=DynamodbClient(),
                     ).run(event=event)
 
                 case "reinvite_users":
                     self.__logger.info(f"Handling event {event_name} with ReinviteUsers")
-                    ReinviteUsers(
-                        bitwarden_api=self._get_bitwarden_public_api(),
-                        dynamodb_client=DynamodbClient(),
-                    ).run(event=event)
+                    self.__logger.warning("event reinvite_users has been removed")
 
                 case "list_custom_groups":
                     self.__logger.info(f"Handling event {event_name} with ListCustomGroups")

@@ -1,7 +1,6 @@
 from typing import Dict, Any
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
-from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 
 from jsonschema import validate
 
@@ -26,10 +25,8 @@ class OffboardUser:
     def __init__(
         self,
         bitwarden_api: BitwardenPublicApi,
-        dynamodb_client: DynamodbClient,
     ):
         self.bitwarden_api = bitwarden_api
-        self.dynamodb_client = dynamodb_client
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
 
     def run(self, event: Dict[str, Any]) -> None:
@@ -41,6 +38,3 @@ class OffboardUser:
         self.bitwarden_api.remove_user(
             username=event["username"],
         )
-
-        self.__logger.info(f"Removing user {event['username']} from dynamodb")
-        self.dynamodb_client.delete_item_from_table(username=event["username"])
