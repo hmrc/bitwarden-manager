@@ -8,13 +8,11 @@ from _pytest.logging import LogCaptureFixture
 
 from app import handler
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
-from bitwarden_manager.clients.dynamodb_client import DynamodbClient
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
 from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.confirm_user import ConfirmUser
-from bitwarden_manager.reinvite_users import ReinviteUsers
 from bitwarden_manager.update_user_groups import UpdateUserGroups
 from bitwarden_manager.get_user_details import GetUserDetails
 
@@ -62,15 +60,12 @@ def test_bitwarden_client_logout_is_called(_: Mock) -> None:
 @mock.patch("boto3.client")
 def test_bitwarden_client_logout_is_called_even_when_exception_thrown(_: Mock) -> None:
     with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-        with patch.object(DynamodbClient, "add_item_to_table"):
-            with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-                secrets_manager_mock.return_value = "23497858247589473589734805734853"
-                event = dict(event_name="new_user")
-                with patch.object(
-                    OnboardUser, "run", MagicMock(side_effect=BitwardenVaultClientError())
-                ) as new_user_mock:
-                    with pytest.raises(BitwardenVaultClientError):
-                        handler(event=event, context={})
+        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+            secrets_manager_mock.return_value = "23497858247589473589734805734853"
+            event = dict(event_name="new_user")
+            with patch.object(OnboardUser, "run", MagicMock(side_effect=BitwardenVaultClientError())) as new_user_mock:
+                with pytest.raises(BitwardenVaultClientError):
+                    handler(event=event, context={})
 
         new_user_mock.assert_called_once_with(event=event)
         bitwarden_logout.assert_called_once()
@@ -189,13 +184,14 @@ def test_handler_routes_update_user_groups(_: Mock) -> None:
 
 
 @mock.patch("boto3.client")
-def test_handler_routes_reinvite_users(_: Mock) -> None:
+def test_handler_routes_reinvite_users(_: Mock, caplog: LogCaptureFixture) -> None:
     event = dict(event_name="reinvite_users")
     with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
         secrets_manager_mock.return_value = "23497858247589473589734805734853"
         with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-            with patch.object(ReinviteUsers, "run") as reinvite_users_mock:
-                handler(event=event, context={})
+            handler(event=event, context={})
 
-    reinvite_users_mock.assert_called_once_with(event=event)
     bitwarden_logout.assert_called_once()
+
+    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert any(record.message == "event reinvite_users has been removed" for record in warnings)
