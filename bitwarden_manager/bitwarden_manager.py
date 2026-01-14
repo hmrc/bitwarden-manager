@@ -47,7 +47,8 @@ class BitwardenManager:
 
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[self._get_secret("export-encryption-password")])
 
-    def _is_api_gateway_event(self, event: Dict[str, Any]) -> Any:
+    @staticmethod
+    def _is_api_gateway_event(event: Dict[str, Any]) -> Any:
         return event.get("path") and "/bitwarden-manager/" in event["path"]
 
     def run(self, event: Dict[str, Any]) -> Dict[str, Any] | None:
@@ -158,10 +159,12 @@ class BitwardenManager:
                 self.__logger.info(f"Ignoring unknown request path '{request_path}'")
                 return {"statusCode": 404, "body": json.dumps(f"Unknown request path '{request_path}'")}
 
-    def _is_sqs_event(self, event: Dict[str, Any]) -> bool:
+    @staticmethod
+    def _is_sqs_event(event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
 
-    def _get_allowed_email_domains(self) -> list[str]:
+    @staticmethod
+    def _get_allowed_email_domains() -> list[str]:
         domain_list = os.environ.get("ALLOWED_DOMAINS", "").split(",")
 
         if domain_list == [""]:
@@ -169,7 +172,8 @@ class BitwardenManager:
         else:
             return list(map(lambda txt: txt.strip(), domain_list))
 
-    def _get_bitwarden_cli_timeout(self) -> float:
+    @staticmethod
+    def _get_bitwarden_cli_timeout() -> float:
         timeout = os.environ.get("BITWARDEN_CLI_TIMEOUT", "20")
 
         if timeout.isnumeric():

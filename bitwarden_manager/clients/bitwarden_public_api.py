@@ -1,8 +1,10 @@
 import base64
+import datetime
+import time
 from logging import Logger
 from typing import Dict, List, Any, Optional
 
-from requests import HTTPError, Session
+from requests import HTTPError, Session, JSONDecodeError
 
 from bitwarden_manager.user import UmpUser, UserStatus, UserType
 
@@ -96,7 +98,8 @@ class BitwardenPublicApi:
         else:
             raise BitwardenUserNotFoundException(f"No user with external_id {external_id} found")
 
-    def get_users(self) -> List[Dict[str, Any]]:
+    @staticmethod
+    def get_users() -> List[Dict[str, Any]]:
         response = session.get(f"{API_URL}/members", timeout=REQUEST_TIMEOUT_SECONDS)
         try:
             response.raise_for_status()
@@ -118,6 +121,88 @@ class BitwardenPublicApi:
 
     def fetch_user_id_by_external_id(self, external_id: str) -> str:
         return str(self.get_user_by_external_id(external_id=external_id)["id"])
+
+    def get_active_user_report(self, duration_days: int = 35) -> set[str]:
+        """
+        Retrieves a report of active users from Bitwarden within the previous specified duration in days.
+
+        Args:
+            duration_days (int): The number of days to consider for user activity. Defaults to 35 days.
+
+        Returns:
+            List[Dict[str, Any]]: A list of active user records.
+        """
+        active_users: set[str] = set()
+        self.__fetch_token()
+        start_date = (datetime.datetime.now(datetime.timezone.utc)
+                      - datetime.timedelta(days=duration_days)
+                      ).strftime("%Y-%m-%d")
+
+        all_events = self._get_events(start_date)
+
+        active_ids = set()
+
+        # we need to iterate over the events and extract the memberId and store unique users
+        for event in all_events:
+            if event.get("memberId", None):
+                active_ids.add(event.get("memberId", ""))
+
+        # we want to return email addresses, so translate memberId to email
+        user_ids: dict[str, str] = {str(user["id"]): user["email"] for user in self.get_users()}
+
+        for user_id in active_ids:
+            active_users.add(user_ids[user_id])
+
+        return active_users
+
+    def _get_events(self, start_date: str, timeout: Optional[int] = 600, end_date: Optional[str] = None) -> list[Any]:
+        # get_events_for_range (start_date, end_date=None)
+        # https://github.com/bitwarden-labs/events-public-api-client/blob/main/main.py
+        params = {"start": start_date}
+        if end_date:
+            params["end"] = end_date
+
+        self.__logger.info(f"Fetching events for time range: {start_date} to {end_date or 'now'}")
+        all_events = []
+        continuation_token = None
+        page = 1
+        base_url = f"{API_URL}/events"
+        timeout_start = time.time()
+
+        while time.time() < timeout_start + timeout:
+            if continuation_token:
+                params["continuationToken"] = continuation_token
+            self.__logger.debug(f"Fetching page {page} of events...")
+            response = session.get(
+                base_url,
+                params=params,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
+
+            if response.status_code == 429:  # Too Many Requests
+                retry_after = int(response.headers.get('Retry-After', 60))
+                self.__logger.warning(f"Rate limit hit. Waiting {retry_after} seconds before retrying...")
+                time.sleep(retry_after)
+                continue
+
+            try:
+                response.raise_for_status()
+            except HTTPError as error:
+                raise Exception("Failed to retrieve events report", response.content, error) from error
+
+            data = response.json()
+            events = data.get("data", [])
+            all_events.extend(events)
+            self.__logger.info(f"Retrieved {len(events)} events from page {page}")
+
+            continuation_token = data.get("continuationToken")
+            if not continuation_token:
+                break
+            page += 1
+
+        self.__logger.info(
+            f"Successfully fetched {len(all_events)} events for time range: {start_date} to {end_date or 'now'}")
+        return all_events
 
     def __fetch_token(self) -> str:
         if self.bitwarden_access_token is None:
