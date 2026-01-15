@@ -13,7 +13,7 @@ offboard_inactive_users_event_schema = {
         "event_name": {
             "type": "string",
             "description": "name of the current event",
-            "pattern": "remove_inactive_users",
+            "pattern": "offboard_inactive_users",
         },
         "inactivity_duration": {"type": "string", "description": "the period a user is considered inactive"},
     },
@@ -28,63 +28,33 @@ protected_user_emails = [
     "nerea.harries@digital.hmrc.gov.uk",
 ]
 
+
 class OffboardInactiveUsers:
-    def __init__(
-        self,
-        bitwarden_api: BitwardenPublicApi,
-    ):
+    def __init__(self, bitwarden_api: BitwardenPublicApi, dry_run: bool = True):
         self.bitwarden_api = bitwarden_api
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
-        self.dry_run = True
+        self.dry_run = dry_run
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=offboard_inactive_users_event_schema)
 
-        # Get audit activity for active users based on event['inactivity_duration']
         self.__logger.info(f"Running activity audit report {event['inactivity_duration']}")
-        active_users = self.get_active_users(event['inactivity_duration'])
+        active_users = self.bitwarden_api.get_active_user_report(event["inactivity_duration"])
 
-        # Get all members of the organization
         self.__logger.info("Fetching organization members")
-        all_users = self.get_all_members()
+        all_users: dict[str, str] = {str(user["id"]): user["email"] for user in self.bitwarden_api.get_users()}
 
-        # Compiling a list of inactive users
         self.__logger.info("Compiling list of inactive users")
+        # Casting: set(all_users) is shorthand for set(all_users.keys())
         inactive_users = set(all_users) - set(active_users)
         self.__logger.info(f"Inactive users: {len(inactive_users)}")
 
-        # Remove inactive users from Bitwarden
-        self.__logger.info(f"Removing inactive users from bitwarden")
-        self.offboard_users(inactive_users)
+        self.__logger.info("Removing inactive users from bitwarden")
+        self.offboard_users(inactive_users, all_users)
 
-    def get_active_users(self, duration: int) -> set[str]:
-        """
-        Retrieves a list of active users based on the specified inactivity duration.
-
-        Args:
-            duration (int): The period (days) a user is considered inactive.
-
-        Returns:
-            set[str]: A list of active user email addresses.
-        """
-        return self.bitwarden_api.get_active_user_report(duration)
-
-    def get_all_members(self) -> set[str]:
-        """
-        Retrieves a list of all members of the organization.
-
-        Returns:
-            dict[str,str]: A list of all members [id=>email address].
-        """
-        all_members = self.bitwarden_api.get_users()
-        self.__logger.info(f"Found {len(all_members)} members in the organization")
-        return {member.get("email", "") for member in all_members}
-
-    def offboard_users(self, inactive_users: set):
+    def offboard_users(self, inactive_users: set[str], all_users: dict[str, str]) -> None:
         """
         Offboards a list of inactive users from the Bitwarden system.
-
-        We actually need the 'id' of the user.
 
         This function iterates through a list of inactive users and, for each user,
         executes the necessary processes to remove them from the Bitwarden organization.
@@ -92,7 +62,7 @@ class OffboardInactiveUsers:
         Parameters:
         inactive_users (list): A list containing the ids of the inactive users
                                to be offboarded.
-
+        all_users (dict): A dictionary containing the email details of all users in the Bitwarden organization.
         Returns:
         None
         """
@@ -100,11 +70,12 @@ class OffboardInactiveUsers:
             self.__logger.info(f"DRY RUN: Would have offboarded {len(inactive_users)} users")
             return
 
-        for user in inactive_users:
-            if not self.dry_run and username not in protected_user_emails:
-                self.__logger.info(f"Removing user {username} from bitwarden")
+        for user_id in inactive_users:
+            if not self.dry_run and all_users[user_id] not in protected_user_emails:
+                self.__logger.info(f"Removing user {all_users[user_id]} from bitwarden")
                 self.bitwarden_api.remove_user_by_id(
-                    user_id=user['id'],
+                    user_id=user_id,
+                    username=all_users[user_id],
                 )
             else:
-                self.__logger.info(f"Skipping offboarding of protected user {username}")
+                self.__logger.info(f"Skipping offboarding of protected user {all_users[user_id]}")

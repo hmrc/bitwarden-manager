@@ -4,7 +4,7 @@ import time
 from logging import Logger
 from typing import Dict, List, Any, Optional
 
-from requests import HTTPError, Session, JSONDecodeError
+from requests import HTTPError, Session
 
 from bitwarden_manager.user import UmpUser, UserStatus, UserType
 
@@ -22,6 +22,10 @@ class BitwardenUserNotFoundException(Exception):
 
 
 class BitwardenUserAlreadyExistsException(Exception):
+    pass
+
+
+class BitwardenAPIException(Exception):
     pass
 
 
@@ -130,13 +134,12 @@ class BitwardenPublicApi:
             duration_days (int): The number of days to consider for user activity. Defaults to 35 days.
 
         Returns:
-            List[Dict[str, Any]]: A list of active user records.
+            set[str]: A set of active user ids.
         """
-        active_users: set[str] = set()
         self.__fetch_token()
-        start_date = (datetime.datetime.now(datetime.timezone.utc)
-                      - datetime.timedelta(days=duration_days)
-                      ).strftime("%Y-%m-%d")
+        start_date = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=duration_days)).strftime(
+            "%Y-%m-%d"
+        )
 
         all_events = self._get_events(start_date)
 
@@ -147,15 +150,9 @@ class BitwardenPublicApi:
             if event.get("memberId", None):
                 active_ids.add(event.get("memberId", ""))
 
-        # we want to return email addresses, so translate memberId to email
-        user_ids: dict[str, str] = {str(user["id"]): user["email"] for user in self.get_users()}
+        return active_ids
 
-        for user_id in active_ids:
-            active_users.add(user_ids[user_id])
-
-        return active_users
-
-    def _get_events(self, start_date: str, timeout: Optional[int] = 600, end_date: Optional[str] = None) -> list[Any]:
+    def _get_events(self, start_date: str, timeout: float = 600.0, end_date: Optional[str] = None) -> list[Any]:
         # get_events_for_range (start_date, end_date=None)
         # https://github.com/bitwarden-labs/events-public-api-client/blob/main/main.py
         params = {"start": start_date}
@@ -180,7 +177,7 @@ class BitwardenPublicApi:
             )
 
             if response.status_code == 429:  # Too Many Requests
-                retry_after = int(response.headers.get('Retry-After', 60))
+                retry_after = int(response.headers.get("Retry-After", 60))
                 self.__logger.warning(f"Rate limit hit. Waiting {retry_after} seconds before retrying...")
                 time.sleep(retry_after)
                 continue
@@ -201,7 +198,8 @@ class BitwardenPublicApi:
             page += 1
 
         self.__logger.info(
-            f"Successfully fetched {len(all_events)} events for time range: {start_date} to {end_date or 'now'}")
+            f"Successfully fetched {len(all_events)} events for time range: {start_date} to {end_date or 'now'}"
+        )
         return all_events
 
     def __fetch_token(self) -> str:
@@ -380,21 +378,27 @@ class BitwardenPublicApi:
     def remove_user(self, username: str) -> None:
         self.__fetch_token()
         try:
-            id = self.fetch_user_id_by_external_id(external_id=username)
+            uid = self.fetch_user_id_by_external_id(external_id=username)
         except Exception:
             self.__logger.info(f"User {username} not found in the Bitwarden organisation")
             return
 
+        self.remove_user_by_id(
+            user_id=uid,
+            username=username,
+        )
+        self.__logger.info(f"User {username} has been removed from the Bitwarden organisation")
+
+    @staticmethod
+    def remove_user_by_id(user_id: str, username: str) -> None:
         response = session.delete(
-            f"{API_URL}/members/{id}",
+            f"{API_URL}/members/{user_id}",
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
         try:
             response.raise_for_status()
         except HTTPError as error:
-            raise Exception(f"Failed to delete user {username}", response.content, error) from error
-
-        self.__logger.info(f"User {username} has been removed from the Bitwarden organisation")
+            raise BitwardenAPIException(f"Failed to delete user {username}", response.content, error) from error
 
     def get_groups(self) -> Dict[str, str]:
         response = session.get(f"{API_URL}/groups", timeout=REQUEST_TIMEOUT_SECONDS)

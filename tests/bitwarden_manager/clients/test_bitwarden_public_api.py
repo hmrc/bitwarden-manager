@@ -7,7 +7,7 @@ import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
 from freezegun import freeze_time
-from mock import MagicMock, mock, Mock
+from mock import MagicMock
 from responses import matchers
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserNotFoundException
@@ -47,7 +47,7 @@ MOCKED_EVENTS = responses.Response(
                 "itemId": "3767a302-8208-4dc6-b842-030428a1cfad",
                 "memberId": "11111111",
             }
-        ]
+        ],
     },
 )
 
@@ -168,7 +168,7 @@ def test_get_user_by_external_id() -> None:
             client.get_user_by_external_id(external_id="")
 
 
-def test__get_events():
+def test__get_events() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_EVENTS)
 
@@ -185,12 +185,11 @@ def test__get_events():
 
 
 @freeze_time("2026-01-14")
-def test_get_active_user_report():
+def test_get_active_user_report() -> None:
     mock_logger = MagicMock()
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
-        rsps.add(MOCKED_GET_MEMBERS)
         rsps.add(MOCKED_EVENTS)
 
         client = BitwardenPublicApi(
@@ -200,13 +199,13 @@ def test_get_active_user_report():
         )
         active_users = client.get_active_user_report(30)
 
-        mock_logger.info.assert_any_call('Fetching events for time range: 2025-12-15 to now')
-        mock_logger.info.assert_any_call('Retrieved 1 events from page 1')
-        mock_logger.info.assert_any_call('Successfully fetched 1 events for time range: 2025-12-15 to now')
+        mock_logger.info.assert_any_call("Fetching events for time range: 2025-12-15 to now")
+        mock_logger.info.assert_any_call("Retrieved 1 events from page 1")
+        mock_logger.info.assert_any_call("Successfully fetched 1 events for time range: 2025-12-15 to now")
         assert mock_logger.info.call_count == 3
 
         assert len(active_users) == 1
-        assert 'test.user01@example.com' in active_users
+        assert "11111111" in active_users
 
 
 def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None:

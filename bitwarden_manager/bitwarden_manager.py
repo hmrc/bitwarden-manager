@@ -12,6 +12,7 @@ from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClien
 from bitwarden_manager.clients.s3_client import S3Client
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.confirm_user import ConfirmUser
+from bitwarden_manager.handlers.offboard_inactive_users import OffboardInactiveUsers
 from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
@@ -105,6 +106,12 @@ class BitwardenManager:
                 case "reinvite_users":
                     self.__logger.info(f"Handling event {event_name} with ReinviteUsers")
                     self.__logger.warning("event reinvite_users has been removed")
+
+                case "offboard_inactive_users":
+                    self.__logger.info(f"Handling event {event_name} with OffboardInactiveUsers")
+                    OffboardInactiveUsers(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                    ).run(event=event)
 
                 case "list_custom_groups":
                     self.__logger.info(f"Handling event {event_name} with ListCustomGroups")
