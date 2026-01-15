@@ -3,14 +3,30 @@ import logging
 from typing import Any, Dict, List
 
 import os
+from unittest.mock import patch, Mock
+
 import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
+from freezegun import freeze_time
+from mock import MagicMock
+from requests import HTTPError
 from responses import matchers
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi, BitwardenUserNotFoundException
 from bitwarden_manager.user import UmpUser
 
+
+MOCKED_LOGIN = responses.Response(
+    method="POST",
+    url="https://identity.bitwarden.eu/connect/token",
+    status=200,
+    json={
+        "access_token": "TEST_BEARER_TOKEN",
+        "expires_in": 3600,
+        "token_type": "Bearer",
+    },
+)
 
 MOCKED_GET_MEMBERS = responses.Response(
     status=200,
@@ -18,6 +34,24 @@ MOCKED_GET_MEMBERS = responses.Response(
     method=responses.GET,
     url="https://api.bitwarden.eu/public/members",
     body=open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "resources", "get_members.json")).read(),
+)
+
+MOCKED_EVENTS = responses.Response(
+    status=200,
+    content_type="application/json",
+    method=responses.GET,
+    url="https://api.bitwarden.eu/public/events",
+    json={
+        "object": "list",
+        "data": [
+            {
+                "object": "event",
+                "type": 1000,
+                "itemId": "3767a302-8208-4dc6-b842-030428a1cfad",
+                "memberId": "11111111",
+            }
+        ],
+    },
 )
 
 
@@ -135,6 +169,165 @@ def test_get_user_by_external_id() -> None:
 
         with pytest.raises(Exception, match=r"No user with external_id .* found"):
             client.get_user_by_external_id(external_id="")
+
+
+def test__get_events() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_EVENTS)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        events = client._get_events("2026-01-01", 10)
+
+        assert len(events) == 1
+        assert events[0]["memberId"] == "11111111"
+
+
+def test__get_event_end_date() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_EVENTS)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        events = client._get_events("2026-01-01", 10, "2026-01-02")
+        assert len(events) == 1
+        assert events[0]["memberId"] == "11111111"
+
+
+@patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
+def test_get_events_pagination(mock_get: Mock) -> None:
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+
+    # First call returns a continuation token
+    response_1 = MagicMock()
+    response_1.status_code = 200
+    response_1.json.return_value = {"data": [{"id": "event_page_1"}], "continuationToken": "token_for_page_2"}
+
+    # Second call returns no continuation token
+    response_2 = MagicMock()
+    response_2.status_code = 200
+    response_2.json.return_value = {"data": [{"id": "event_page_2"}], "continuationToken": None}
+
+    mock_get.side_effect = [response_1, response_2]
+
+    events = client._get_events(start_date="2026-01-01")
+
+    assert len(events) == 2
+    assert events[0]["id"] == "event_page_1"
+    assert events[1]["id"] == "event_page_2"
+
+    # Verify calls
+    assert mock_get.call_count == 2
+
+    # Check that the second call used the continuationToken
+    args, kwargs = mock_get.call_args_list[1]
+    assert kwargs["params"]["continuationToken"] == "token_for_page_2"
+
+
+@patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
+def test_get_events_success(mock_get: Mock) -> None:
+    mock_logger = MagicMock()
+    bitwarden_api = BitwardenPublicApi(
+        logger=mock_logger,
+        client_id="foo",
+        client_secret="bar",
+    )
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "data": [
+            {"id": "event1", "memberId": "user1"},
+            {"id": "event2", "memberId": "user2"},
+        ],
+        "continuationToken": None,
+    }
+    mock_get.return_value = mock_response
+
+    start_date = "2023-01-01"
+    events = bitwarden_api._get_events(start_date=start_date)
+
+    # Assertions
+    assert len(events) == 2
+    assert events[0]["id"] == "event1"
+    assert events[1]["id"] == "event2"
+    mock_logger.info.assert_called_with("Successfully fetched 2 events for time range: 2023-01-01 to now")
+
+
+@patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
+def test_get_events_rate_limit(mock_get: Mock) -> None:
+    mock_logger = MagicMock()
+    bitwarden_api = BitwardenPublicApi(
+        logger=mock_logger,
+        client_id="foo",
+        client_secret="bar",
+    )
+    mock_response = MagicMock()
+    mock_response.status_code = 429
+    mock_response.headers = {"Retry-After": "1"}
+    mock_get.side_effect = [
+        mock_response,
+        MagicMock(status_code=200, json=lambda: {"data": [], "continuationToken": None}),
+    ]
+
+    start_date = "2023-01-01"
+    events = bitwarden_api._get_events(start_date=start_date)
+
+    # Assertions
+    assert len(events) == 0
+    mock_logger.warning.assert_called_with("Rate limit hit. Waiting 1 seconds before retrying...")
+
+
+@patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
+def test_get_events_http_error(mock_get: Mock) -> None:
+    bitwarden_api = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.raise_for_status.side_effect = HTTPError("Internal Server Error")
+    mock_get.return_value = mock_response
+
+    start_date = "2023-01-01"
+    with pytest.raises(Exception, match="Failed to retrieve events report"):
+        bitwarden_api._get_events(start_date=start_date)
+
+
+@freeze_time("2026-01-14")
+def test_get_active_user_report() -> None:
+    mock_logger = MagicMock()
+
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        rsps.add(MOCKED_EVENTS)
+
+        client = BitwardenPublicApi(
+            logger=mock_logger,
+            client_id="foo",
+            client_secret="bar",
+        )
+        active_users = client.get_active_user_report(30)
+
+        mock_logger.info.assert_any_call("Fetching events for time range: 2025-12-15 to now")
+        mock_logger.info.assert_any_call("Retrieved 1 events from page 1")
+        mock_logger.info.assert_any_call("Successfully fetched 1 events for time range: 2025-12-15 to now")
+        assert mock_logger.info.call_count == 3
+
+        assert len(active_users) == 1
+        assert "11111111" in active_users
 
 
 def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None:
@@ -1457,18 +1650,6 @@ def test_collate_user_group_ids_duplicates() -> None:
             match="There are duplicate groups or collections",
         ):
             client.collate_user_group_ids(teams=teams, groups=groups, collections=collections)
-
-
-MOCKED_LOGIN = responses.Response(
-    method="POST",
-    url="https://identity.bitwarden.eu/connect/token",
-    status=200,
-    json={
-        "access_token": "TEST_BEARER_TOKEN",
-        "expires_in": 3600,
-        "token_type": "Bearer",
-    },
-)
 
 
 def test_remove_user(caplog: LogCaptureFixture) -> None:

@@ -87,8 +87,22 @@ any that match the criteria.
 }
 ```
 
+### Offboard Inactive Users
+
+Sending this event will remove users from the Bitwarden organisation.
+It scans the activity log for users who have not logged in for the specified duration (in days) and removes them.
+There is a list of 'protected' users that will not be removed.
+
+```json
+{
+    "event_name": "offboard_inactive_users",
+    "inactivity_duration": "90"
+}
+```
+
 ### Expired invites
 
+This has been deprecated. PSEC-2916.
 Bitwarden invites expire after 5 days if not accepted by the user. To handle this, when a user is added to Bitwarden
 via the `New User` event, they are added to a
 [DynamoDB](https://github.com/hmrc/platsec-terraform/blob/main/components/lambda_bitwarden_manager/dynamodb.tf) table in

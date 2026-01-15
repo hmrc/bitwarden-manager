@@ -9,6 +9,7 @@ from _pytest.logging import LogCaptureFixture
 from app import handler
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient, BitwardenVaultClientError
+from bitwarden_manager.handlers.offboard_inactive_users import OffboardInactiveUsers
 from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
@@ -195,3 +196,16 @@ def test_handler_routes_reinvite_users(_: Mock, caplog: LogCaptureFixture) -> No
 
     warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
     assert any(record.message == "event reinvite_users has been removed" for record in warnings)
+
+
+@mock.patch("boto3.client")
+def test_handler_routes_offboard_inactive_users(_: Mock) -> None:
+    event = dict(event_name="offboard_inactive_users", inactivity_duration="90")
+    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+        secrets_manager_mock.return_value = "23497858247589473589734805734853"
+        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+            with patch.object(OffboardInactiveUsers, "run") as offboard_inactive_users_mock:
+                handler(event=event, context={})
+
+    offboard_inactive_users_mock.assert_called_once_with(event=event)
+    bitwarden_logout.assert_called_once()

@@ -12,6 +12,7 @@ from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClien
 from bitwarden_manager.clients.s3_client import S3Client
 from bitwarden_manager.clients.user_management_api import UserManagementApi
 from bitwarden_manager.confirm_user import ConfirmUser
+from bitwarden_manager.handlers.offboard_inactive_users import OffboardInactiveUsers
 from bitwarden_manager.offboard_user import OffboardUser
 from bitwarden_manager.onboard_user import OnboardUser
 from bitwarden_manager.export_vault import ExportVault
@@ -47,7 +48,8 @@ class BitwardenManager:
 
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[self._get_secret("export-encryption-password")])
 
-    def _is_api_gateway_event(self, event: Dict[str, Any]) -> Any:
+    @staticmethod
+    def _is_api_gateway_event(event: Dict[str, Any]) -> Any:
         return event.get("path") and "/bitwarden-manager/" in event["path"]
 
     def run(self, event: Dict[str, Any]) -> Dict[str, Any] | None:
@@ -105,6 +107,12 @@ class BitwardenManager:
                     self.__logger.info(f"Handling event {event_name} with ReinviteUsers")
                     self.__logger.warning("event reinvite_users has been removed")
 
+                case "offboard_inactive_users":
+                    self.__logger.info(f"Handling event {event_name} with OffboardInactiveUsers")
+                    OffboardInactiveUsers(
+                        bitwarden_api=self._get_bitwarden_public_api(),
+                    ).run(event=event)
+
                 case "list_custom_groups":
                     self.__logger.info(f"Handling event {event_name} with ListCustomGroups")
                     ListCustomGroups(
@@ -158,10 +166,12 @@ class BitwardenManager:
                 self.__logger.info(f"Ignoring unknown request path '{request_path}'")
                 return {"statusCode": 404, "body": json.dumps(f"Unknown request path '{request_path}'")}
 
-    def _is_sqs_event(self, event: Dict[str, Any]) -> bool:
+    @staticmethod
+    def _is_sqs_event(event: Dict[str, Any]) -> bool:
         return "eventSource" in event.get("Records", [{}])[0] and event["Records"][0]["eventSource"] == "aws:sqs"
 
-    def _get_allowed_email_domains(self) -> list[str]:
+    @staticmethod
+    def _get_allowed_email_domains() -> list[str]:
         domain_list = os.environ.get("ALLOWED_DOMAINS", "").split(",")
 
         if domain_list == [""]:
@@ -169,7 +179,8 @@ class BitwardenManager:
         else:
             return list(map(lambda txt: txt.strip(), domain_list))
 
-    def _get_bitwarden_cli_timeout(self) -> float:
+    @staticmethod
+    def _get_bitwarden_cli_timeout() -> float:
         timeout = os.environ.get("BITWARDEN_CLI_TIMEOUT", "20")
 
         if timeout.isnumeric():
