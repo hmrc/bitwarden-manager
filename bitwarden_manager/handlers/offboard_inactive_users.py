@@ -68,7 +68,6 @@ class OffboardInactiveUsers:
         """
         if self.dry_run:
             self.__logger.info(f"DRY RUN: Would have offboarded {len(inactive_users)} users")
-            return
 
         for user_id in inactive_users:
             if not self.dry_run and all_users[user_id] not in protected_user_emails:
