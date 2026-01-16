@@ -15,7 +15,7 @@ offboard_inactive_users_event_schema = {
             "description": "name of the current event",
             "pattern": "offboard_inactive_users",
         },
-        "inactivity_duration": {"type": "string", "description": "the period a user is considered inactive"},
+        "inactivity_duration": {"type": "integer", "description": "the period a user is considered inactive"},
     },
     "required": ["event_name", "inactivity_duration"],
 }
@@ -37,9 +37,9 @@ class OffboardInactiveUsers:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=offboard_inactive_users_event_schema)
-
-        self.__logger.info(f"Running activity audit report {event['inactivity_duration']}")
-        active_users = self.bitwarden_api.get_active_user_report(event["inactivity_duration"])
+        inactivity_duration: int = event["inactivity_duration"]
+        self.__logger.info(f"Running activity audit report {inactivity_duration}")
+        active_users = self.bitwarden_api.get_active_user_report(inactivity_duration)
 
         self.__logger.info("Fetching organization members")
         all_users: dict[str, str] = {str(user["id"]): user["email"] for user in self.bitwarden_api.get_users()}
