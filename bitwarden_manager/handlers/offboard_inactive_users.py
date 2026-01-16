@@ -77,4 +77,7 @@ class OffboardInactiveUsers:
                     username=all_users[user_id],
                 )
             else:
-                self.__logger.info(f"Skipping offboarding of protected user {all_users[user_id]}")
+                reason = "of protected user"
+                if all_users[user_id] not in protected_user_emails:
+                    reason = "Dry Run:"
+                self.__logger.info(f"Skipping offboarding {reason} {all_users[user_id]}")
