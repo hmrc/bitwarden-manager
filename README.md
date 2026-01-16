@@ -96,7 +96,7 @@ There is a list of 'protected' users that will not be removed.
 ```json
 {
     "event_name": "offboard_inactive_users",
-    "inactivity_duration": "90"
+    "inactivity_duration": 90
 }
 ```
 

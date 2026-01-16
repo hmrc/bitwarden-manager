@@ -74,7 +74,7 @@ def test_run_valid_event(validation_mock: Mock, logger_mock: Mock) -> None:
         "33333333": "test.user03@example.com",
     }
 
-    event = {"inactivity_duration": 90}
+    event = {"event_name": "offboard_inactive_users", "inactivity_duration": 90}
 
     with patch.object(offboard_handler, "offboard_users") as mock_offboard_users:
         offboard_handler.run(event)
