@@ -14,14 +14,13 @@ def test_offboard_users(logger_mock: Mock) -> None:
     offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, dry_run=False)
     all_users = {"11111111": "user1@example.com", "22222222": "user2@example.com"}
     inactive_users = {"11111111", "22222222"}
-    offboard_handler.offboard_users(inactive_users, all_users)
+    offboard_handler.offboard_users(inactive_users, all_users, set())
 
     mock_logger.info.assert_any_call("Removing user user1@example.com from bitwarden")
     mock_logger.info.assert_any_call("Removing user user2@example.com from bitwarden")
 
 
 @mock.patch("bitwarden_manager.handlers.offboard_inactive_users.get_bitwarden_logger")
-@mock.patch("bitwarden_manager.handlers.offboard_inactive_users.protected_user_emails", new=["user2@example.com"])
 def test_offboard_users_dry_run(logger_mock: Mock) -> None:
     mock_logger = MagicMock()
     logger_mock.return_value = mock_logger
@@ -31,7 +30,8 @@ def test_offboard_users_dry_run(logger_mock: Mock) -> None:
 
     all_users = {"11111111": "user1@example.com", "22222222": "user2@example.com"}
     inactive_users = {"11111111", "22222222"}
-    offboard_handler.offboard_users(inactive_users, all_users)
+    protected_users = {"22222222"}
+    offboard_handler.offboard_users(inactive_users, all_users, protected_users)
 
     mock_logger.info.assert_any_call("DRY RUN: Would have offboarded 2 users")
     mock_logger.info.assert_any_call("Skipping offboarding Dry Run: user1@example.com")
