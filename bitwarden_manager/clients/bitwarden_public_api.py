@@ -533,7 +533,9 @@ class BitwardenPublicApi:
     def get_users_by_group_name(self, group_name: str) -> List[str]:
         # get the group_id for our name
         group_id = self.get_group_id_by_name(group_name)
-
+        if not group_id:
+            self.__logger.info(f"Group {group_name} not found")
+            return []
         users = self.get_users_in_group(group_id)
 
         return users
@@ -552,9 +554,11 @@ class BitwardenPublicApi:
                 return str(group.get("id", ""))
         return ""
 
-    @staticmethod
-    def get_users_in_group(group_id: str) -> List[str]:
+    def get_users_in_group(self, group_id: str) -> List[str]:
         # this endpoint just returns a list of user ids
+        if not group_id:
+            self.__logger.warning("group_id cannot be empty")
+            return []
         response = session.get(f"{API_URL}/groups/{group_id}/member-ids")
         try:
             response.raise_for_status()
