@@ -1998,6 +1998,19 @@ def test_get_users_in_group_failure() -> None:
             client.get_users_in_group("539a36c5-e0d2-4cf9-979e-51ecf5cf6593")
 
 
+def test_get_users_in_group_with_empty(caplog: LogCaptureFixture) -> None:
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+
+    with caplog.at_level(logging.INFO):
+        client.get_users_in_group("")
+
+    assert "group_id cannot be empty" in caplog.text
+
+
 def test_get_users_by_group_name() -> None:
     client = BitwardenPublicApi(
         logger=logging.getLogger(),
@@ -2013,6 +2026,23 @@ def test_get_users_by_group_name() -> None:
     assert mock_get_group_id_by_name.call_count == 1
     assert get_mock_users_in_group.call_count == 1
     assert users == ["user_id"]
+
+
+def test_get_users_by_empty_group(caplog: LogCaptureFixture) -> None:
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+    with (
+        caplog.at_level(logging.INFO),
+        patch.object(client, "get_group_id_by_name", return_value=[]) as mock_get_group_id,
+    ):
+        users = client.get_users_by_group_name("Development Team")
+
+    assert "Group Development Team not found" in caplog.text
+    assert mock_get_group_id.call_count == 1
+    assert users == []
 
 
 # Helper functions
