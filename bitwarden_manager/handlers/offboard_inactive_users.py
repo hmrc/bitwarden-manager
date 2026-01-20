@@ -4,6 +4,7 @@ from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
 from jsonschema import validate
 
+from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.redacting_formatter import get_bitwarden_logger
 
 offboard_inactive_users_event_schema = {
@@ -22,8 +23,11 @@ offboard_inactive_users_event_schema = {
 
 
 class OffboardInactiveUsers:
-    def __init__(self, bitwarden_api: BitwardenPublicApi, dry_run: bool = True):
+    def __init__(
+        self, bitwarden_api: BitwardenPublicApi, bitwarden_vault_client: BitwardenVaultClient, dry_run: bool = True
+    ):
         self.bitwarden_api = bitwarden_api
+        self.bitwarden_vault = bitwarden_vault_client
         self.__logger = get_bitwarden_logger(extra_redaction_patterns=[])
         self.dry_run = dry_run
 
@@ -79,9 +83,20 @@ class OffboardInactiveUsers:
                 self.__logger.info(f"Skipping offboarding {reason} {all_users[user_id]}")
 
     def _get_protected_users(self) -> set[str]:
-        # we are looking for all members of the Root collection.
+        # we are looking for all members that have access to the Root collection.
+        # also members that are in the MDTP Platform Owners group
+
+        # get the Root collection id
+        root_collection_id = self.bitwarden_vault.get_collection_id_by_name("Root")
+        self.__logger.info(f"Root collection id: {root_collection_id}")
+
         users = set()
         for user in self.bitwarden_api.get_users():
-            if user.get("collections", []).__contains__("Root"):
-                users.add(user.get("id", ""))
-        return set(users)
+            if root_collection_id in user.get("collections", []):
+                users.add(user["id"])
+
+        self.__logger.info(f"Root Collection Protected users: {len(users)}")
+        # and get all members of the MDTP Platform Owners group
+        mdtp_platform_owners_user_ids = self.bitwarden_api.get_users_by_group_name("MDTP Platform Owners")
+        self.__logger.info(f"MDTP Platform Owners Protected users: {len(mdtp_platform_owners_user_ids)}")
+        return set(users) | set(mdtp_platform_owners_user_ids)

@@ -529,3 +529,36 @@ class BitwardenPublicApi:
             else:
                 raise Exception(f"There are duplicate groups or collections for {team}")
         return groups_ids
+
+    def get_users_by_group_name(self, group_name: str) -> List[str]:
+        # get the group_id for our name
+        group_id = self.get_group_id_by_name(group_name)
+
+        users = self.get_users_in_group(group_id)
+
+        return users
+
+    @staticmethod
+    def get_group_id_by_name(group_name: str) -> str:
+        response = session.get(f"{API_URL}/groups/")
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to retrieve groups", response.content, error) from error
+        response_json: Dict[str, Any] = response.json()
+        groups = list(response_json.get("data", []))
+        for group in groups:
+            if group.get("name", "") == group_name:
+                return str(group.get("id", ""))
+        return ""
+
+    @staticmethod
+    def get_users_in_group(group_id: str) -> List[str]:
+        # this endpoint just returns a list of user ids
+        response = session.get(f"{API_URL}/groups/{group_id}/member-ids")
+        try:
+            response.raise_for_status()
+        except HTTPError as error:
+            raise Exception("Failed to get users in group", response.content, error) from error
+        users: List[str] = response.json()
+        return users

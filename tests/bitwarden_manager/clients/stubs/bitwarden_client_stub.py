@@ -48,6 +48,19 @@ list_user_output = [
     },
 ]
 
+list_collection_output = [
+    {
+        "id": "12345678-1234-1234-1234-123456789012",
+        "name": "test-collection",
+        "organizationId": "12345678-1234-1234-1234-123456789012",
+    },
+    {
+        "id": "23456789-root-2345-2345-234567890123",
+        "name": "Root",
+        "organizationId": "12345678-1234-1234-1234-123456789012",
+    },
+]
+
 
 def fail_if_no_session_set() -> None:
     if not os.environ.get("BW_SESSION", None):
@@ -90,7 +103,9 @@ if __name__ == "__main__":
             return_code = 0
         case "list":
             fail_if_no_session_set()
-            stdout = json.dumps(list_user_output)
+            stdout = (
+                json.dumps(list_collection_output) if sys.argv[2] == "org-collections" else json.dumps(list_user_output)
+            )
             stderr = ""
             return_code = 0
         case "confirm":

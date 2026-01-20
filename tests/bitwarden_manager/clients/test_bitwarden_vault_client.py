@@ -161,3 +161,18 @@ def test_confirm_user(client: BitwardenVaultClient, caplog: LogCaptureFixture) -
 def test_confirm_user_failed_to_parse(failing_client: BitwardenVaultClient) -> None:
     with pytest.raises(BitwardenVaultClientError, match="'confirm', 'org-member'"):
         failing_client.confirm_user(user_id="example_id")
+
+
+def test_get_collection_id_by_name(client: BitwardenVaultClient, caplog: LogCaptureFixture) -> None:
+    root_collection_id = client.get_collection_id_by_name("Root")
+    assert root_collection_id == "23456789-root-2345-2345-234567890123"
+
+
+def test_get_collection_id_by_name_not_found(client: BitwardenVaultClient) -> None:
+    root_collection_id = client.get_collection_id_by_name("Not Found")
+    assert root_collection_id == ""
+
+
+def test_get_collection_id_by_name_failed(failing_client: BitwardenVaultClient) -> None:
+    with pytest.raises(BitwardenVaultClientError, match="'list', 'org-collections'"):
+        failing_client.get_collection_id_by_name("Root")

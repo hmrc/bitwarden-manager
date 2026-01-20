@@ -1889,6 +1889,132 @@ def test_reinvite_user_failed(caplog: LogCaptureFixture) -> None:
             client.reinvite_user(id="22222222", username="test.user02")
 
 
+def test_get_group_id_by_name() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.eu/public/groups/",
+            json={
+                "object": "list",
+                "data": [
+                    {
+                        "name": "Development Team",
+                        "externalId": "external_id_123456",
+                        "object": "group",
+                        "id": "539a36c5-e0d2-4cf9-979e-51ecf5cf6593",
+                        "collections": [
+                            {
+                                "id": "bfbc8338-e329-4dc0-b0c9-317c2ebf1a09",
+                                "readOnly": True,
+                                "hidePasswords": True,
+                                "manage": True,
+                            }
+                        ],
+                    }
+                ],
+            },
+            status=200,
+            content_type="application/json",
+        )
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        assert client.get_group_id_by_name("Development Team") == "539a36c5-e0d2-4cf9-979e-51ecf5cf6593"
+
+
+def test_get_group_id_by_name_not_found() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.eu/public/groups/",
+            json={"object": "list", "data": [{}]},
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        group_id = client.get_group_id_by_name("Non-existent Group")
+
+    assert group_id == ""
+
+
+def test_get_group_id_by_name_failure() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.eu/public/groups/",
+            body=b'{"object":"error","message":"The request\'s model state is invalid."}',
+            status=400,
+            content_type="application/json",
+        )
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with pytest.raises(Exception, match="Failed to retrieve groups"):
+            client.get_group_id_by_name("Development Team")
+
+
+def test_get_users_in_group() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.eu/public/groups/539a36c5-e0d2-4cf9-979e-51ecf5cf6593/member-ids",
+            json=["11111111"],
+            status=200,
+            content_type="application/json",
+        )
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        assert client.get_users_in_group("539a36c5-e0d2-4cf9-979e-51ecf5cf6593") == ["11111111"]
+
+
+def test_get_users_in_group_failure() -> None:
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(
+            responses.GET,
+            "https://api.bitwarden.eu/public/groups/539a36c5-e0d2-4cf9-979e-51ecf5cf6593/member-ids",
+            body=b'{"object":"error","message":"The request\'s model state is invalid."}',
+            status=400,
+            content_type="application/json",
+        )
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with pytest.raises(Exception, match="Failed to get users in group"):
+            client.get_users_in_group("539a36c5-e0d2-4cf9-979e-51ecf5cf6593")
+
+
+def test_get_users_by_group_name() -> None:
+    client = BitwardenPublicApi(
+        logger=logging.getLogger(),
+        client_id="foo",
+        client_secret="bar",
+    )
+    with (
+        patch.object(client, "get_group_id_by_name", return_value="group_id") as mock_get_group_id_by_name,
+        patch.object(client, "get_users_in_group", return_value=["user_id"]) as get_mock_users_in_group,
+    ):
+        users = client.get_users_by_group_name("Development Team")
+
+    assert mock_get_group_id_by_name.call_count == 1
+    assert get_mock_users_in_group.call_count == 1
+    assert users == ["user_id"]
+
+
 # Helper functions
 
 

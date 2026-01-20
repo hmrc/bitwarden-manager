@@ -3,6 +3,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 import pytest
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
+from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.handlers.offboard_inactive_users import OffboardInactiveUsers
 from jsonschema import ValidationError
 
@@ -65,7 +66,8 @@ def test_run_valid_event(validation_mock: Mock, logger_mock: Mock) -> None:
     logger_mock.return_value = mock_logger
 
     mock_api = MagicMock(spec=BitwardenPublicApi)
-    offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api)
+    mock_client = MagicMock(spec=BitwardenVaultClient)
+    offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, bitwarden_vault_client=mock_client)
     mock_api.get_active_user_report = MagicMock(return_value={"11111111", "22222222"})
     mock_api.get_users = MagicMock(return_value=GET_MEMBERS_DICT)
     all_users = {
@@ -76,17 +78,22 @@ def test_run_valid_event(validation_mock: Mock, logger_mock: Mock) -> None:
 
     event = {"event_name": "offboard_inactive_users", "inactivity_duration": 90}
 
-    with patch.object(offboard_handler, "offboard_users") as mock_offboard_users:
+    with (
+        patch.object(offboard_handler, "offboard_users") as mock_offboard_users,
+        patch.object(offboard_handler, "_get_protected_users") as mock_protected_users,
+    ):
+        mock_protected_users.return_value = set()
         offboard_handler.run(event)
 
     validation_mock.assert_called_once_with(instance=event, schema=mock.ANY)
     mock_api.get_active_user_report.assert_called_once_with(90)
     mock_api.get_users.assert_called_once()
-    mock_offboard_users.assert_called_once_with({"33333333"}, all_users)
+    mock_offboard_users.assert_called_once_with({"33333333"}, all_users, set())
     mock_logger.info.assert_any_call("Running activity audit report 90")
     mock_logger.info.assert_any_call("Fetching organization members")
     mock_logger.info.assert_any_call("Compiling list of inactive users")
     mock_logger.info.assert_any_call("Inactive users: 1")
+    mock_logger.info.assert_any_call("Compiling list of protected users")
     mock_logger.info.assert_any_call("Removing inactive users from bitwarden")
 
 
@@ -96,7 +103,8 @@ def test_run_invalid_event(validation_mock: Mock, logger_mock: Mock) -> None:
     logger_mock.return_value = MagicMock()
 
     mock_api = MagicMock(spec=BitwardenPublicApi)
-    offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api)
+    mock_client = MagicMock(spec=BitwardenVaultClient)
+    offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, bitwarden_vault_client=mock_client)
 
     validation_mock.side_effect = ValidationError("Invalid input")
 
