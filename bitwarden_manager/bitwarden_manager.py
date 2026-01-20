@@ -111,6 +111,7 @@ class BitwardenManager:
                     self.__logger.info(f"Handling event {event_name} with OffboardInactiveUsers")
                     OffboardInactiveUsers(
                         bitwarden_api=self._get_bitwarden_public_api(),
+                        bitwarden_vault_client=bitwarden_vault_client,
                     ).run(event=event)
 
                 case "list_custom_groups":

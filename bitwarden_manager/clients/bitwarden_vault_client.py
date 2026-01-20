@@ -288,3 +288,33 @@ class BitwardenVaultClient:
 
     def __get_config_dir(self) -> str:
         return "/tmp/.config"  # nosec B108
+
+    def get_collection_id_by_name(self, collection_name: str) -> str:
+        # Get all collections in the organisation
+        tmp_env = os.environ.copy()
+        tmp_env["BITWARDENCLI_APPDATA_DIR"] = self.__get_config_dir()
+        tmp_env["BW_SESSION"] = self.session_token()
+        try:
+            out = subprocess.check_output(
+                [
+                    self.cli_executable_path,
+                    "list",
+                    "org-collections",
+                    "--organizationid",
+                    self.organisation_id,
+                ],
+                shell=False,
+                env=tmp_env,
+                text=True,
+                encoding="utf-8",
+                timeout=self.cli_timeout,
+            )  # nosec B603
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            raise BitwardenVaultClientError(e)
+
+        json_response = json.loads(out)
+        for collection in json_response:
+            if collection.get("name") == collection_name:
+                return str(collection.get("id"))
+
+        return ""
