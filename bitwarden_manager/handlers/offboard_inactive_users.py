@@ -16,7 +16,7 @@ offboard_inactive_users_event_schema = {
             "description": "name of the current event",
             "pattern": "offboard_inactive_users",
         },
-        "inactivity_duration": {"type": "integer", "description": "the period a user is considered inactive"},
+        "inactivity_duration": {"type": "integer", "description": "The number of days a user must be inactive for to be considered for removal"},
     },
     "required": ["event_name", "inactivity_duration"],
 }
