@@ -48,7 +48,8 @@ MOCKED_EVENTS = responses.Response(
                 "object": "event",
                 "type": 1000,
                 "itemId": "3767a302-8208-4dc6-b842-030428a1cfad",
-                "memberId": "11111111",
+                "memberId": None,
+                "actingUserId": "11111111",
             }
         ],
     },
@@ -184,7 +185,7 @@ def test__get_events() -> None:
         events = client._get_events("2026-01-01", 10)
 
         assert len(events) == 1
-        assert events[0]["memberId"] == "11111111"
+        assert events[0]["actingUserId"] == "11111111"
 
 
 def test__get_event_end_date() -> None:
@@ -199,7 +200,7 @@ def test__get_event_end_date() -> None:
 
         events = client._get_events("2026-01-01", 10, "2026-01-02")
         assert len(events) == 1
-        assert events[0]["memberId"] == "11111111"
+        assert events[0]["actingUserId"] == "11111111"
 
 
 @patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
@@ -248,8 +249,8 @@ def test_get_events_success(mock_get: Mock) -> None:
     mock_response.status_code = 200
     mock_response.json.return_value = {
         "data": [
-            {"id": "event1", "memberId": "user1"},
-            {"id": "event2", "memberId": "user2"},
+            {"id": "event1", "actingUserId": "user1"},
+            {"id": "event2", "actingUserId": "user2"},
         ],
         "continuationToken": None,
     }

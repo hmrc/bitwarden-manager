@@ -145,10 +145,9 @@ class BitwardenPublicApi:
 
         active_ids = set()
 
-        # we need to iterate over the events and extract the memberId and store unique users
         for event in all_events:
-            if event.get("memberId", None):
-                active_ids.add(event.get("memberId", ""))
+            if event.get("actingUserId", None):
+                active_ids.add(event.get("actingUserId", ""))
 
         return active_ids
 
