@@ -141,15 +141,11 @@ class BitwardenPublicApi:
             "%Y-%m-%d"
         )
 
-        all_events = self._get_events(start_date)
+        events = self._get_events(start_date)
+        users = {event["actingUserId"] for event in events if event["actingUserId"] is not None}
+        members = {event["memberId"] for event in events if event["memberId"] is not None}
 
-        active_ids = set()
-
-        for event in all_events:
-            if event.get("actingUserId", None):
-                active_ids.add(event.get("actingUserId", ""))
-
-        return active_ids
+        return users | members
 
     def _get_events(self, start_date: str, timeout: float = 600.0, end_date: Optional[str] = None) -> list[Any]:
         # get_events_for_range (start_date, end_date=None)
@@ -159,7 +155,7 @@ class BitwardenPublicApi:
             params["end"] = end_date
 
         self.__logger.info(f"Fetching events for time range: {start_date} to {end_date or 'now'}")
-        all_events = []
+        events: list[Any] = []
         continuation_token = None
         page = 1
         base_url = f"{API_URL}/events"
@@ -168,6 +164,7 @@ class BitwardenPublicApi:
         while time.time() < timeout_start + timeout:
             if continuation_token:
                 params["continuationToken"] = continuation_token
+
             self.__logger.debug(f"Fetching page {page} of events...")
             response = session.get(
                 base_url,
@@ -186,20 +183,20 @@ class BitwardenPublicApi:
             except HTTPError as error:
                 raise Exception("Failed to retrieve events report", response.content, error) from error
 
-            data = response.json()
-            events = data.get("data", [])
-            all_events.extend(events)
-            self.__logger.info(f"Retrieved {len(events)} events from page {page}")
+            events = [*events, *response.json()["data"]]
+            self.__logger.info(f"Retrieved {len(events)} total events")
 
-            continuation_token = data.get("continuationToken")
+            continuation_token = response.json().get("continuationToken", None)
             if not continuation_token:
                 break
+
             page += 1
 
         self.__logger.info(
-            f"Successfully fetched {len(all_events)} events for time range: {start_date} to {end_date or 'now'}"
+            f"Successfully fetched {len(events)} events for time range: {start_date} to {end_date or 'now'}"
         )
-        return all_events
+
+        return events
 
     def __fetch_token(self) -> str:
         if self.bitwarden_access_token is None:
