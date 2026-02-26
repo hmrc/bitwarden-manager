@@ -50,7 +50,21 @@ MOCKED_EVENTS = responses.Response(
                 "itemId": "3767a302-8208-4dc6-b842-030428a1cfad",
                 "memberId": None,
                 "actingUserId": "11111111",
-            }
+            },
+            {
+                "object": "event",
+                "type": 1000,
+                "itemId": "3767a302-8208-4dc6-b842-030428a1cfaf",
+                "memberId": "11111111",
+                "actingUserId": None,
+            },
+            {
+                "object": "event",
+                "type": 1000,
+                "itemId": "3767a302-8208-4dc6-b842-030428a1cfaf",
+                "memberId": None,
+                "actingUserId": "22222222",
+            },
         ],
     },
 )
@@ -184,8 +198,10 @@ def test__get_events() -> None:
 
         events = client._get_events("2026-01-01", 10)
 
-        assert len(events) == 1
+        assert len(events) == 3
         assert events[0]["actingUserId"] == "11111111"
+        assert events[1]["memberId"] == "11111111"
+        assert events[2]["actingUserId"] == "22222222"
 
 
 def test__get_event_end_date() -> None:
@@ -199,8 +215,10 @@ def test__get_event_end_date() -> None:
         )
 
         events = client._get_events("2026-01-01", 10, "2026-01-02")
-        assert len(events) == 1
+        assert len(events) == 3
         assert events[0]["actingUserId"] == "11111111"
+        assert events[1]["memberId"] == "11111111"
+        assert events[2]["actingUserId"] == "22222222"
 
 
 @patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
@@ -323,12 +341,13 @@ def test_get_active_user_report() -> None:
         active_users = client.get_active_user_report(30)
 
         mock_logger.info.assert_any_call("Fetching events for time range: 2025-12-15 to now")
-        mock_logger.info.assert_any_call("Retrieved 1 events from page 1")
-        mock_logger.info.assert_any_call("Successfully fetched 1 events for time range: 2025-12-15 to now")
+        mock_logger.info.assert_any_call("Retrieved 3 total events")
+        mock_logger.info.assert_any_call("Successfully fetched 3 events for time range: 2025-12-15 to now")
         assert mock_logger.info.call_count == 3
 
-        assert len(active_users) == 1
+        assert len(active_users) == 2
         assert "11111111" in active_users
+        assert "22222222" in active_users
 
 
 def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None:
