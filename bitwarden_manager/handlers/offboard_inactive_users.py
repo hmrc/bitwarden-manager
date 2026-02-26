@@ -42,11 +42,14 @@ class OffboardInactiveUsers:
 
         self.__logger.info("Fetching organization members")
         all_users: dict[str, str] = {str(user["id"]): user["email"] for user in self.bitwarden_api.get_users()}
+        self.__logger.info(f"Total users: {len(all_users)}")
         # bw_user.get("collections", []))
 
         self.__logger.info("Compiling list of inactive users")
         # Casting: set(all_users) is shorthand for set(all_users.keys())
         inactive_users = set(all_users) - set(active_users)
+
+        self.__logger.info(f"Active users: {len(active_users)}")
         self.__logger.info(f"Inactive users: {len(inactive_users)}")
 
         self.__logger.info("Compiling list of protected users")
