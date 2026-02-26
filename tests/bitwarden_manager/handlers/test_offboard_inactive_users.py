@@ -37,8 +37,8 @@ def test_offboard_users_dry_run(logger_mock: Mock) -> None:
     offboard_handler.offboard_users(inactive_users, all_users, protected_users)
 
     mock_logger.info.assert_any_call("DRY RUN: Would have offboarded 2 users")
-    mock_logger.info.assert_any_call("Skipping offboarding Dry Run: user1@example.com")
-    mock_logger.info.assert_any_call("Skipping offboarding of protected user user2@example.com")
+    mock_logger.info.assert_any_call("[DRY RUN] Removing user user1@example.com from bitwarden")
+    mock_logger.info.assert_any_call("Skipping protected user user2@example.com")
     mock_api.remove_user_by_id.assert_not_called()
 
 

@@ -68,7 +68,7 @@ def test_run_valid_event(validation_mock: Mock, logger_mock: Mock) -> None:
     mock_api = MagicMock(spec=BitwardenPublicApi)
     mock_client = MagicMock(spec=BitwardenVaultClient)
     offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, bitwarden_vault_client=mock_client)
-    mock_api.get_active_user_report = MagicMock(return_value={"11111111", "22222222"})
+    mock_api.get_active_user_report = MagicMock(return_value={"11111111", "22222222", "77777777"})
     mock_api.get_users = MagicMock(return_value=GET_MEMBERS_DICT)
     all_users = {
         "11111111": "test.user01@example.com",
@@ -89,10 +89,11 @@ def test_run_valid_event(validation_mock: Mock, logger_mock: Mock) -> None:
     mock_api.get_active_user_report.assert_called_once_with(90)
     mock_api.get_users.assert_called_once()
     mock_offboard_users.assert_called_once_with({"33333333"}, all_users, set())
-    mock_logger.info.assert_any_call("Running activity audit report 90")
+    mock_logger.info.assert_any_call("Compiling list of active users for the last 90 days")
     mock_logger.info.assert_any_call("Fetching organization members")
     mock_logger.info.assert_any_call("Compiling list of inactive users")
     mock_logger.info.assert_any_call("Inactive users: 1")
+    mock_logger.info.assert_any_call("New Inactive users: 1")
     mock_logger.info.assert_any_call("Compiling list of protected users")
     mock_logger.info.assert_any_call("Removing inactive users from bitwarden")
 
