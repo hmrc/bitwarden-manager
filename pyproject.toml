@@ -13,11 +13,11 @@ url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple/"
 priority = "primary"
 
 [tool.poetry.dependencies]
-python = "^3.12.0"
+python = "^3.14.0"
 boto3-type-annotations = "^0.3.1"
 requests = "^2.32.0"
 types-requests = "^2.30.0.0"
-awslambdaric = "^2.0.4"
+awslambdaric = "^3.0.0"
 boto3 = "^1.26.127"
 boto3-stubs = "^1.26.131"
 jsonschema = "^4.17.3"
