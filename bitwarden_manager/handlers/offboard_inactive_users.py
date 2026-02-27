@@ -87,8 +87,12 @@ class OffboardInactiveUsers:
 
         users = set()
         for user in self.bitwarden_api.get_users():
-            if root_collection_id in user.get("collections", []):
-                users.add(user["id"])
+            if len(user["collections"]) == 0:
+                continue
+
+            for user_collection in user["collections"]:
+                if user_collection["id"] == root_collection_id:
+                    users.add(user["userId"])
 
         self.__logger.info(f"Root Collection Protected users: {len(users)}")
         # and get all members of the MDTP Platform Owners group
