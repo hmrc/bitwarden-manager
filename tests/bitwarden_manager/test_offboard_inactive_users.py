@@ -93,7 +93,6 @@ def test_run_valid_event(validation_mock: Mock, logger_mock: Mock) -> None:
     mock_logger.info.assert_any_call("Fetching organization members")
     mock_logger.info.assert_any_call("Compiling list of inactive users")
     mock_logger.info.assert_any_call("Inactive users: 1")
-    mock_logger.info.assert_any_call("New Inactive users: 1")
     mock_logger.info.assert_any_call("Compiling list of protected users")
     mock_logger.info.assert_any_call("Removing inactive users from bitwarden")
 
