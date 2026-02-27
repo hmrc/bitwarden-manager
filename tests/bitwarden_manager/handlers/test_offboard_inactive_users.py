@@ -49,8 +49,8 @@ def test__get_protected_users(logger_mock: Mock) -> None:
 
     mock_api = MagicMock(spec=BitwardenPublicApi)
     mock_api.get_users.return_value = [
-        {"id": "1", "email": "user1@example.com", "collections": ["root-id"]},
-        {"id": "2", "email": "user2@example.com", "collections": []},
+        {"userId": "1", "email": "user1@example.com", "collections": [{"id": "root-id"}]},
+        {"userId": "2", "email": "user2@example.com", "collections": []},
     ]
     mock_api.get_users_by_group_name.return_value = ["3"]
     mock_client = MagicMock(spec=BitwardenVaultClient)
