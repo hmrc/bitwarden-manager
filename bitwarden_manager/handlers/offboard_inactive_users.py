@@ -43,7 +43,7 @@ class OffboardInactiveUsers:
         self.__logger.info(f"Active users: {len(active_users)}")
 
         self.__logger.info("Fetching organization members")
-        users: dict[str, str] = {str(user["id"]): user["email"] for user in self.bitwarden_api.get_users()}
+        users: dict[str, str] = {str(user["userId"]): user["email"] for user in self.bitwarden_api.get_users()}
         all_users = users.copy()
         self.__logger.info(f"Total users: {len(users)}")
 
@@ -67,19 +67,6 @@ class OffboardInactiveUsers:
         self.offboard_users(inactive_users, all_users, protected_users)
 
     def offboard_users(self, inactive_users: set[str], all_users: dict[str, str], protected_users: set[str]) -> None:
-        """
-        Offboards a list of inactive users from the Bitwarden system.
-
-        This function iterates through a list of inactive users and, for each user,
-        executes the necessary processes to remove them from the Bitwarden organization.
-
-        Parameters:
-        inactive_users (list): A list containing the ids of the inactive users
-                               to be offboarded.
-        all_users (dict): A dictionary containing the email details of all users in the Bitwarden organization.
-        Returns:
-        None
-        """
         if self.dry_run:
             self.__logger.info(f"DRY RUN: Would have offboarded {len(inactive_users)} users")
 

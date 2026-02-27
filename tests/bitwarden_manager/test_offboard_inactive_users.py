@@ -10,8 +10,8 @@ from jsonschema import ValidationError
 GET_MEMBERS_DICT = [
     {
         "object": "member",
-        "id": "11111111",
-        "userId": None,
+        "id": None,
+        "userId": "11111111",
         "name": "test user01",
         "email": "test.user01@example.com",
         "twoFactorEnabled": False,
@@ -25,8 +25,8 @@ GET_MEMBERS_DICT = [
     },
     {
         "object": "member",
-        "id": "22222222",
-        "userId": None,
+        "id": None,
+        "userId": "22222222",
         "name": "test user02",
         "email": "test.user02@example.com",
         "twoFactorEnabled": True,
@@ -43,8 +43,8 @@ GET_MEMBERS_DICT = [
     },
     {
         "object": "member",
-        "id": "33333333",
-        "userId": None,
+        "id": None,
+        "userId": "33333333",
         "name": "test user03",
         "email": "test.user03@example.com",
         "twoFactorEnabled": True,
