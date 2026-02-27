@@ -38,6 +38,7 @@ class OffboardInactiveUsers:
         validate(instance=event, schema=offboard_inactive_users_event_schema)
         inactivity_duration: int = event["inactivity_duration"]
 
+        # these aren't all users so numbers may be off after subtraction, but the result it right
         self.__logger.info(f"Compiling list of active users for the last {inactivity_duration} days")
         active_users = self.bitwarden_api.get_active_user_report(inactivity_duration)
         self.__logger.info(f"Active users: {len(active_users)}")
@@ -52,16 +53,8 @@ class OffboardInactiveUsers:
         self.__logger.info(f"Total protected users: {len(protected_users)}")
 
         self.__logger.info("Compiling list of inactive users")
-
-        for user in active_users:
-            if user in users.keys():
-                del users[user]
-            else:
-                self.__logger.info("Could not find user with the id {user}")
-
         inactive_users = set(users) - set(active_users)
         self.__logger.info(f"Inactive users: {len(inactive_users)}")
-        self.__logger.info(f"New Inactive users: {len(users)}")
 
         self.__logger.info("Removing inactive users from bitwarden")
         self.offboard_users(inactive_users, all_users, protected_users)
