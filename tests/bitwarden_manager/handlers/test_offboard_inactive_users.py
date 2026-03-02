@@ -1,5 +1,5 @@
 from unittest import mock
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, call
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
@@ -52,12 +52,14 @@ def test__get_protected_users(logger_mock: Mock) -> None:
         {"userId": "1", "email": "user1@example.com", "collections": [{"id": "root-id"}]},
         {"userId": "2", "email": "user2@example.com", "collections": []},
     ]
-    mock_api.get_users_by_group_name.return_value = ["3"]
+    mock_api.get_users_by_group_name.side_effect = ["3", "4", "7"]
     mock_client = MagicMock(spec=BitwardenVaultClient)
     mock_client.get_collection_id_by_name.return_value = "root-id"
     offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, bitwarden_vault_client=mock_client, dry_run=True)
     protected_users = offboard_handler._get_protected_users()
-    assert protected_users == {"1", "3"}
+    assert protected_users == {"1", "3", "4"}
     mock_client.get_collection_id_by_name.assert_called_once_with("Root")
     mock_api.get_users.assert_called_once()
-    mock_api.get_users_by_group_name.assert_called_once_with("MDTP Platform Owners")
+    mock_api.get_users_by_group_name.assert_has_calls(
+        calls=[call("MDTP Platform Owners"), call("AWS Account Authorisers")]
+    )

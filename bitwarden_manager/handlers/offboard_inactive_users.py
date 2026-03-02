@@ -96,6 +96,8 @@ class OffboardInactiveUsers:
 
         self.__logger.info(f"Root Collection Protected users: {len(users)}")
         # and get all members of the MDTP Platform Owners group
-        mdtp_platform_owners_user_ids = self.bitwarden_api.get_users_by_group_name("MDTP Platform Owners")
-        self.__logger.info(f"MDTP Platform Owners Protected users: {len(mdtp_platform_owners_user_ids)}")
-        return set(users) | set(mdtp_platform_owners_user_ids)
+        owners = self.bitwarden_api.get_users_by_group_name("MDTP Platform Owners")
+        authorisers = self.bitwarden_api.get_users_by_group_name("AWS Account Authorisers")
+        protected = set(users) | set(owners) | set(authorisers)
+        self.__logger.info(f"Protected users: {len(protected)}")
+        return protected
