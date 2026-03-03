@@ -28,8 +28,8 @@ black = "^24.4.2"
 flake8 = "^7.0.0"
 flake8-print = "^5.0.0"
 mypy = "^1.10"
-pytest = "^8.2.0"
-pytest-cov = "^5.0.0"
+pytest = "^9.0.0"
+pytest-cov = "^7.0.0"
 responses = "^0.25.0"
 bandit = "^1.7.8"
 pre-commit = "^3.7.0"
@@ -42,6 +42,13 @@ pip-audit = "^2.10.0"
 [tool.flake8]
 ignore = ['E203'] # "Colons should not have any space before them" ignoring rule avoids incompatibaty with black formater https://github.com/psf/black/issues/315
 max-line-length = 120
+
+[tool.pytest]
+minversion = "9.0"
+addopts = ["-v", "-p", "no:cacheprovider", "--no-header", "--cov", "bitwarden_manager", "--cov-report", "term-missing", "--no-cov-on-fail", "--cov-fail-under", "100"]
+testpaths = [
+    "tests",
+]
 
 [build-system]
 requires = ["poetry-core"]

@@ -70,6 +70,13 @@ MOCKED_EVENTS = responses.Response(
                 "type": 1000,
                 "itemId": "3767a302-8208-4dc6-b842-030428a1cfaf",
                 "memberId": None,
+                "actingUserId": "33333333",
+            },
+            {
+                "object": "event",
+                "type": 1000,
+                "itemId": "3767a302-8208-4dc6-b842-030428a1cfaf",
+                "memberId": None,
                 "actingUserId": "77777777",
             },
         ],
@@ -205,7 +212,7 @@ def test__get_events() -> None:
 
         events = client._get_events("2026-01-01", 10)
 
-        assert len(events) == 4
+        assert len(events) == 5
         assert events[0]["actingUserId"] == "11111111"
         assert events[1]["memberId"] == "11111111"
         assert events[2]["actingUserId"] == "22222222"
@@ -222,7 +229,7 @@ def test__get_event_end_date() -> None:
         )
 
         events = client._get_events("2026-01-01", 10, "2026-01-02")
-        assert len(events) == 4
+        assert len(events) == 5
         assert events[0]["actingUserId"] == "11111111"
         assert events[1]["memberId"] == "11111111"
         assert events[2]["actingUserId"] == "22222222"
@@ -339,6 +346,7 @@ def test_get_active_user_report() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_EVENTS)
+        rsps.add(MOCKED_GET_MEMBERS)
 
         client = BitwardenPublicApi(
             logger=mock_logger,
@@ -348,11 +356,11 @@ def test_get_active_user_report() -> None:
         active_users = client.get_active_user_report(30)
 
         mock_logger.info.assert_any_call("Fetching events for time range: 2025-12-15 to now")
-        mock_logger.info.assert_any_call("Retrieved 4 total events")
-        mock_logger.info.assert_any_call("Successfully fetched 4 events for time range: 2025-12-15 to now")
+        mock_logger.info.assert_any_call("Retrieved 5 total events")
+        mock_logger.info.assert_any_call("Successfully fetched 5 events for time range: 2025-12-15 to now")
         assert mock_logger.info.call_count == 3
 
-        assert len(active_users) == 3
+        assert len(active_users) == 2
         assert "11111111" in active_users
         assert "22222222" in active_users
 

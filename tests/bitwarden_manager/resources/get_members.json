@@ -4,7 +4,7 @@
       {
         "object": "member",
         "id": "11111111",
-        "userId": null,
+        "userId": "11111111",
         "name": "test user01",
         "email": "test.user01@example.com",
         "twoFactorEnabled": false,
@@ -19,7 +19,7 @@
       {
         "object": "member",
         "id": "22222222",
-        "userId": null,
+        "userId": "22222222",
         "name": "test user02",
         "email": "test.user02@example.com",
         "twoFactorEnabled": true,
@@ -45,7 +45,7 @@
       {
         "object": "member",
         "id": "33333333",
-        "userId": null,
+        "userId": "33333333",
         "name": "test user03",
         "email": "test.user03@example.com",
         "twoFactorEnabled": true,

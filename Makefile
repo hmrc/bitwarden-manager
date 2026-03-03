@@ -58,14 +58,7 @@ bandit: python
 	@$(POETRY_DOCKER) bandit -c bandit.yaml -r -q $(PYTHON_SRC)
 
 python-test: python
-	@$(POETRY_DOCKER) pytest \
-		-v \
-		-p no:cacheprovider \
-		--no-header \
-		--cov=bitwarden_manager \
-		--cov-report term-missing \
-		--no-cov-on-fail \
-		--cov-fail-under=100
+	@$(POETRY_DOCKER) pytest
 
 test: flake8 bandit md-check fmt-check mypy python-test
 
