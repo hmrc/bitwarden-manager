@@ -1,4 +1,5 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
+from datetime import datetime, timedelta, timezone
 
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenPublicApi
 
@@ -38,26 +39,34 @@ class OffboardInactiveUsers:
         validate(instance=event, schema=offboard_inactive_users_event_schema)
         inactivity_duration: int = event["inactivity_duration"]
 
-        # these aren't all users so numbers may be off after subtraction, but the result it right
-        self.__logger.info(f"Compiling list of active users for the last {inactivity_duration} days")
-        active_users = self.bitwarden_api.get_active_user_report(inactivity_duration)
-        self.__logger.info(f"Active users: {len(active_users)}")
-
         self.__logger.info("Fetching organization members")
-        users: dict[str, str] = {str(user["userId"]): user["email"] for user in self.bitwarden_api.get_users()}
-        all_users = users.copy()
-        self.__logger.info(f"Total users: {len(users)}")
+        members = self.bitwarden_api.get_users()
 
-        self.__logger.info("Compiling list of protected users")
-        protected_users = self._get_protected_users()
-        self.__logger.info(f"Total protected users: {len(protected_users)}")
+        self.__logger.info("Fetching events")
+        events = self.bitwarden_api.get_events(
+            start_date=(datetime.now(timezone.utc) - timedelta(days=event["inactivity_duration"])).strftime("%Y-%m-%d")
+        )
 
-        self.__logger.info("Compiling list of inactive users")
-        inactive_users = set(users) - set(active_users)
-        self.__logger.info(f"Inactive users: {len(inactive_users)}")
+        # these aren't all users so numbers may be off after subtraction, but the result it right
+        self.__logger.info(f"Compiling list of active members for the last {inactivity_duration} days")
+        active_members = self._get_active_member_report(events, members)
 
-        self.__logger.info("Removing inactive users from bitwarden")
-        self.offboard_users(inactive_users, all_users, protected_users)
+        all_members: dict[str, str] = {
+            str(member["id"]): member["email"] for member in members if int(member["status"]) == 2
+        }
+
+        self.__logger.info("Compiling list of protected members")
+        protected_members = self._get_protected_users()
+
+        self.__logger.info("Compiling list of inactive members")
+        inactive_members = set(all_members) - set(active_members)
+
+        self.__logger.info(
+            f"Total members: {len(all_members)}, Active members: {len(active_members)}, Inactive members: {len(inactive_members)}"  # noqa: E501
+        )
+
+        self.__logger.info(f"Removing {len(inactive_members)} inactive members from bitwarden")
+        self.offboard_users(inactive_members, all_members, protected_members)
 
     def offboard_users(self, inactive_users: set[str], all_users: dict[str, str], protected_users: set[str]) -> None:
         if self.dry_run:
@@ -76,6 +85,32 @@ class OffboardInactiveUsers:
                     user_id=user_id,
                     username=all_users[user_id],
                 )
+
+    def _get_active_member_report(
+        self, events: List[Dict[str, Any]] | None = None, members: List[Dict[str, Any]] | None = None
+    ) -> set[str]:
+
+        if events is None:
+            raise ValueError("The current list of events must be provided")
+
+        if members is None:
+            raise ValueError("The current list of active members must be provided")
+
+        member_ids = {member["id"] for member in members if int(member["status"]) == 2}
+        user_ids = {str(member["userId"]): member["id"] for member in members if int(member["status"]) == 2}
+
+        active = set()
+
+        for event in events:
+            if event["memberId"] is not None and event["memberId"] in member_ids:
+                active.add(event["memberId"])
+                continue
+
+            if event["actingUserId"] is not None and user_ids.get(event["actingUserId"], None) is not None:
+                active.add(user_ids.get(event["actingUserId"]))
+                continue
+
+        return active
 
     def _get_protected_users(self) -> set[str]:
         # we are looking for all members that have access to the Root collection.

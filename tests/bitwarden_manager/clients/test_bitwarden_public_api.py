@@ -8,7 +8,6 @@ from unittest.mock import patch, Mock
 import pytest
 import responses
 from _pytest.logging import LogCaptureFixture
-from freezegun import freeze_time
 from mock import MagicMock
 from requests import HTTPError
 from responses import matchers
@@ -200,7 +199,7 @@ def test_get_user_by_external_id() -> None:
             client.get_user_by_external_id(external_id="")
 
 
-def test__get_events() -> None:
+def test_get_events() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
         rsps.add(MOCKED_EVENTS)
 
@@ -210,7 +209,7 @@ def test__get_events() -> None:
             client_secret="bar",
         )
 
-        events = client._get_events("2026-01-01", 10)
+        events = client.get_events("2026-01-01", 10)
 
         assert len(events) == 5
         assert events[0]["actingUserId"] == "11111111"
@@ -228,7 +227,7 @@ def test__get_event_end_date() -> None:
             client_secret="bar",
         )
 
-        events = client._get_events("2026-01-01", 10, "2026-01-02")
+        events = client.get_events("2026-01-01", 10, "2026-01-02")
         assert len(events) == 5
         assert events[0]["actingUserId"] == "11111111"
         assert events[1]["memberId"] == "11111111"
@@ -255,7 +254,7 @@ def test_get_events_pagination(mock_get: Mock) -> None:
 
     mock_get.side_effect = [response_1, response_2]
 
-    events = client._get_events(start_date="2026-01-01")
+    events = client.get_events(start_date="2026-01-01")
 
     assert len(events) == 2
     assert events[0]["id"] == "event_page_1"
@@ -289,7 +288,7 @@ def test_get_events_success(mock_get: Mock) -> None:
     mock_get.return_value = mock_response
 
     start_date = "2023-01-01"
-    events = bitwarden_api._get_events(start_date=start_date)
+    events = bitwarden_api.get_events(start_date=start_date)
 
     # Assertions
     assert len(events) == 2
@@ -315,7 +314,7 @@ def test_get_events_rate_limit(mock_get: Mock) -> None:
     ]
 
     start_date = "2023-01-01"
-    events = bitwarden_api._get_events(start_date=start_date)
+    events = bitwarden_api.get_events(start_date=start_date)
 
     # Assertions
     assert len(events) == 0
@@ -336,33 +335,7 @@ def test_get_events_http_error(mock_get: Mock) -> None:
 
     start_date = "2023-01-01"
     with pytest.raises(Exception, match="Failed to retrieve events report"):
-        bitwarden_api._get_events(start_date=start_date)
-
-
-@freeze_time("2026-01-14")
-def test_get_active_user_report() -> None:
-    mock_logger = MagicMock()
-
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-        rsps.add(MOCKED_LOGIN)
-        rsps.add(MOCKED_EVENTS)
-        rsps.add(MOCKED_GET_MEMBERS)
-
-        client = BitwardenPublicApi(
-            logger=mock_logger,
-            client_id="foo",
-            client_secret="bar",
-        )
-        active_users = client.get_active_user_report(30)
-
-        mock_logger.info.assert_any_call("Fetching events for time range: 2025-12-15 to now")
-        mock_logger.info.assert_any_call("Retrieved 5 total events")
-        mock_logger.info.assert_any_call("Successfully fetched 5 events for time range: 2025-12-15 to now")
-        assert mock_logger.info.call_count == 3
-
-        assert len(active_users) == 2
-        assert "11111111" in active_users
-        assert "22222222" in active_users
+        bitwarden_api.get_events(start_date=start_date)
 
 
 def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None:

@@ -39,13 +39,15 @@ moto = "^5.0.18"
 freezegun = "^1.5.0"
 pip-audit = "^2.10.0"
 
+[tool.black]
+
 [tool.flake8]
 ignore = ['E203'] # "Colons should not have any space before them" ignoring rule avoids incompatibaty with black formater https://github.com/psf/black/issues/315
 max-line-length = 120
 
 [tool.pytest]
 minversion = "9.0"
-addopts = ["-v", "-p", "no:cacheprovider", "--no-header", "--cov", "bitwarden_manager", "--cov-report", "term-missing", "--no-cov-on-fail", "--cov-fail-under", "100"]
+addopts = ["-v", "-x", "-p", "no:cacheprovider", "--no-header", "--cov", "bitwarden_manager", "--cov-report", "term-missing", "--no-cov-on-fail", "--cov-fail-under", "100"]
 testpaths = [
     "tests",
 ]
