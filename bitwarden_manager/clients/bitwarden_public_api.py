@@ -1,5 +1,4 @@
 import base64
-import datetime
 import time
 from logging import Logger
 from typing import Dict, List, Any, Optional
@@ -126,32 +125,9 @@ class BitwardenPublicApi:
     def fetch_user_id_by_external_id(self, external_id: str) -> str:
         return str(self.get_user_by_external_id(external_id=external_id)["id"])
 
-    def get_active_user_report(self, duration_days: int = 35) -> set[str]:
-        self.__fetch_token()
-        start_date = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=duration_days)).strftime(
-            "%Y-%m-%d"
-        )
-
-        events = self._get_events(start_date)
-        members = self.get_users()
-
-        member_ids = {member["id"] for member in members if int(member["status"]) == 2}
-        user_ids = {str(member["userId"]): member["id"] for member in members if int(member["status"]) == 2}
-
-        active = set()
-
-        for event in events:
-            if event["memberId"] is not None and event["memberId"] in member_ids:
-                active.add(event["memberId"])
-                continue
-
-            if event["actingUserId"] is not None and user_ids.get(event["actingUserId"], None) is not None:
-                active.add(user_ids.get(event["actingUserId"]))
-                continue
-
-        return active
-
-    def _get_events(self, start_date: str, timeout: float = 600.0, end_date: Optional[str] = None) -> list[Any]:
+    def get_events(
+        self, start_date: str, timeout: float = 600.0, end_date: Optional[str] = None
+    ) -> list[Dict[str, Any]]:
         # get_events_for_range (start_date, end_date=None)
         # https://github.com/bitwarden-labs/events-public-api-client/blob/main/main.py
         params = {"start": start_date}
