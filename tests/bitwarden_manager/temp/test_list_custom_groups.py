@@ -206,9 +206,12 @@ def test_list_custom_groups_event_routing(
         "event_name": "list_custom_groups",
     }
 
-    get_secret_value = Mock(return_value={"SecretString": "secret"})
-    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
-    mock_list_custom_groups.return_value.run.return_value = None
-    mock_log_redacting_formatter.validate_patterns.return_value = None
-    BitwardenManager().run(event=event)
-    mock_list_custom_groups.return_value.run.assert_called()
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(BITWARDEN_MOCKED_LOGIN)
+
+        get_secret_value = Mock(return_value={"SecretString": "secret"})
+        mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+        mock_list_custom_groups.return_value.run.return_value = None
+        mock_log_redacting_formatter.validate_patterns.return_value = None
+        BitwardenManager().run(event=event)
+        mock_list_custom_groups.return_value.run.assert_called()

@@ -11,6 +11,16 @@ from bitwarden_manager.clients.user_management_api import UserManagementApi
 API_URL = "https://user-management-backend-production.tools.tax.service.gov.uk/v2"
 AUTH_URL = "https://user-management-auth-production.tools.tax.service.gov.uk/v1/login"
 
+MOCKED_LOGIN = responses.Response(
+    method="POST",
+    url=AUTH_URL,
+    status=200,
+    json={
+        "Token": "TEST_BEARER_TOKEN",
+        "uid": "user.name",
+    },
+)
+
 
 @responses.activate
 def test_get_user_teams() -> None:
@@ -261,14 +271,3 @@ def test_get_teams() -> None:
 
         with pytest.raises(Exception):
             client.get_teams()
-
-
-MOCKED_LOGIN = responses.Response(
-    method="POST",
-    url=AUTH_URL,
-    status=200,
-    json={
-        "Token": "TEST_BEARER_TOKEN",
-        "uid": "user.name",
-    },
-)

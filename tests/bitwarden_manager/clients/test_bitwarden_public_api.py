@@ -104,31 +104,36 @@ def test_get_user_by_email() -> None:
 
 
 def test_get_user_collections_returns_empty_list_when_collections_are_none() -> None:
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    result = client._BitwardenPublicApi__get_user_collections(None)  # type: ignore
-    assert result == []
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        result = client._BitwardenPublicApi__get_user_collections(None)  # type: ignore
+        assert result == []
 
 
 def test_get_user_collections_returns_collections_where_collections_exist() -> None:
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
-
-    user_colletions = [_user_collection("manually-created"), _user_collection("manager-created")]
-
-    collections = [
-        _collection_object_with_empty_external_id("manually-created"),
-        _collection_object_with_base64_encoded_external_id("manager-created"),
-    ]
-
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        user_colletions = [_user_collection("manually-created"), _user_collection("manager-created")]
+
+        collections = [
+            _collection_object_with_empty_external_id("manually-created"),
+            _collection_object_with_base64_encoded_external_id("manager-created"),
+        ]
+
         for collection in collections:
             rsps.add(
                 status=200,
@@ -143,15 +148,16 @@ def test_get_user_collections_returns_collections_where_collections_exist() -> N
 
 
 def test_get_user_collections_throws_exception_when_collections_dont_exist() -> None:
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
-
-    user_collections = [_user_collection("non-existent")]
-
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        user_collections = [_user_collection("non-existent")]
+
         rsps.add(
             rsps.GET,
             f"https://api.bitwarden.eu/public/collections/{user_collections[0]["id"]}",
@@ -201,6 +207,7 @@ def test_get_user_by_external_id() -> None:
 
 def test_get_events() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_EVENTS)
 
         client = BitwardenPublicApi(
@@ -219,6 +226,7 @@ def test_get_events() -> None:
 
 def test__get_event_end_date() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(MOCKED_EVENTS)
 
         client = BitwardenPublicApi(
@@ -236,106 +244,119 @@ def test__get_event_end_date() -> None:
 
 @patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
 def test_get_events_pagination(mock_get: Mock) -> None:
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    # First call returns a continuation token
-    response_1 = MagicMock()
-    response_1.status_code = 200
-    response_1.json.return_value = {"data": [{"id": "event_page_1"}], "continuationToken": "token_for_page_2"}
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
 
-    # Second call returns no continuation token
-    response_2 = MagicMock()
-    response_2.status_code = 200
-    response_2.json.return_value = {"data": [{"id": "event_page_2"}], "continuationToken": None}
+        # First call returns a continuation token
+        response_1 = MagicMock()
+        response_1.status_code = 200
+        response_1.json.return_value = {"data": [{"id": "event_page_1"}], "continuationToken": "token_for_page_2"}
 
-    mock_get.side_effect = [response_1, response_2]
+        # Second call returns no continuation token
+        response_2 = MagicMock()
+        response_2.status_code = 200
+        response_2.json.return_value = {"data": [{"id": "event_page_2"}], "continuationToken": None}
 
-    events = client.get_events(start_date="2026-01-01")
+        mock_get.side_effect = [response_1, response_2]
 
-    assert len(events) == 2
-    assert events[0]["id"] == "event_page_1"
-    assert events[1]["id"] == "event_page_2"
+        events = client.get_events(start_date="2026-01-01")
 
-    # Verify calls
-    assert mock_get.call_count == 2
+        assert len(events) == 2
+        assert events[0]["id"] == "event_page_1"
+        assert events[1]["id"] == "event_page_2"
 
-    # Check that the second call used the continuationToken
-    args, kwargs = mock_get.call_args_list[1]
-    assert kwargs["params"]["continuationToken"] == "token_for_page_2"
+        # Verify calls
+        assert mock_get.call_count == 2
+
+        # Check that the second call used the continuationToken
+        args, kwargs = mock_get.call_args_list[1]
+        assert kwargs["params"]["continuationToken"] == "token_for_page_2"
 
 
 @patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
 def test_get_events_success(mock_get: Mock) -> None:
-    mock_logger = MagicMock()
-    bitwarden_api = BitwardenPublicApi(
-        logger=mock_logger,
-        client_id="foo",
-        client_secret="bar",
-    )
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {
-        "data": [
-            {"id": "event1", "actingUserId": "user1"},
-            {"id": "event2", "actingUserId": "user2"},
-        ],
-        "continuationToken": None,
-    }
-    mock_get.return_value = mock_response
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    start_date = "2023-01-01"
-    events = bitwarden_api.get_events(start_date=start_date)
+        mock_logger = MagicMock()
+        bitwarden_api = BitwardenPublicApi(
+            logger=mock_logger,
+            client_id="foo",
+            client_secret="bar",
+        )
 
-    # Assertions
-    assert len(events) == 2
-    assert events[0]["id"] == "event1"
-    assert events[1]["id"] == "event2"
-    mock_logger.info.assert_called_with("Successfully fetched 2 events for time range: 2023-01-01 to now")
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "data": [
+                {"id": "event1", "actingUserId": "user1"},
+                {"id": "event2", "actingUserId": "user2"},
+            ],
+            "continuationToken": None,
+        }
+        mock_get.return_value = mock_response
+
+        start_date = "2023-01-01"
+        events = bitwarden_api.get_events(start_date=start_date)
+
+        # Assertions
+        assert len(events) == 2
+        assert events[0]["id"] == "event1"
+        assert events[1]["id"] == "event2"
+        mock_logger.info.assert_called_with("Successfully fetched 2 events for time range: 2023-01-01 to now")
 
 
 @patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
 def test_get_events_rate_limit(mock_get: Mock) -> None:
-    mock_logger = MagicMock()
-    bitwarden_api = BitwardenPublicApi(
-        logger=mock_logger,
-        client_id="foo",
-        client_secret="bar",
-    )
-    mock_response = MagicMock()
-    mock_response.status_code = 429
-    mock_response.headers = {"Retry-After": "1"}
-    mock_get.side_effect = [
-        mock_response,
-        MagicMock(status_code=200, json=lambda: {"data": [], "continuationToken": None}),
-    ]
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    start_date = "2023-01-01"
-    events = bitwarden_api.get_events(start_date=start_date)
+        mock_logger = MagicMock()
+        bitwarden_api = BitwardenPublicApi(
+            logger=mock_logger,
+            client_id="foo",
+            client_secret="bar",
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 429
+        mock_response.headers = {"Retry-After": "1"}
+        mock_get.side_effect = [
+            mock_response,
+            MagicMock(status_code=200, json=lambda: {"data": [], "continuationToken": None}),
+        ]
 
-    # Assertions
-    assert len(events) == 0
-    mock_logger.warning.assert_called_with("Rate limit hit. Waiting 1 seconds before retrying...")
+        start_date = "2023-01-01"
+        events = bitwarden_api.get_events(start_date=start_date)
+
+        # Assertions
+        assert len(events) == 0
+        mock_logger.warning.assert_called_with("Rate limit hit. Waiting 1 seconds before retrying...")
 
 
 @patch("bitwarden_manager.clients.bitwarden_public_api.session.get")
 def test_get_events_http_error(mock_get: Mock) -> None:
-    bitwarden_api = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
-    mock_response = MagicMock()
-    mock_response.status_code = 500
-    mock_response.raise_for_status.side_effect = HTTPError("Internal Server Error")
-    mock_get.return_value = mock_response
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    start_date = "2023-01-01"
-    with pytest.raises(Exception, match="Failed to retrieve events report"):
-        bitwarden_api.get_events(start_date=start_date)
+        bitwarden_api = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.raise_for_status.side_effect = HTTPError("Internal Server Error")
+        mock_get.return_value = mock_response
+
+        start_date = "2023-01-01"
+        with pytest.raises(Exception, match="Failed to retrieve events report"):
+            bitwarden_api.get_events(start_date=start_date)
 
 
 def test_grant_can_manage_permission_to_team_collections_to_team_admin() -> None:
@@ -474,7 +495,10 @@ def test_grant_can_manage_permission_to_team_collections_to_regular_user() -> No
         email="test.user02@example.com",
         roles_by_team={"team-one": "user", "team-two": "super_admin"},
     )
+
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+
         rsps.add(
             status=200,
             content_type="application/json",
@@ -497,8 +521,8 @@ def test_grant_can_manage_permission_to_team_collections_to_regular_user() -> No
             teams=teams,
         )
 
-        assert len(rsps.calls) == 1
-        assert rsps.calls[0].request.method != "PUT"
+        assert len(rsps.calls) == 2
+        assert rsps.calls[1].request.method != "PUT"
 
 
 def test_assign_custom_permissions_to_platsec_user() -> None:
@@ -818,16 +842,15 @@ def test_failed_login() -> None:
             content_type="application/json",
         )
 
-        client = BitwardenPublicApi(
-            logger=logging.getLogger(),
-            client_id="foo",
-            client_secret="bar",
-        )
-
         with pytest.raises(
             Exception,
             match="Failed to authenticate with " "https://identity.bitwarden.eu/connect/token, " "creds incorrect?",
         ):
+            client = BitwardenPublicApi(
+                logger=logging.getLogger(),
+                client_id="foo",
+                client_secret="bar",
+            )
             client.invite_user(user=UmpUser(username="test.user", email="test@example.com", roles_by_team={}))
 
 
@@ -836,6 +859,7 @@ def test_create_group() -> None:
     collection_id = "XXXXXXXX"
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.POST,
             "https://api.bitwarden.eu/public/groups",
@@ -865,18 +889,21 @@ def test_create_group() -> None:
 
 
 def test_invalid_group_name(caplog: LogCaptureFixture) -> None:
-    test_group = ""
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    with caplog.at_level(logging.INFO):
-        new_group = client.create_group(group_name=test_group, collection_id="XXXXXXXX")
-    assert "Group name invalid" in caplog.text
+        test_group = ""
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
 
-    assert new_group == ""
+        with caplog.at_level(logging.INFO):
+            new_group = client.create_group(group_name=test_group, collection_id="XXXXXXXX")
+        assert "Group name invalid" in caplog.text
+
+        assert new_group == ""
 
 
 def test_failed_to_create_group() -> None:
@@ -908,6 +935,7 @@ def test_get_collections_failure() -> None:
     collection_name = "test_name"
     collection_id = _collection_id(collection_name)
     with responses.RequestsMock() as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=400,
             content_type="application/json",
@@ -937,6 +965,7 @@ def test_get_collection_groups_failure() -> None:
     collection_name = "test_name"
     collection_id = _collection_id(collection_name)
     with responses.RequestsMock() as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=400,
             content_type="application/json",
@@ -966,6 +995,7 @@ def test_get_user_groups_failure() -> None:
     user_id = "id-test-user01"
     managed_group_ids = ["id-team-one"]
     with responses.RequestsMock() as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=400,
             content_type="application/json",
@@ -1042,15 +1072,19 @@ def test_get_groups() -> None:
 def test_user_custom_group_ids() -> None:
     existing_group_ids = ["id-managed-team-1", "id-custom-grp-1", "id-custom-grp-2"]
     custom_group_ids = ["id-custom-grp-1", "id-custom-grp-2"]
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
 
-    assert ["id-custom-grp-1", "id-custom-grp-2"] == client._user_custom_group_ids(
-        existing_user_group_ids=existing_group_ids, custom_group_ids=custom_group_ids
-    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
+        assert ["id-custom-grp-1", "id-custom-grp-2"] == client._user_custom_group_ids(
+            existing_user_group_ids=existing_group_ids, custom_group_ids=custom_group_ids
+        )
 
 
 def test_associate_user_to_group_no_custom_group() -> None:
@@ -1059,6 +1093,7 @@ def test_associate_user_to_group_no_custom_group() -> None:
     managed_group_ids = ["id-team-one"]
     custom_group_ids: List[str] = []
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1098,6 +1133,7 @@ def test_associate_user_to_group_multiple_custom_groups() -> None:
     existing_group_ids = ["id-managed-team-1", "id-custom-grp-1", "id-custom-grp-2"]
     custom_group_ids = ["id-custom-grp-1", "id-custom-grp-2", "id-custom-grp-3"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1137,6 +1173,7 @@ def test_failed_to_associate_user_to_groups() -> None:
     managed_group_ids = ["id-team-two"]
     custom_group_ids: List[str] = []
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1178,6 +1215,7 @@ def test_failed_to_get_group_data_to_associate_user_to_groups() -> None:
     user_id = "id-test-user01"
     existing_group_ids = ["id-team-one"]
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=400,
             content_type="application/json",
@@ -1232,12 +1270,15 @@ def test_update_manually_created_collection_group() -> None:
 def test_get_collection_external_id() -> None:
     collection_name = "Team One"
     collection_id = _collection_id(collection_name)
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1271,6 +1312,8 @@ def test_failed_to_update_collection_group() -> None:
     collection_id = _collection_id(collection_name)
     group_id = "ZZZZZZZZ"
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1310,6 +1353,7 @@ def test_list_existing_collections() -> None:
     teams = [team_one_name]
     team_name_one_external_id = _external_id_base64_encoded(team_one_name)
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1340,6 +1384,7 @@ def test_update_collection_groups_success() -> None:
     collection_id = _collection_id(collection_name)
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             f"https://api.bitwarden.eu/public/collections/{collection_id}",
@@ -1364,7 +1409,7 @@ def test_update_collection_groups_success() -> None:
             group_id="XXXXXXXX",
         )
 
-        assert len(rsps.calls) == 4
+        assert len(rsps.calls) == 5
         assert rsps.calls[-1].request.method == "PUT"
         assert rsps.calls[-1].request.url == f"https://api.bitwarden.eu/public/collections/{collection_id}"
 
@@ -1374,6 +1419,7 @@ def test_list_existing_collections_duplicate() -> None:
     teams = [team_one_name]
     team_one_external_id = _external_id_base64_encoded(team_one_name)
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1574,6 +1620,7 @@ def test_collate_user_group_ids() -> None:
         team_two_name: {"id": _collection_id(team_two_name), "externalID": ""},
     }
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             status=200,
             content_type="application/json",
@@ -1646,7 +1693,8 @@ def test_collate_user_group_ids_duplicates() -> None:
     teams = ["Team Name One"]
     groups = {"Team Name One": "duplicate"}
     collections = {"Team Name One": {"id": "ZZZZZZZZ", "externalID": ""}}
-    with responses.RequestsMock(assert_all_requests_are_fired=True):
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         client = BitwardenPublicApi(
             logger=logging.getLogger(),
             client_id="foo",
@@ -1662,7 +1710,7 @@ def test_collate_user_group_ids_duplicates() -> None:
 
 def test_remove_user(caplog: LogCaptureFixture) -> None:
     username = "test.user02"
-    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
         rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
@@ -1685,10 +1733,10 @@ def test_remove_user(caplog: LogCaptureFixture) -> None:
             client_id="foo",
             client_secret="bar",
         )
-        with caplog.at_level(logging.INFO):
-            client.remove_user(
-                username=username,
-            )
+
+        client.remove_user(
+            username=username,
+        )
 
         rsps.assert_call_count("https://api.bitwarden.eu/public/members/22222222", 1) is True
         assert f"User {username} has been removed from the Bitwarden organisation" in caplog.text
@@ -1899,6 +1947,7 @@ def test_reinvite_user_failed(caplog: LogCaptureFixture) -> None:
 
 def test_get_group_id_by_name() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/groups/",
@@ -1934,6 +1983,7 @@ def test_get_group_id_by_name() -> None:
 
 def test_get_group_id_by_name_not_found() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/groups/",
@@ -1954,6 +2004,7 @@ def test_get_group_id_by_name_not_found() -> None:
 
 def test_get_group_id_by_name_failure() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/groups/",
@@ -1972,6 +2023,7 @@ def test_get_group_id_by_name_failure() -> None:
 
 def test_get_users_in_group() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/groups/539a36c5-e0d2-4cf9-979e-51ecf5cf6593/member-ids",
@@ -1990,6 +2042,7 @@ def test_get_users_in_group() -> None:
 
 def test_get_users_in_group_failure() -> None:
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             responses.GET,
             "https://api.bitwarden.eu/public/groups/539a36c5-e0d2-4cf9-979e-51ecf5cf6593/member-ids",
@@ -2007,50 +2060,59 @@ def test_get_users_in_group_failure() -> None:
 
 
 def test_get_users_in_group_with_empty(caplog: LogCaptureFixture) -> None:
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    with caplog.at_level(logging.INFO):
-        client.get_users_in_group("")
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
 
-    assert "group_id cannot be empty" in caplog.text
+        with caplog.at_level(logging.INFO):
+            client.get_users_in_group("")
+
+        assert "group_id cannot be empty" in caplog.text
 
 
 def test_get_users_by_group_name() -> None:
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
-    with (
-        patch.object(client, "get_group_id_by_name", return_value="group_id") as mock_get_group_id_by_name,
-        patch.object(client, "get_users_in_group", return_value=["user_id"]) as get_mock_users_in_group,
-    ):
-        users = client.get_users_by_group_name("Development Team")
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    assert mock_get_group_id_by_name.call_count == 1
-    assert get_mock_users_in_group.call_count == 1
-    assert users == ["user_id"]
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with (
+            patch.object(client, "get_group_id_by_name", return_value="group_id") as mock_get_group_id_by_name,
+            patch.object(client, "get_users_in_group", return_value=["user_id"]) as get_mock_users_in_group,
+        ):
+            users = client.get_users_by_group_name("Development Team")
+
+        assert mock_get_group_id_by_name.call_count == 1
+        assert get_mock_users_in_group.call_count == 1
+        assert users == ["user_id"]
 
 
 def test_get_users_by_empty_group(caplog: LogCaptureFixture) -> None:
-    client = BitwardenPublicApi(
-        logger=logging.getLogger(),
-        client_id="foo",
-        client_secret="bar",
-    )
-    with (
-        caplog.at_level(logging.INFO),
-        patch.object(client, "get_group_id_by_name", return_value=[]) as mock_get_group_id,
-    ):
-        users = client.get_users_by_group_name("Development Team")
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
 
-    assert "Group Development Team not found" in caplog.text
-    assert mock_get_group_id.call_count == 1
-    assert users == []
+        client = BitwardenPublicApi(
+            logger=logging.getLogger(),
+            client_id="foo",
+            client_secret="bar",
+        )
+        with (
+            caplog.at_level(logging.INFO),
+            patch.object(client, "get_group_id_by_name", return_value=[]) as mock_get_group_id,
+        ):
+            users = client.get_users_by_group_name("Development Team")
+
+        assert "Group Development Team not found" in caplog.text
+        assert mock_get_group_id.call_count == 1
+        assert users == []
 
 
 # Helper functions

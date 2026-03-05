@@ -74,6 +74,7 @@ def test_update_collection_external_id() -> None:
     external_id = "extId-test-collection-01"
 
     with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
         rsps.add(
             method=responses.PUT,
             url=f"https://api.bitwarden.eu/public/collections/{collection_id}",
@@ -94,7 +95,7 @@ def test_update_collection_external_id() -> None:
             external_id=external_id,
         )
 
-        assert len(rsps.calls) == 1
+        assert len(rsps.calls) == 2
         assert rsps.calls[-1].request.method == "PUT"
         assert rsps.calls[-1].request.url == f"https://api.bitwarden.eu/public/collections/{collection_id}"
 
@@ -182,9 +183,12 @@ def test_update_collection_external_ids_event_routing(
 ) -> None:
     event = {"event_name": "update_collection_external_ids"}
 
-    get_secret_value = Mock(return_value={"SecretString": "secret"})
-    mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
-    mock_update_collection_external_ids.return_value.run.return_value = None
-    mock_log_redacting_formatter.validate_patterns.return_value = None
-    BitwardenManager().run(event=event)
-    mock_update_collection_external_ids.return_value.run.assert_called()
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+
+        get_secret_value = Mock(return_value={"SecretString": "secret"})
+        mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
+        mock_update_collection_external_ids.return_value.run.return_value = None
+        mock_log_redacting_formatter.validate_patterns.return_value = None
+        BitwardenManager().run(event=event)
+        mock_update_collection_external_ids.return_value.run.assert_called()

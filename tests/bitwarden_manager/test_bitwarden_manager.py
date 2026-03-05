@@ -5,12 +5,15 @@ from unittest.mock import Mock, call, patch
 
 from pytest import LogCaptureFixture
 import pytest
+import responses
 
 
 from bitwarden_manager.bitwarden_manager import BitwardenManager
 from bitwarden_manager.clients.bitwarden_public_api import BitwardenUserAlreadyExistsException
 from bitwarden_manager.clients.bitwarden_vault_client import BitwardenVaultClient
 from bitwarden_manager.confirm_user import BitwardenConfirmUserInvalidDomain
+
+from tests.bitwarden_manager.clients.test_bitwarden_public_api import MOCKED_LOGIN
 
 
 @mock.patch("boto3.client")
@@ -99,21 +102,23 @@ def test_warning_is_logged_on_failed_attempt_to_onboard_an_already_existing_user
     get_secret_value = Mock(return_value={"SecretString": "secret"})
     mock_secretsmanager.return_value = Mock(get_secret_value=get_secret_value)
 
-    with patch("bitwarden_manager.bitwarden_manager.OnboardUser") as mock_onboard_user:
-        _mock_onboard_user = mock_onboard_user.return_value
-        _mock_onboard_user.run.side_effect = BitwardenUserAlreadyExistsException
-        with caplog.at_level(logging.WARN):
-            BitwardenManager().run(
-                event={
-                    "event_name": "new_user",
-                    "username": "existing.user",
-                    "email": "existing.user@example.com",
-                }
-            )
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch("bitwarden_manager.bitwarden_manager.OnboardUser") as mock_onboard_user:
+            _mock_onboard_user = mock_onboard_user.return_value
+            _mock_onboard_user.run.side_effect = BitwardenUserAlreadyExistsException
+            with caplog.at_level(logging.WARN):
+                BitwardenManager().run(
+                    event={
+                        "event_name": "new_user",
+                        "username": "existing.user",
+                        "email": "existing.user@example.com",
+                    }
+                )
 
-        mock_onboard_user.run.assert_called_once
+            mock_onboard_user.run.assert_called_once
 
-        assert "Failed to complete new_user due to user already exists - " in caplog.text
+            assert "Failed to complete new_user due to user already exists - " in caplog.text
 
 
 @mock.patch.dict(os.environ, {"LOG_LEVEL": "DEBUG"})
