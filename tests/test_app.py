@@ -5,6 +5,7 @@ from unittest.mock import patch, Mock, MagicMock
 from jsonschema import ValidationError
 import pytest
 from _pytest.logging import LogCaptureFixture
+import responses
 
 from app import handler
 from bitwarden_manager.clients.aws_secretsmanager_client import AwsSecretsManagerClient
@@ -16,6 +17,8 @@ from bitwarden_manager.export_vault import ExportVault
 from bitwarden_manager.confirm_user import ConfirmUser
 from bitwarden_manager.update_user_groups import UpdateUserGroups
 from bitwarden_manager.get_user_details import GetUserDetails
+
+from tests.bitwarden_manager.clients.test_bitwarden_public_api import MOCKED_LOGIN
 
 
 @mock.patch("boto3.client")
@@ -60,26 +63,32 @@ def test_bitwarden_client_logout_is_called(_: Mock) -> None:
 
 @mock.patch("boto3.client")
 def test_bitwarden_client_logout_is_called_even_when_exception_thrown(_: Mock) -> None:
-    with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-            secrets_manager_mock.return_value = "23497858247589473589734805734853"
-            event = dict(event_name="new_user")
-            with patch.object(OnboardUser, "run", MagicMock(side_effect=BitwardenVaultClientError())) as new_user_mock:
-                with pytest.raises(BitwardenVaultClientError):
-                    handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+            with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+                secrets_manager_mock.return_value = "23497858247589473589734805734853"
+                event = dict(event_name="new_user")
+                with patch.object(
+                    OnboardUser, "run", MagicMock(side_effect=BitwardenVaultClientError())
+                ) as new_user_mock:
+                    with pytest.raises(BitwardenVaultClientError):
+                        handler(event=event, context={})
 
-        new_user_mock.assert_called_once_with(event=event)
-        bitwarden_logout.assert_called_once()
+            new_user_mock.assert_called_once_with(event=event)
+            bitwarden_logout.assert_called_once()
 
 
 @mock.patch("boto3.client")
 def test_handler_routes_new_user_events(_: Mock) -> None:
-    with patch.object(BitwardenVaultClient, "logout"):
-        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-            secrets_manager_mock.return_value = "23497858247589473589734805734853"
-            event = dict(event_name="new_user")
-            with patch.object(OnboardUser, "run") as new_user_mock:
-                handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(BitwardenVaultClient, "logout"):
+            with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+                secrets_manager_mock.return_value = "23497858247589473589734805734853"
+                event = dict(event_name="new_user")
+                with patch.object(OnboardUser, "run") as new_user_mock:
+                    handler(event=event, context={})
 
     new_user_mock.assert_called_once_with(event=event)
 
@@ -99,15 +108,17 @@ def test_handler_with_sqs_event(_: Mock) -> None:
         ]
     }
 
-    with patch.object(BitwardenVaultClient, "logout"):
-        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-            secrets_manager_mock.return_value = "23497858247589473589734805734853"
-            with patch.object(OnboardUser, "run") as new_user_mock:
-                with patch.object(OffboardUser, "run") as remove_user_mock:
-                    handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(BitwardenVaultClient, "logout"):
+            with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+                secrets_manager_mock.return_value = "23497858247589473589734805734853"
+                with patch.object(OnboardUser, "run") as new_user_mock:
+                    with patch.object(OffboardUser, "run") as remove_user_mock:
+                        handler(event=event, context={})
 
-    new_user_mock.assert_called_once_with(event=dict(event_name="new_user"))
-    remove_user_mock.assert_called_once_with(event=dict(event_name="remove_user"))
+        new_user_mock.assert_called_once_with(event=dict(event_name="new_user"))
+        remove_user_mock.assert_called_once_with(event=dict(event_name="remove_user"))
 
 
 @mock.patch("boto3.client")
@@ -139,12 +150,14 @@ def test_handler_routes_confirm_user(_: Mock) -> None:
 @mock.patch("boto3.client")
 def test_handler_routes_user_get_method(_: Mock) -> None:
     event = dict(path="/bitwarden-manager/users", httpMethod="GET")
-    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-        secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(GetUserDetails, "run") as get_user_mock:
-            handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+            secrets_manager_mock.return_value = "23497858247589473589734805734853"
+            with patch.object(GetUserDetails, "run") as get_user_mock:
+                handler(event=event, context={})
 
-    get_user_mock.assert_called_once_with(event=event)
+        get_user_mock.assert_called_once_with(event=event)
 
 
 @mock.patch("boto3.client")
@@ -161,51 +174,59 @@ def test_handler_routes_user_unknown_method(_: Mock, caplog: LogCaptureFixture) 
 @mock.patch("boto3.client")
 def test_handler_routes_remove_user(_: Mock) -> None:
     event = dict(event_name="remove_user")
-    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-        secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-            with patch.object(OffboardUser, "run") as remove_user_mock:
-                handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+            secrets_manager_mock.return_value = "23497858247589473589734805734853"
+            with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+                with patch.object(OffboardUser, "run") as remove_user_mock:
+                    handler(event=event, context={})
 
-    remove_user_mock.assert_called_once_with(event=event)
-    bitwarden_logout.assert_called_once()
+        remove_user_mock.assert_called_once_with(event=event)
+        bitwarden_logout.assert_called_once()
 
 
 @mock.patch("boto3.client")
 def test_handler_routes_update_user_groups(_: Mock) -> None:
     event = dict(event_name="update_user_groups")
-    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-        secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-            with patch.object(UpdateUserGroups, "run") as update_user_groups_mock:
-                handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+            secrets_manager_mock.return_value = "23497858247589473589734805734853"
+            with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+                with patch.object(UpdateUserGroups, "run") as update_user_groups_mock:
+                    handler(event=event, context={})
 
-    update_user_groups_mock.assert_called_once_with(event=event)
-    bitwarden_logout.assert_called_once()
+        update_user_groups_mock.assert_called_once_with(event=event)
+        bitwarden_logout.assert_called_once()
 
 
 @mock.patch("boto3.client")
 def test_handler_routes_reinvite_users(_: Mock, caplog: LogCaptureFixture) -> None:
     event = dict(event_name="reinvite_users")
-    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-        secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-            handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+            secrets_manager_mock.return_value = "23497858247589473589734805734853"
+            with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+                handler(event=event, context={})
 
-    bitwarden_logout.assert_called_once()
+        bitwarden_logout.assert_called_once()
 
-    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
-    assert any(record.message == "event reinvite_users has been removed" for record in warnings)
+        warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+        assert any(record.message == "event reinvite_users has been removed" for record in warnings)
 
 
 @mock.patch("boto3.client")
 def test_handler_routes_offboard_inactive_users(_: Mock) -> None:
     event = dict(event_name="offboard_inactive_users", inactivity_duration="90")
-    with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
-        secrets_manager_mock.return_value = "23497858247589473589734805734853"
-        with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
-            with patch.object(OffboardInactiveUsers, "run") as offboard_inactive_users_mock:
-                handler(event=event, context={})
+    with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        rsps.add(MOCKED_LOGIN)
+        with patch.object(AwsSecretsManagerClient, "get_secret_value") as secrets_manager_mock:
+            secrets_manager_mock.return_value = "23497858247589473589734805734853"
+            with patch.object(BitwardenVaultClient, "logout") as bitwarden_logout:
+                with patch.object(OffboardInactiveUsers, "run") as offboard_inactive_users_mock:
+                    handler(event=event, context={})
 
-    offboard_inactive_users_mock.assert_called_once_with(event=event)
-    bitwarden_logout.assert_called_once()
+        offboard_inactive_users_mock.assert_called_once_with(event=event)
+        bitwarden_logout.assert_called_once()

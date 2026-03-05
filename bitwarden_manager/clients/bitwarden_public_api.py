@@ -37,6 +37,8 @@ class BitwardenPublicApi:
         self.__client_secret = client_secret
         self.__client_id = client_id
 
+        self.__fetch_token()
+
     @staticmethod
     def external_id_base64_encoded(id: str) -> str:
         return base64.b64encode(id.encode()).decode("utf-8")
@@ -78,7 +80,6 @@ class BitwardenPublicApi:
         return not bool(external_id and external_id.strip())
 
     def get_user_by_email(self, email: str) -> Dict[str, Any]:
-        self.__fetch_token()
         for user in self.get_users():
             if email and email == user.get("email", ""):
                 return user
@@ -86,7 +87,6 @@ class BitwardenPublicApi:
             raise BitwardenUserNotFoundException(f"No user with email {email} found")
 
     def get_user_by_username(self, username: str) -> Dict[str, Any]:
-        self.__fetch_token()
         for user in self.get_users():
             if username and username in user.get("email", ""):
                 return user
@@ -94,7 +94,6 @@ class BitwardenPublicApi:
             raise BitwardenUserNotFoundException(f"No user with username {username} found")
 
     def get_user_by_external_id(self, external_id: str) -> Dict[str, Any]:
-        self.__fetch_token()
         for user in self.get_users():
             if external_id and external_id == user.get("externalId", ""):
                 return user
@@ -112,7 +111,6 @@ class BitwardenPublicApi:
         return list(response_json.get("data", []))
 
     def get_user_by(self, field: str, value: str) -> Dict[str, Any]:
-        self.__fetch_token()
         for user in self.get_users():
             if value and value in user.get(field, ""):
                 return user
@@ -226,7 +224,6 @@ class BitwardenPublicApi:
             raise Exception("Failed to list collections", response.content, error) from error
 
     def get_pending_users(self) -> List[Dict[str, Any]]:
-        self.__fetch_token()
         pending = []
         for user in self.get_users():
             if user.get("status") == UserStatus.INVITED:
@@ -234,7 +231,6 @@ class BitwardenPublicApi:
         return pending
 
     def invite_user(self, user: UmpUser) -> str:
-        self.__fetch_token()
         response = session.post(
             f"{API_URL}/members",
             json={
@@ -352,7 +348,6 @@ class BitwardenPublicApi:
         self.__logger.info(f"PlatSec user {user.username} has been granted custom permissions")
 
     def remove_user(self, username: str) -> None:
-        self.__fetch_token()
         try:
             uid = self.fetch_user_id_by_external_id(external_id=username)
         except Exception:
@@ -365,8 +360,7 @@ class BitwardenPublicApi:
         )
         self.__logger.info(f"User {username} has been removed from the Bitwarden organisation")
 
-    @staticmethod
-    def remove_user_by_id(user_id: str, username: str) -> None:
+    def remove_user_by_id(self, user_id: str, username: str) -> None:
         response = session.delete(
             f"{API_URL}/members/{user_id}",
             timeout=REQUEST_TIMEOUT_SECONDS,
@@ -516,8 +510,7 @@ class BitwardenPublicApi:
 
         return users
 
-    @staticmethod
-    def get_group_id_by_name(group_name: str) -> str:
+    def get_group_id_by_name(self, group_name: str) -> str:
         response = session.get(f"{API_URL}/groups/")
         try:
             response.raise_for_status()
