@@ -164,6 +164,75 @@ def test_run_valid_event(validation_mock: Mock, logger_mock: Mock) -> None:
 
 @mock.patch("bitwarden_manager.handlers.offboard_inactive_users.get_bitwarden_logger")
 @mock.patch("bitwarden_manager.handlers.offboard_inactive_users.validate")
+def test_run_valid_event_dry_run_true(validation_mock: Mock, logger_mock: Mock) -> None:
+    mock_logger = MagicMock()
+    logger_mock.return_value = mock_logger
+
+    mock_api = MagicMock(spec=BitwardenPublicApi)
+    mock_client = MagicMock(spec=BitwardenVaultClient)
+    mock_api.get_users = MagicMock(return_value=GET_MEMBERS_DICT)
+    mock_api.get_events = Mock(return_value=GET_EVENTS_LIST)
+
+    offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, bitwarden_vault_client=mock_client)
+
+    event = {"event_name": "offboard_inactive_users", "inactivity_duration": 90, "dry_run": True}
+
+    with (patch.object(offboard_handler, "_get_protected_users") as mock_protected_users,):
+        mock_protected_users.return_value = set()
+        offboard_handler.run(event)
+
+        assert offboard_handler.dry_run == True  # noqa: E712
+        mock_logger.info.assert_any_call("[DRY RUN] Removing user test.user04@example.com from bitwarden")
+
+
+@mock.patch("bitwarden_manager.handlers.offboard_inactive_users.get_bitwarden_logger")
+@mock.patch("bitwarden_manager.handlers.offboard_inactive_users.validate")
+def test_run_valid_event_dry_run_not_set(validation_mock: Mock, logger_mock: Mock) -> None:
+    mock_logger = MagicMock()
+    logger_mock.return_value = mock_logger
+
+    mock_api = MagicMock(spec=BitwardenPublicApi)
+    mock_client = MagicMock(spec=BitwardenVaultClient)
+    mock_api.get_users = MagicMock(return_value=GET_MEMBERS_DICT)
+    mock_api.get_events = Mock(return_value=GET_EVENTS_LIST)
+
+    offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, bitwarden_vault_client=mock_client)
+
+    event = {"event_name": "offboard_inactive_users", "inactivity_duration": 90}
+
+    with (patch.object(offboard_handler, "_get_protected_users") as mock_protected_users,):
+        mock_protected_users.return_value = set()
+        offboard_handler.run(event)
+
+        assert offboard_handler.dry_run == True  # noqa: E712
+        mock_logger.info.assert_any_call("[DRY RUN] Removing user test.user04@example.com from bitwarden")
+
+
+@mock.patch("bitwarden_manager.handlers.offboard_inactive_users.get_bitwarden_logger")
+@mock.patch("bitwarden_manager.handlers.offboard_inactive_users.validate")
+def test_run_valid_event_dry_run_falsee(validation_mock: Mock, logger_mock: Mock) -> None:
+    mock_logger = MagicMock()
+    logger_mock.return_value = mock_logger
+
+    mock_api = MagicMock(spec=BitwardenPublicApi)
+    mock_client = MagicMock(spec=BitwardenVaultClient)
+    mock_api.get_users = MagicMock(return_value=GET_MEMBERS_DICT)
+    mock_api.get_events = Mock(return_value=GET_EVENTS_LIST)
+
+    offboard_handler = OffboardInactiveUsers(bitwarden_api=mock_api, bitwarden_vault_client=mock_client)
+
+    event = {"event_name": "offboard_inactive_users", "inactivity_duration": 90, "dry_run": False}
+
+    with (patch.object(offboard_handler, "_get_protected_users") as mock_protected_users,):
+        mock_protected_users.return_value = set()
+        offboard_handler.run(event)
+
+        assert offboard_handler.dry_run == False  # noqa: E712
+        mock_logger.info.assert_any_call("Removing user test.user04@example.com from bitwarden")
+
+
+@mock.patch("bitwarden_manager.handlers.offboard_inactive_users.get_bitwarden_logger")
+@mock.patch("bitwarden_manager.handlers.offboard_inactive_users.validate")
 def test_run_null_events(validation_mock: Mock, logger_mock: Mock) -> None:
     mock_logger = MagicMock()
     logger_mock.return_value = mock_logger
