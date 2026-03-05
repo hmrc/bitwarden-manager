@@ -21,6 +21,11 @@ offboard_inactive_users_event_schema = {
             "type": "integer",
             "description": "The number of days a user must be inactive for to be considered for removal",
         },
+        "dry_run": {
+            "type": "boolean",
+            "description": "Report or action the removal of inactive members",
+            "default": True,
+        },
     },
     "required": ["event_name", "inactivity_duration"],
 }
@@ -37,6 +42,10 @@ class OffboardInactiveUsers:
 
     def run(self, event: Dict[str, Any]) -> None:
         validate(instance=event, schema=offboard_inactive_users_event_schema)
+
+        if event.get("dry_run") is not None:
+            self.dry_run = bool(event.get("dry_run"))
+
         inactivity_duration: int = event["inactivity_duration"]
 
         self.__logger.info("Fetching organization members")
@@ -79,6 +88,7 @@ class OffboardInactiveUsers:
 
             if self.dry_run:
                 self.__logger.info(f"[DRY RUN] Removing user {all_users[user_id]} from bitwarden")
+
             else:
                 self.__logger.info(f"Removing user {all_users[user_id]} from bitwarden")
                 self.bitwarden_api.remove_user_by_id(
